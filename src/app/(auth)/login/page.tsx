@@ -1,17 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation"; //  useRouter para redireccionar
 import { Button, ButtonLink } from "@/components/ui/Button";
 
 export default function LoginCAAM() {
+  const router = useRouter(); // Hook para manejar la navegación
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = (e: React.FormEvent) => {
+  // Convertimos la función a async para poder usar await
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!correo || !contrasena) {
       setError("Por favor completa ambos campos.");
@@ -19,7 +21,37 @@ export default function LoginCAAM() {
     }
     setError(null);
     setLoading(true);
-    setTimeout(() => setLoading(false), 900);
+
+    try {
+      // Hacemos la llamada a nuestra API de backend
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ correo, contrasena }),
+      });
+
+      // Si la respuesta no es exitosa (ej. 401, 400, 500)
+      if (!response.ok) {
+        const data = await response.json();
+        // Mostramos el mensaje de error que nos envía el backend
+        setError(data.error || 'Ocurrió un error al iniciar sesión.');
+        setLoading(false);
+        return;
+      }
+
+      // Si la respuesta es exitosa (200 OK)
+      // La cookie de sesión ya fue establecida por el backend.
+      // Redireccionamos al usuario al dashboard.
+      router.push('/dashboards');
+      // No necesitamos poner setLoading(false) aquí porque la página va a cambiar.
+
+    } catch (err) {
+      // Manejo de errores de red (ej. no hay conexión a internet)
+      setError("No se pudo conectar con el servidor. Inténtalo de nuevo.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,7 +70,7 @@ export default function LoginCAAM() {
             alt="Logo CAAM"
             width={200}
             height={200}
-            className="mx-auto mb-4 h-20 w-auto" /* h-30 no existe */
+            className="mx-auto mb-4 h-20 w-auto"
             priority
           />
           <h1 className="text-3xl font-extrabold tracking-tight text-[var(--brand-dark)]">
@@ -89,7 +121,7 @@ export default function LoginCAAM() {
               />
             </label>
 
-            <Button type="submit" full variant="primary">
+            <Button type="submit" full variant="primary" disabled={loading}>
               {loading ? "Entrando..." : "Iniciar sesión"}
             </Button>
 
@@ -124,3 +156,4 @@ export default function LoginCAAM() {
     </div>
   );
 }
+
