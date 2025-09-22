@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
-export default function Navbar() {
-  const [openDrop, setOpenDrop] = useState(false);
+export default function Header() {
   const pathname = usePathname();
   const isMascotas = pathname?.startsWith("/mascotas");
+  const [openDrop, setOpenDrop] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#BC5F36] shadow-md">
@@ -23,7 +23,7 @@ export default function Navbar() {
 
         {/* Links */}
         <ul className="flex items-center gap-8">
-          {/* 👇 si estás en Mascotas, muestra Inicio en lugar de Adopta */}
+          {/* Si estamos en /mascotas: mostrar 'Inicio'. En el resto: dropdown 'Adopta' */}
           {isMascotas ? (
             <li>
               <Link
