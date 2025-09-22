@@ -38,4 +38,6 @@ a { text-underline-offset: 3px; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-slide { animation: fade-slide 0.22s ease-out; }
+html, body { background: #fff4e7; }
+
 /* Fin src/styles/globals.css */

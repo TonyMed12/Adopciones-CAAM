@@ -2,15 +2,11 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
 
 import PageHead from "@/components/layout/PageHead";
-import Button from "@/components/ui/Button2";
-import Modal from "@/components/ui/Modal";
 
 import Filters from "@/components/masc/Filters";
 import MascotaCard from "@/components/masc/MascotaCard";
-import FormMascota from "@/components/masc/FormMascota";
 
 import { ESPECIES, MOCK } from "@/data/masc/constants";
 import type { Mascota, Sexo } from "@/data/masc/types";
@@ -56,12 +52,7 @@ export default function MascotasPage() {
     <>
       <PageHead
         title="Mascotas"
-        subtitle="Explora a nuestros adorables compañeros 🐾"
-        right={
-          <Button onClick={() => setOpenForm(true)}>
-            <Plus size={18} /> Agregar
-          </Button>
-        }
+        subtitle="Explora a nuestros adorables compañeros 🐾"       
       />
 
       <Filters
@@ -84,10 +75,6 @@ export default function MascotasPage() {
           </div>
         )}
       </section>
-
-      <Modal open={openForm} onClose={() => setOpenForm(false)} title="Agregar mascota">
-        <FormMascota onCancel={() => setOpenForm(false)} onSubmit={onSubmit} />
-      </Modal>
     </>
   );
 }

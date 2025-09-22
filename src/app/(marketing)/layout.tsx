@@ -1,5 +1,5 @@
 // src/app/(marketing)/layout.tsx
-import Navbar from "../../components/layout/Navbar";
+import Navbar from "../../components/layout/Header";
 export default function MarketingLayout({
   children,
 }: {

@@ -1,6 +1,4 @@
 // src/app/(marketing)/page.tsx
-import { ButtonLink } from "@/components/ui/Button";
-
 export default function LandingPage() {
   return (
     <main className="bg-[#FFF8F0]">

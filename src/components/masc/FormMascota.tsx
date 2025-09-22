@@ -1,12 +1,12 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import type { Mascota } from "../data/types";
-import { ESPECIES } from "../data/constants";
+import type { Mascota } from "@/data/masc/types";
+import { ESPECIES } from "@/data/masc/constants";
 
 /* ========= Dropdown con look & feel “Adopta” (sin negritas) ========= */
 type Opt = { label: string; value: string };
 
-function useClickOutside(ref: React.RefObject<HTMLElement>, onClose: () => void) {
+function useClickOutside(ref: React.RefObject<HTMLElement | null>, onClose: () => void) {
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
