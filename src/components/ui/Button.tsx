@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/utils/cn";
+import { cn } from "@/lib/utils";
 
 // Variantes del botón
 const buttonVariants = cva(

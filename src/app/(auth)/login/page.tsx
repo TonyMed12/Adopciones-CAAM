@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation"; //  useRouter para redireccionar
+import { useRouter } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginCAAM() {
-  const router = useRouter(); // Hook para manejar la navegación
+  const router = useRouter();
+  const supabase = createClient();
+  
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Convertimos la función a async para poder usar await
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!correo || !contrasena) {
@@ -23,32 +25,43 @@ export default function LoginCAAM() {
     setLoading(true);
 
     try {
-      // Hacemos la llamada a nuestra API de backend
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ correo, contrasena }),
+      // Usar Supabase en lugar de tu API custom
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: correo,
+        password: contrasena,
       });
 
-      // Si la respuesta no es exitosa (ej. 401, 400, 500)
-      if (!response.ok) {
-        const data = await response.json();
-        // Mostramos el mensaje de error que nos envía el backend
-        setError(data.error || 'Ocurrió un error al iniciar sesión.');
+      if (authError) {
+        let errorMessage = 'Credenciales incorrectas';
+        
+        if (authError.message === 'Invalid login credentials') {
+          errorMessage = 'Email o contraseña incorrectos';
+        } else if (authError.message === 'Email not confirmed') {
+          errorMessage = 'Por favor verifica tu email antes de iniciar sesión';
+        }
+        
+        setError(errorMessage);
         setLoading(false);
         return;
       }
 
-      // Si la respuesta es exitosa (200 OK)
-      // La cookie de sesión ya fue establecida por el backend.
-      // Redireccionamos al usuario al dashboard.
-      router.push('/dashboards');
-      // No necesitamos poner setLoading(false) aquí porque la página va a cambiar.
+      if (data.user) {
+        // Obtener perfil del usuario para verificar rol
+        const { data: perfil } = await supabase
+          .from('perfiles')
+          .select('rol')
+          .eq('id', data.user.id)
+          .single();
+
+        // Redirigir según el rol (mantener tu ruta /dashboards si prefieres)
+        if (perfil?.rol === 'administrador') {
+          router.push('/dashboards'); // O '/admin/dashboard' si quieres separar
+        } else {
+          router.push('/dashboards'); // Tu dashboard existente
+        }
+      }
 
     } catch (err) {
-      // Manejo de errores de red (ej. no hay conexión a internet)
       setError("No se pudo conectar con el servidor. Inténtalo de nuevo.");
       setLoading(false);
     }
@@ -139,7 +152,7 @@ export default function LoginCAAM() {
           <p className="text-center text-sm text-gray-600 mt-5">
             ¿Aún no tienes cuenta?{" "}
             <ButtonLink
-              href="/registro"
+              href="/register"
               variant="secondary"
               className="text-[var(--brand-pink)] font-semibold"
             >
@@ -156,4 +169,3 @@ export default function LoginCAAM() {
     </div>
   );
 }
-
