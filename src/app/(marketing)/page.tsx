@@ -2,25 +2,23 @@
 export default function LandingPage() {
   return (
     <main className="bg-[#FFF8F0]">
-      {/* Hero Section */}
-      <section className="relative bg-[#D97706] text-white py-20 overflow-hidden">
-        {/* Decoración con huellas */}
-        <div className="absolute top-10 left-10 text-6xl opacity-20">🐾</div>
-        <div className="absolute bottom-20 right-16 text-7xl opacity-20">
-          🐾
-        </div>
-
-        <div className="container mx-auto grid items-center gap-10 px-6 md:grid-cols-2">
-          {/* Texto */}
+      {/* Fondo imagen naranja */}
+      <section
+        className="relative text-white py-20 overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: "url('/bg-green.jpeg')" }}
+      >
+        <div className="flex flex-row justify-center container mx-auto  items-center gap-10 px-6 md:grid-cols-2">
+          {/* Texto de la izquierda */}
           <div>
-            <h1 className="text-5xl md:text-6xl font-extrabold leading-tight">
+            <h1 className="text-7xl md:t font-extrabold leading-tight">
               Adopta y cambia una vida
             </h1>
-            <p className="mt-4 text-lg text-[#FFF8F0]">
-              Conoce a nuestros gatetes y perretes que buscan un hogar lleno de
-              amor.
+            <p className="mt-4 text-xl text-[#FFF8F0]">
+              Encuentra a tu compañero de vida, animales que buscan un hogar
+              lleno de amor.
             </p>
 
+            {/* Botones de lado izquierdo quienes somos e inicia sesion */}
             <div className="mt-6 flex flex-wrap gap-4">
               <a
                 href="/adopciones"
@@ -44,8 +42,6 @@ export default function LandingPage() {
               alt="Perros en adopción"
               className="rounded-2xl shadow-2xl object-cover w-full max-w-md"
             />
-            {/* Elemento decorativo */}
-            <div className="absolute -z-10 top-6 left-6 w-72 h-72 rounded-full bg-[#FDE68A] opacity-70"></div>
           </div>
         </div>
       </section>

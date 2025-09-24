@@ -1,5 +1,6 @@
 // src/app/(marketing)/layout.tsx
 import Navbar from "../../components/layout/Header";
+
 export default function MarketingLayout({
   children,
 }: {
@@ -10,8 +11,9 @@ export default function MarketingLayout({
       <Navbar />
       {children}
       <footer className="mt-12 border-amber-600 ]">
-        <div className="container mx-auto px-4 py-8 text-sm bg-[#FFF8F0] text-gray-600">
-          © {new Date().getFullYear()} CAAM Morelia — Hecho con ❤️
+        <div className="container mx-auto px-4 py-8 text-sm bg-amber-50 text-gray-600">
+          © {new Date().getFullYear()} Centro de Atención Animal Morelia. Echale
+          mi chuyy
         </div>
       </footer>
     </>

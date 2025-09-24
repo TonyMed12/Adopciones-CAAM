@@ -1,43 +1,91 @@
+/* Importar Tailwind */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
 @import "tailwindcss";
 
+/* Importar fuentes de Google */
+
+/* Variables globales */
 :root {
-  --background: #FFF8F0;
-  --foreground: #171717;
+  /* Fondo y texto */
+  --background: #fff8f0;
+  --foreground: #1f2240;
+
+  /* Marca principal */
+  --brand-purple: #5b4bb6;
+  /* Morado institucional */
+  --brand-pink: #f06a4f;
+  /* Rosa para CTA */
+  --brand-orange: #d97706;
+  /* Naranja cálido/acento */
+
+  /* Estados */
+  --success: #22c55e;
+  /* Verde (éxito) */
+  --warning: #f59e0b;
+  /* Amarillo (advertencia) */
+  --error: #ef4444;
+  /* Rojo (error) */
+
+  /* Escala de neutros */
+  --neutral-100: #f9fafb;
+  --neutral-200: #e5e7eb;
+  --neutral-400: #9ca3af;
+  --neutral-700: #374151;
+
+  /* Fuentes */
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Montserrat', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark mode opcional */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #FFF8F0;
-    --foreground: #5b4bb6;
+    --background: #1f2240;
+    --foreground: #f9fafb;
   }
 }
 
+/* Estilos base */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-montserrat);
+  margin: 0;
+  padding: 0;
 }
 
-/* src/styles/globals.css */
-:root{
-  --brand-purple:#5b4bb6;   /* morado principal */
-  --brand-pink:#f04f93;     /* rosa CTA */
-  --brand-dark:#1f2240;
+/* Títulos con tipografía display */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-zain);
 }
-a { text-underline-offset: 3px; }
 
+/* Links */
+a {
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--brand-pink);
+}
+
+/* Animaciones globales */
 @keyframes fade-slide {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-slide { animation: fade-slide 0.22s ease-out; }
-html, body { background: #fff4e7; }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 
-/* Fin src/styles/globals.css */
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide {
+  animation: fade-slide 0.22s ease-out;
+}

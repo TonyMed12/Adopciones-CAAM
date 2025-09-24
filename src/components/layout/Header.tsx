@@ -9,21 +9,27 @@ export default function Header() {
   const pathname = usePathname();
   const [openDrop, setOpenDrop] = useState(false);
 
-  const linkBase =
-    "text-lg font-medium transition px-4 py-2 rounded-md";
+  const linkBase = "text-lg font-medium transition px-4 py-2 rounded-md";
 
   const isActive = (href: string) => pathname === href;
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#BC5F36] shadow-md">
       <nav className="container mx-auto flex items-center justify-between px-6 py-5">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3">
-          <Image src="/logo.png" alt="CAAM" width={40} height={40} />
-          <span className="font-bold text-lg text-[#FFF8F0]">
-            Centro de Atención Animal Morelia
-          </span>
-        </Link>
+        <div className="flex items-center flex-col">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/logo.png" alt="CAAM" width={60} height={60} />
+            <div className="flex flex-col items-start">
+              <span className="font-bold text-xl text-[#FFF8F0]">
+                Centro de Atención Animal
+              </span>
+              <span className="font-medium text-lg text-[#FFF8F0]">
+                Morelia, Michoacán{" "}
+              </span>
+            </div>
+          </Link>
+        </div>
 
         {/* Links */}
         <ul className="flex items-center gap-8">
@@ -61,8 +67,7 @@ export default function Header() {
                 <Link
                   href="/mascotas?especie=Perro"
                   className={`block px-5 py-2 ${
-                    pathname.includes("mascotas") &&
-                    pathname.includes("Perro")
+                    pathname.includes("mascotas") && pathname.includes("Perro")
                       ? "bg-[#FDE68A] text-[#8B4513] font-semibold"
                       : "text-[#8B4513] hover:bg-[#FDE68A]"
                   }`}
@@ -74,8 +79,7 @@ export default function Header() {
                 <Link
                   href="/mascotas?especie=Gato"
                   className={`block px-5 py-2 ${
-                    pathname.includes("mascotas") &&
-                    pathname.includes("Gato")
+                    pathname.includes("mascotas") && pathname.includes("Gato")
                       ? "bg-[#FDE68A] text-[#8B4513] font-semibold"
                       : "text-[#8B4513] hover:bg-[#FDE68A]"
                   }`}
@@ -87,8 +91,7 @@ export default function Header() {
                 <Link
                   href="/mascotas?especie=Todas"
                   className={`block px-5 py-2 ${
-                    pathname.includes("mascotas") &&
-                    pathname.includes("Todas")
+                    pathname.includes("mascotas") && pathname.includes("Todas")
                       ? "bg-[#FDE68A] text-[#8B4513] font-semibold"
                       : "text-[#8B4513] hover:bg-[#FDE68A]"
                   }`}
