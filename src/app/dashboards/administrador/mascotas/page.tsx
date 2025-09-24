@@ -9,7 +9,7 @@ import Button from "@/components/ui/Button2";
 import Modal from "@/components/ui/Modal";
 
 import Filters from "@/components/masc/Filters";
-import MascotaCard from "@/components/masc/MascotaCard";
+import MascotaCard from "@/components/masc/MascotaCardAd";
 import FormMascota from "@/components/masc/FormMascota";
 
 import { ESPECIES, MOCK } from "@/data/masc/constants";
