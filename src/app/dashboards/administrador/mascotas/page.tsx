@@ -9,8 +9,9 @@ import Button from "@/components/ui/Button2";
 import Modal from "@/components/ui/Modal";
 
 import Filters from "@/components/masc/Filters";
-import MascotaCard from "@/components/masc/MascotaCardAd";
 import FormMascota from "@/components/masc/FormMascota";
+import MascotasTable from "@/components/masc/MascotasTable";
+import MascotaCardFull from "@/components/masc/MascotaCardFull";
 
 import { ESPECIES, MOCK } from "@/data/masc/constants";
 import type { Mascota, Sexo } from "@/data/masc/types";
@@ -28,6 +29,7 @@ export default function MascotasPage() {
   });
   const [sexo, setSexo] = useState<string>("Todos");
   const [openForm, setOpenForm] = useState(false);
+  const [sel, setSel] = useState<Mascota | null>(null);
 
   useEffect(() => {
     const val = (especieQS || "").trim();
@@ -74,17 +76,35 @@ export default function MascotasPage() {
         ESPECIES={ESPECIES}
       />
 
-      <section className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
-        {data.map((m) => (
-          <MascotaCard key={m.id} m={m} onView={() => {}} onAdopt={() => {}} />
-        ))}
-        {data.length === 0 && (
-          <div className="col-span-full text-center text-[#7a5c49] py-10">
-            No hay resultados con esos filtros
-          </div>
-        )}
-      </section>
+      {/* Tabla reutilizable */}
+      <MascotasTable
+        data={data}
+        actions={{
+          onViewCard: (m) => setSel(m),
+          onEdit: (m) => setSel(m),          
+          onDelete: (m) => {
+            if (!confirm(`¿Eliminar a ${m.nombre}?`)) return;
+            setItems((prev) => prev.filter((x) => x.id !== m.id));
+          },
+        }}
+        deleteDisabledForId={() => false}
+      />
 
+      {/* Tarjeta grande reutilizable (abre como modal) */}
+      <MascotaCardFull
+        m={sel as any}
+        open={!!sel}
+        onClose={() => setSel(null)}
+        onEdit={() => sel && setSel(sel)}
+        onDelete={() => {
+          if (!sel) return;
+          if (!confirm(`¿Eliminar a ${sel.nombre}?`)) return;
+          setItems((prev) => prev.filter((x) => x.id !== sel.id));
+          setSel(null);
+        }}
+      />
+
+      {/* Modal de “Agregar” (tu componente existente) */}
       <Modal open={openForm} onClose={() => setOpenForm(false)} title="Agregar mascota">
         <FormMascota onCancel={() => setOpenForm(false)} onSubmit={onSubmit} />
       </Modal>
