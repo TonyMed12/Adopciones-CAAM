@@ -55,9 +55,9 @@ export default function LoginCAAM() {
 
         // Redirigir según el rol (mantener tu ruta /dashboards si prefieres)
         if (perfil?.rol === 'administrador') {
-          router.push('/dashboards'); // O '/admin/dashboard' si quieres separar
+          router.push('/dashboards/administrador'); 
         } else {
-          router.push('/dashboards'); // Tu dashboard existente
+          router.push('/dashboards/administrador'); 
         }
       }
 

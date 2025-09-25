@@ -5,16 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
-/**
- * Registro CAAM — Wizard en Modal (visual-only)
- * - SIEMPRE ABIERTO (no se puede cerrar) según pedido
- * - 3 pasos: Datos personales, Dirección, Contacto+confirmación
- * - Sin endpoints; validación por paso
- * - Accesible: role="dialog", aria-modal, focus inicial por paso
- * - Usa variables CSS: --brand-purple, --brand-pink, --brand-dark, --background
- *
- * Ubicación sugerida: app/(auth)/registro/page.tsx
- */
 
 type Form = {
   nombre: string;

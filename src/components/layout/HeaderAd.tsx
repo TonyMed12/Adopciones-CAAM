@@ -4,13 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, CalendarClock, Users, FileText, Menu, X } from "lucide-react";
+import { LayoutDashboard, CalendarClock, Users, FileText, Menu, X, LogOutIcon } from "lucide-react";
 
 const adminNav = [
   { href: "/dashboards/administrador", label: "Inicio", icon: LayoutDashboard },
   { href: "/dashboards/administrador/mascotas", label: "Mascotas", icon: CalendarClock },
   { href: "/dashboards/administrador/usuarios", label: "Usuarios", icon: Users },
-  { href: "/dashboards/administrador/reportes", label: "Reportes", icon: FileText },
+  //{ href: "/dashboards/administrador/reportes", label: "Reportes", icon: FileText },
+  { href: "/", label: "Cerrar sesión", icon: LogOutIcon },
 ];
 
 export default function AdminHeader() {
