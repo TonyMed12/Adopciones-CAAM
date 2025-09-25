@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import type { Mascota } from "@/data/masc/types";
+import type { Sexo, Tamano, Mascota } from "@/types/mascotas.types"; 
 import { Button } from "@/components/ui/Button";
 
 function getFotoSrc(m: Partial<Mascota>) {

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import type { Mascota } from "@/data/masc/types";
+import type { Sexo, Tamano, Mascota } from "@/types/mascotas.types"; 
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
