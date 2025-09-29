@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   "/recuperacion",
   "/verificar-email",
   "/dashboards/administrador/mascotas",
+  "/dashboards/citas",
 ];
 
 export async function middleware(request: NextRequest) {
