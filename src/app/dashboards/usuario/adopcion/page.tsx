@@ -3,7 +3,18 @@
 import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, Clock, FileCheck2, FileUp, Info, XCircle, CalendarCheck, FileText, PawPrint } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  FileCheck2,
+  FileUp,
+  Info,
+  XCircle,
+  CalendarCheck,
+  FileText,
+  PawPrint,
+} from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 import PageHead from "@/components/layout/PageHead";
 import { Button } from "@/components/ui/Button";
@@ -18,9 +29,24 @@ type DocReq = {
 };
 
 const REQUISITOS: DocReq[] = [
-  { id: "identificacion", nombre: "Identificación oficial", descripcion: "INE / Pasaporte", requerido: true },
-  { id: "comprobante", nombre: "Comprobante de domicilio", descripcion: "No mayor a 3 meses", requerido: true },
-  { id: "carta", nombre: "Carta compromiso", descripcion: "Formato del CAAM firmado", requerido: true },
+  {
+    id: "identificacion",
+    nombre: "Identificación oficial",
+    descripcion: "INE / Pasaporte",
+    requerido: true,
+  },
+  {
+    id: "comprobante",
+    nombre: "Comprobante de domicilio",
+    descripcion: "No mayor a 3 meses",
+    requerido: true,
+  },
+  {
+    id: "carta",
+    nombre: "Carta compromiso",
+    descripcion: "Formato del CAAM firmado",
+    requerido: true,
+  },
 ];
 
 export default function ProcesoAdopcionPage() {
@@ -31,7 +57,8 @@ export default function ProcesoAdopcionPage() {
   // Lee estado guardado (simulado hasta conectar back)
   const [estado, setEstado] = useState<Estado>("sin_documentos");
   useEffect(() => {
-    const stored = (typeof window !== "undefined" && localStorage.getItem("docEstado")) as Estado | null;
+    const stored = (typeof window !== "undefined" &&
+      localStorage.getItem("docEstado")) as Estado | null;
     if (stored) setEstado(stored as Estado);
   }, []);
 
@@ -40,18 +67,82 @@ export default function ProcesoAdopcionPage() {
     comprobante: null,
     carta: null,
   });
-  const [motivoRechazo] = useState<string>("Falta nitidez en la identificación (ejemplo visual).");
+  const [motivoRechazo] = useState<string>(
+    "Falta nitidez en la identificación (ejemplo visual)."
+  );
 
-  const completos = useMemo(() => Object.values(archivos).every((f) => !!f), [archivos]);
+  const completos = useMemo(
+    () => Object.values(archivos).every((f) => !!f),
+    [archivos]
+  );
+
+  function sanitizeFileName(fileName: string) {
+    return fileName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // quita acentos
+      .replace(/[^a-zA-Z0-9.\-_]/g, "_"); // reemplaza espacios y caracteres raros por "_"
+  }
+
+  async function uploadDocumento(file: File, tipo: string, perfilId?: string) {
+    const safeName = sanitizeFileName(file.name);
+
+    // Usar tu perfil_id como valor predeterminado
+    const perfil = perfilId ?? "e10181d6-1874-4be2-9c1b-521f7f431d19";
+
+    const { data, error } = await supabase.storage
+      .from("documentos_adopcion")
+      .upload(`${perfil}/${tipo}-${Date.now()}-${safeName}`, file);
+
+    if (error) {
+      console.error("Error en upload:", error);
+      throw error;
+    }
+
+    console.log("Archivo subido:", data);
+
+    const { data: insertData, error: dbError } = await supabase
+      .from("documentos")
+      .insert({
+        perfil_id: perfil,
+        tipo,
+        url: data.path,
+      })
+      .select();
+
+    if (dbError) {
+      console.error("Error insertando en documentos:", dbError);
+      throw dbError;
+    }
+
+    console.log("Documento insertado en DB:", insertData);
+  }
 
   function onPick(id: string, file?: File) {
     setArchivos((prev) => ({ ...prev, [id]: file ?? null }));
   }
 
-  function enviar() {
-    // En real: POST al back -> setEstado("en_revision")
-    setEstado("en_revision");
-    localStorage.setItem("docEstado", "en_revision");
+  async function enviar() {
+    try {
+      // 👇 tu perfil_id real de la tabla perfiles
+      const perfilId = "e10181d6-1874-4be2-9c1b-521f7f431d19";
+
+      // Subir documentos
+      await uploadDocumento(
+        archivos.identificacion!,
+        "identificacion",
+        perfilId
+      );
+      await uploadDocumento(archivos.comprobante!, "comprobante", perfilId);
+      await uploadDocumento(archivos.carta!, "carta", perfilId);
+
+      // Cambiar estado
+      setEstado("en_revision");
+      localStorage.setItem("docEstado", "en_revision");
+
+      console.log("✅ Documentos enviados correctamente.");
+    } catch (err) {
+      console.error("Error subiendo documentos:", JSON.stringify(err, null, 2));
+    }
   }
 
   function simularAprobacion() {
@@ -84,7 +175,12 @@ export default function ProcesoAdopcionPage() {
 
       {/* --------- Bloques según estado de validación --------- */}
       {estado === "sin_documentos" && (
-        <SeccionCarga archivos={archivos} onPick={onPick} onEnviar={enviar} deshabilitarEnviar={!completos} />
+        <SeccionCarga
+          archivos={archivos}
+          onPick={onPick}
+          onEnviar={enviar}
+          deshabilitarEnviar={!completos}
+        />
       )}
 
       {estado === "en_revision" && (
@@ -95,7 +191,11 @@ export default function ProcesoAdopcionPage() {
           note="Tiempo estimado visual — el back definirá los tiempos reales."
           cta={
             <div className="flex gap-3">
-              <Button variant="ghost" className="px-4 py-2" onClick={() => setEstado("rechazado")}>
+              <Button
+                variant="ghost"
+                className="px-4 py-2"
+                onClick={() => setEstado("rechazado")}
+              >
                 Simular rechazo
               </Button>
               <Button className="px-4 py-2" onClick={simularAprobacion}>
@@ -115,10 +215,20 @@ export default function ProcesoAdopcionPage() {
           note={`Motivo (demo): ${motivoRechazo}`}
           cta={
             <div className="flex gap-3">
-              <Button variant="ghost" className="px-4 py-2" onClick={() => setEstado("sin_documentos")}>
+              <Button
+                variant="ghost"
+                className="px-4 py-2"
+                onClick={() => setEstado("sin_documentos")}
+              >
                 Volver a subir
               </Button>
-              <Button className="px-4 py-2" onClick={() => { setEstado("en_revision"); localStorage.setItem("docEstado","en_revision"); }}>
+              <Button
+                className="px-4 py-2"
+                onClick={() => {
+                  setEstado("en_revision");
+                  localStorage.setItem("docEstado", "en_revision");
+                }}
+              >
                 Reenviar para revisión
               </Button>
             </div>
@@ -135,7 +245,8 @@ export default function ProcesoAdopcionPage() {
           </div>
 
           <p className="mt-2 text-sm text-[#7a5c49]">
-            Ahora sí, continúa con tu proceso de adopción. Si llegaste desde una mascota, te enviaremos directo a continuar con ella.
+            Ahora sí, continúa con tu proceso de adopción. Si llegaste desde una
+            mascota, te enviaremos directo a continuar con ella.
           </p>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -155,7 +266,9 @@ export default function ProcesoAdopcionPage() {
               desc="Conoce a la mascota y valida compatibilidad."
               action={
                 <Link href="/usuario/citas">
-                  <Button variant="ghost" className="w-full">Agendar</Button>
+                  <Button variant="ghost" className="w-full">
+                    Agendar
+                  </Button>
                 </Link>
               }
             />
@@ -163,7 +276,11 @@ export default function ProcesoAdopcionPage() {
               icon={<FileText className="h-5 w-5" />}
               title="3) Solicitud y contrato"
               desc="Llena la solicitud y firma el compromiso."
-              action={<Button variant="ghost" className="w-full">Abrir solicitud</Button>}
+              action={
+                <Button variant="ghost" className="w-full">
+                  Abrir solicitud
+                </Button>
+              }
             />
           </div>
 
@@ -171,10 +288,15 @@ export default function ProcesoAdopcionPage() {
           {from && (
             <div className="mt-5 rounded-xl border border-[#f0e6dc] bg-[#fffaf4] p-4">
               <p className="text-sm">
-                Iniciaste el flujo desde una mascota. Puedes continuar con esa adopción:
+                Iniciaste el flujo desde una mascota. Puedes continuar con esa
+                adopción:
               </p>
               <div className="mt-3">
-                <Button onClick={() => router.push(`/usuario/mascotas?adoptId=${from}`)}>
+                <Button
+                  onClick={() =>
+                    router.push(`/usuario/mascotas?adoptId=${from}`)
+                  }
+                >
                   Continuar con esa mascota
                 </Button>
               </div>
@@ -190,8 +312,14 @@ export default function ProcesoAdopcionPage() {
           <h3 className="text-sm font-extrabold">Preguntas frecuentes</h3>
         </div>
         <ul className="mt-3 grid gap-2 text-sm text-[#7a5c49]">
-          <li>• Formatos aceptados (visual): PDF, JPG, PNG. Tamaño máx. 5 MB por archivo.</li>
-          <li>• La revisión la realiza un administrador. Te notificaremos al aprobar o rechazar.</li>
+          <li>
+            • Formatos aceptados (visual): PDF, JPG, PNG. Tamaño máx. 5 MB por
+            archivo.
+          </li>
+          <li>
+            • La revisión la realiza un administrador. Te notificaremos al
+            aprobar o rechazar.
+          </li>
           <li>• Si hay observaciones, podrás corregir y volver a enviar.</li>
         </ul>
       </section>
@@ -208,7 +336,8 @@ function Stepper({ estado }: { estado: Estado }) {
     { key: "aprobado", label: "3. Aprobado" },
   ] as const;
 
-  const currentIndex = estado === "sin_documentos" ? 0 : estado === "en_revision" ? 1 : 2;
+  const currentIndex =
+    estado === "sin_documentos" ? 0 : estado === "en_revision" ? 1 : 2;
 
   return (
     <ol className="grid gap-3 md:grid-cols-3">
@@ -220,14 +349,20 @@ function Stepper({ estado }: { estado: Estado }) {
             key={s.key}
             className={[
               "rounded-xl border p-4 shadow-[0_6px_14px_rgba(43,27,18,.06)]",
-              active ? "border-[#BC5F36] bg-[#fff4e7]" : "border-[#eadacb] bg-white",
+              active
+                ? "border-[#BC5F36] bg-[#fff4e7]"
+                : "border-[#eadacb] bg-white",
             ].join(" ")}
           >
             <div className="flex items-center gap-2">
               <span
                 className={[
                   "grid h-6 w-6 place-items-center rounded-full text-xs font-bold",
-                  done ? "bg-[#BC5F36] text-white" : active ? "bg-[#BC5F36]/15 text-[#BC5F36]" : "bg-[#f5ebe1] text-[#7a5c49]",
+                  done
+                    ? "bg-[#BC5F36] text-white"
+                    : active
+                    ? "bg-[#BC5F36]/15 text-[#BC5F36]"
+                    : "bg-[#f5ebe1] text-[#7a5c49]",
                 ].join(" ")}
               >
                 {done ? "✓" : idx + 1}
@@ -251,7 +386,10 @@ function StepperAdopcion() {
   return (
     <ol className="grid gap-3 md:grid-cols-4">
       {steps.map((label, idx) => (
-        <li key={label} className="rounded-xl border border-[#eadacb] bg-[#fff4e7] p-4 shadow-[0_6px_14px_rgba(43,27,18,.06)]">
+        <li
+          key={label}
+          className="rounded-xl border border-[#eadacb] bg-[#fff4e7] p-4 shadow-[0_6px_14px_rgba(43,27,18,.06)]"
+        >
           <div className="flex items-center gap-2">
             <span className="grid h-6 w-6 place-items-center rounded-full bg-[#BC5F36] text-xs font-bold text-white">
               {idx + 1}
@@ -277,8 +415,13 @@ function SeccionCarga({
 }) {
   return (
     <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-[0_12px_30px_rgba(43,27,18,.08)]">
-      <h3 className="text-sm font-extrabold text-[#2b1b12]">Sube tus documentos</h3>
-      <p className="mt-1 text-sm text-[#7a5c49]">Adjunta los archivos requeridos. Puedes arrastrar y soltar o seleccionar desde tu dispositivo.</p>
+      <h3 className="text-sm font-extrabold text-[#2b1b12]">
+        Sube tus documentos
+      </h3>
+      <p className="mt-1 text-sm text-[#7a5c49]">
+        Adjunta los archivos requeridos. Puedes arrastrar y soltar o seleccionar
+        desde tu dispositivo.
+      </p>
 
       <div className="mt-5 grid gap-3">
         {REQUISITOS.map((req) => (
@@ -296,14 +439,20 @@ function SeccionCarga({
               className="hidden"
               onChange={(e) => onPick(req.id, e.target.files?.[0] || undefined)}
             />
-            <label htmlFor={`file-${req.id}`}>
-              <Button variant="ghost" className="px-3 py-2">
-                <FileUp className="h-4 w-4" />
-                {archivos[req.id] ? "Cambiar" : "Seleccionar"}
-              </Button>
-            </label>
+            <Button
+              variant="ghost"
+              className="px-3 py-2"
+              onClick={() => document.getElementById(`file-${req.id}`)?.click()}
+            >
+              <FileUp className="h-4 w-4" />
+              {archivos[req.id] ? "Cambiar" : "Seleccionar"}
+            </Button>
             {archivos[req.id] && (
-              <Button variant="ghost" className="px-3 py-2" onClick={() => onPick(req.id, undefined)}>
+              <Button
+                variant="ghost"
+                className="px-3 py-2"
+                onClick={() => onPick(req.id, undefined)}
+              >
                 Quitar
               </Button>
             )}
@@ -312,8 +461,14 @@ function SeccionCarga({
       </div>
 
       <div className="mt-6 flex items-center justify-between">
-        <p className="text-xs text-[#7a5c49]">Formatos: PDF, JPG, PNG. Máx. 5 MB (visual).</p>
-        <Button className="px-5 py-3" disabled={deshabilitarEnviar} onClick={onEnviar}>
+        <p className="text-xs text-[#7a5c49]">
+          Formatos: PDF, JPG, PNG. Máx. 5 MB (visual).
+        </p>
+        <Button
+          className="px-5 py-3"
+          disabled={deshabilitarEnviar}
+          onClick={onEnviar}
+        >
           <FileCheck2 className="h-5 w-5" />
           Enviar para revisión
         </Button>
@@ -367,7 +522,9 @@ function StepCard({
   return (
     <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
       <div className="flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-[#BC5F36]/15 text-[#BC5F36]">{icon}</span>
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-[#BC5F36]/15 text-[#BC5F36]">
+          {icon}
+        </span>
         <p className="text-sm font-extrabold text-[#2b1b12]">{title}</p>
       </div>
       <p className="mt-1 text-sm text-[#7a5c49]">{desc}</p>
@@ -400,9 +557,15 @@ function PanelEstado({
   const t = tones[tone];
 
   return (
-    <section className="rounded-2xl p-5 shadow-[0_12px_30px_rgba(43,27,18,.08)]" style={{ border: `1px solid ${t.border}`, background: t.bg }}>
+    <section
+      className="rounded-2xl p-5 shadow-[0_12px_30px_rgba(43,27,18,.08)]"
+      style={{ border: `1px solid ${t.border}`, background: t.bg }}
+    >
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-full text-white" style={{ background: t.iconBg }}>
+        <span
+          className="mt-0.5 grid h-9 w-9 place-items-center rounded-full text-white"
+          style={{ background: t.iconBg }}
+        >
           {icon}
         </span>
         <div className="flex-1">
