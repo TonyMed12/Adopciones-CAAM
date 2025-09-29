@@ -57,7 +57,7 @@ export default function LoginCAAM() {
         if (perfil?.rol === 'administrador') {
           router.push('/dashboards/administrador'); 
         } else {
-          router.push('/dashboards/administrador'); 
+          router.push('/dashboards/usuario'); 
         }
       }
 
