@@ -89,7 +89,7 @@ export default function Header() {
                   Gatos
                 </Link>
                 <Link
-                  href="/mascotas?especie=Todas"
+                  href="/dashboards/mascotas"
                   className={`block px-5 py-2 ${
                     pathname.includes("mascotas") && pathname.includes("Todas")
                       ? "bg-[#FDE68A] text-[#8B4513] font-semibold"
@@ -115,6 +115,19 @@ export default function Header() {
               }`}
             >
               Nosotros
+            </Link>
+            {/* Citas*/}
+          </li>
+                    <li>
+            <Link
+              href="/dashboards/citas"
+              className={`${linkBase} ${
+                isActive("/dashboards/citas")
+                  ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
+                  : "text-[#FFF8F0] hover:text-[#FDE68A]"
+              }`}
+            >
+              Citas
             </Link>
           </li>
 
