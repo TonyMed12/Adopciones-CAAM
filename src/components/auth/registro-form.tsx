@@ -193,7 +193,7 @@ export default function RegistroForm() {
       }
 
       // 3. Redirigir
-      router.push("/dashboards");
+      router.push("/dashboards/usuarios");
     } catch (error: any) {
       console.error("Error en registro:", error);
       setErrors({
