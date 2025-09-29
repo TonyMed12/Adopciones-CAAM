@@ -59,7 +59,7 @@ export default function RegistroForm() {
   // Manejar cambios en inputs
   const handleInputChange = (
     field: keyof RegistroAdoptanteData,
-    value: any
+    value: string | boolean
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Limpiar errores del campo cuando se modifica
