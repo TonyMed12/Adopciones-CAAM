@@ -21,7 +21,7 @@ export default function LandingPage() {
             {/* Botones de lado izquierdo quienes somos e inicia sesion */}
             <div className="mt-6 flex flex-wrap gap-4">
               <a
-                href="/adopciones"
+                href="/nosotros"
                 className="px-6 py-3 rounded-xl bg-white text-[#D97706] font-semibold shadow-md hover:bg-gray-100 transition"
               >
                 ¿Quién Somos?

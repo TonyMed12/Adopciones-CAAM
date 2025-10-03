@@ -8,7 +8,7 @@ export default function UserLayout({
   return (
     <div className="min-h-screen bg-slate-50 relative overflow-hidden">
       {/* Header superior del admin */}
-      <UserHeader />
+      {/* <UserHeader />*/}
 
       {/* Fondo suave decorativo */}
       <div className="pointer-events-none absolute inset-0">

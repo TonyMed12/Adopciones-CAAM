@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 export default function LoginCAAM() {
   const router = useRouter();
   const supabase = createClient();
-  
+
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,20 +26,22 @@ export default function LoginCAAM() {
 
     try {
       // Usar Supabase en lugar de tu API custom
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: correo,
-        password: contrasena,
-      });
+      const { data, error: authError } = await supabase.auth.signInWithPassword(
+        {
+          email: correo,
+          password: contrasena,
+        }
+      );
 
       if (authError) {
-        let errorMessage = 'Credenciales incorrectas';
-        
-        if (authError.message === 'Invalid login credentials') {
-          errorMessage = 'Email o contraseña incorrectos';
-        } else if (authError.message === 'Email not confirmed') {
-          errorMessage = 'Por favor verifica tu email antes de iniciar sesión';
+        let errorMessage = "Credenciales incorrectas";
+
+        if (authError.message === "Invalid login credentials") {
+          errorMessage = "Email o contraseña incorrectos";
+        } else if (authError.message === "Email not confirmed") {
+          errorMessage = "Por favor verifica tu email antes de iniciar sesión";
         }
-        
+
         setError(errorMessage);
         setLoading(false);
         return;
@@ -48,19 +50,18 @@ export default function LoginCAAM() {
       if (data.user) {
         // Obtener perfil del usuario para verificar rol
         const { data: perfil } = await supabase
-          .from('perfiles')
-          .select('rol')
-          .eq('id', data.user.id)
+          .from("perfiles")
+          .select("rol")
+          .eq("id", data.user.id)
           .single();
 
         // Redirigir según el rol (mantener tu ruta /dashboards si prefieres)
-        if (perfil?.rol === 'administrador') {
-          router.push('/dashboards/administrador'); 
+        if (perfil?.rol === "administrador") {
+          router.push("/dashboards/administrador");
         } else {
-          router.push('/dashboards/usuario'); 
+          router.push("/dashboards/usuario");
         }
       }
-
     } catch (err) {
       setError("No se pudo conectar con el servidor. Inténtalo de nuevo.");
       setLoading(false);
@@ -79,18 +80,23 @@ export default function LoginCAAM() {
         {/* Encabezado */}
         <div className="text-center mb-6">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Logo CAAM"
-            width={200}
-            height={200}
+            width={900}
+            height={900}
             className="mx-auto mb-4 h-20 w-auto"
             priority
           />
           <h1 className="text-3xl font-extrabold tracking-tight text-[var(--brand-dark)]">
-            Bienvenido
+            ¡Bienvenido!
+          </h1>
+
+          <h1 className="mb-5 text-2xl">
+            {" "}
+            Centro de Atención Animal | Morelia, Michoacán{" "}
           </h1>
           <p className="text-[var(--brand-dark)]/70 mt-1">
-            Inicia sesión para continuar ayudando a peluditos 🐶🐱
+            Para poder adoptar, es necesario iniciar sesión.
           </p>
         </div>
 
@@ -114,7 +120,7 @@ export default function LoginCAAM() {
                 type="email"
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
-                placeholder="tucorreo@ejemplo.com"
+                placeholder="adopta@nocompres.mx"
                 autoComplete="email"
                 className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[var(--brand-dark)] placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[var(--brand-purple)]/20 focus:border-[var(--brand-purple)] transition"
               />
@@ -154,16 +160,15 @@ export default function LoginCAAM() {
             <ButtonLink
               href="/register"
               variant="secondary"
-              className="text-[var(--brand-pink)] font-semibold"
+              className="text-[var(--brand-pink)] font-semibold ml-5"
             >
               Regístrate
             </ButtonLink>
           </p>
         </div>
 
-        <p className="text-center text-xs text-[var(--brand-dark)]/60 mt-4">
-          Hecho con <span className="text-[var(--brand-pink)]">❤</span> por CAAM
-          Morelia
+        <p className="mb-10 text-center text-xs text-[var(--brand-dark)]/60 mt-10">
+          Transformando adopciones en historias de amor
         </p>
       </div>
     </div>

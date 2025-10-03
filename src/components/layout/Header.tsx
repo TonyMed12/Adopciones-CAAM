@@ -49,59 +49,16 @@ export default function Header() {
 
           {/* Dropdown Adopta */}
           <li className="relative">
-            <button
-              aria-haspopup="menu"
-              aria-expanded={openDrop}
-              onClick={() => setOpenDrop((v) => !v)}
-              className={`${linkBase} text-[#FFF8F0] hover:text-[#FDE68A]`}
+            <Link
+              href="/dashboards/usuario/mascotas"
+              className={`${linkBase} ${
+                isActive("/dashboards/usuario/mascotas")
+                  ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
+                  : "text-[#FFF8F0] hover:text-[#FDE68A]"
+              }`}
             >
-              Adopta
-            </button>
-
-            {openDrop && (
-              <div
-                className="absolute left-0 mt-3 w-48 rounded-md bg-[#FFF1E6] shadow-lg overflow-hidden z-50"
-                role="menu"
-                onMouseLeave={() => setOpenDrop(false)}
-              >
-                <Link
-                  href="/mascotas?especie=Perro"
-                  className={`block px-5 py-2 ${
-                    pathname.includes("mascotas") && pathname.includes("Perro")
-                      ? "bg-[#FDE68A] text-[#8B4513] font-semibold"
-                      : "text-[#8B4513] hover:bg-[#FDE68A]"
-                  }`}
-                  onClick={() => setOpenDrop(false)}
-                  role="menuitem"
-                >
-                  Perros
-                </Link>
-                <Link
-                  href="/mascotas?especie=Gato"
-                  className={`block px-5 py-2 ${
-                    pathname.includes("mascotas") && pathname.includes("Gato")
-                      ? "bg-[#FDE68A] text-[#8B4513] font-semibold"
-                      : "text-[#8B4513] hover:bg-[#FDE68A]"
-                  }`}
-                  onClick={() => setOpenDrop(false)}
-                  role="menuitem"
-                >
-                  Gatos
-                </Link>
-                <Link
-                  href="/dashboards/mascotas"
-                  className={`block px-5 py-2 ${
-                    pathname.includes("mascotas") && pathname.includes("Todas")
-                      ? "bg-[#FDE68A] text-[#8B4513] font-semibold"
-                      : "text-[#8B4513] hover:bg-[#FDE68A]"
-                  }`}
-                  onClick={() => setOpenDrop(false)}
-                  role="menuitem"
-                >
-                  Ver todas
-                </Link>
-              </div>
-            )}
+              Nuestras Mascotas
+            </Link>
           </li>
 
           {/* Nosotros */}
@@ -118,7 +75,7 @@ export default function Header() {
             </Link>
             {/* Citas*/}
           </li>
-                    <li>
+          <li>
             <Link
               href="/dashboards/citas"
               className={`${linkBase} ${
