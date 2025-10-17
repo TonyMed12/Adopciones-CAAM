@@ -7,11 +7,11 @@ import {supabase} from "@/lib/supabase/client";
 import type {CreateMascotaPayload} from "@/data/masc/types";
 type Opt = {label: string; value: string};
 
-const { data: razas } = await supabase.from("razas").select("id, nombre, especie");
+const {data: razas} = await supabase.from("razas").select("id, nombre, especie");
 
-const razaOpts = razas.map(r => ({
-  label: `${r.nombre} • ${r.especie}`,
-  value: r.id,
+const razaOpts = razas.map((r) => ({
+    label: `${r.nombre} • ${r.especie}`,
+    value: r.id,
 }));
 
 function useClickOutside(ref: React.RefObject<HTMLElement | null>, onClose: () => void) {
@@ -371,16 +371,19 @@ export default function FormMascota({
             </div>
 
             {/* fila 5: personalidad y esterilizado */}
+
             <div className="row">
                 <div className="field">
                     <label>Esterilizado</label>
-                    <select
+                    <MenuSelect
                         value={esterilizado ? "sí" : "no"}
-                        onChange={(e) => setEsterilizado(e.target.value === "sí")}
-                    >
-                        <option value="sí">Sí</option>
-                        <option value="no">No</option>
-                    </select>
+                        onChange={(v) => setEsterilizado(v === "sí")}
+                        options={[
+                            {label: "Sí", value: "sí"},
+                            {label: "No", value: "no"},
+                        ]}
+                        ariaLabel="Seleccionar si está esterilizado"
+                    />
                 </div>
 
                 <div className="field">

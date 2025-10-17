@@ -11,7 +11,7 @@ import FormMascota from "@/components/masc/FormMascota";
 import MascotasTable from "@/components/masc/MascotasTable";
 import MascotaCardFull from "@/components/masc/MascotaCardFull";
 
-import {listarMascotas} from "@/mascotas/mascotas-actions";
+import {listarMascotas, eliminarMascota} from "@/mascotas/mascotas-actions";
 
 export default function MascotasPage() {
     const [items, setItems] = useState<any[]>([]);
@@ -99,7 +99,25 @@ export default function MascotasPage() {
                         actions={{
                             onViewCard: () => {},
                             onEdit: () => {},
-                            onDelete: () => {},
+                            onDelete: async (item: any) => {
+                                const id = typeof item === "string" ? item : item?.id; // 👈 extrae el id si viene como objeto
+
+                                if (!id) {
+                                    alert("No se pudo determinar el ID de la mascota 😿");
+                                    return;
+                                }
+
+                                if (!confirm("¿Seguro que quieres eliminar esta mascota? 🐾")) return;
+
+                                try {
+                                    await eliminarMascota(id);
+                                    alert("Mascota eliminada correctamente 🗑️");
+                                    await fetchMascotas();
+                                } catch (err: any) {
+                                    console.error("Error eliminando mascota:", err);
+                                    alert(err.message || "No se pudo eliminar la mascota");
+                                }
+                            },
                         }}
                         deleteDisabledForId={() => false}
                     />

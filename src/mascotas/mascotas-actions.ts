@@ -2,7 +2,7 @@
 import {supabase} from "@/lib/supabase/client";
 import {CreateMascotaSchema, UpdateMascotaSchema, DeleteMascotaSchema} from "./mascotas-schemas";
 import type {Mascota} from "./mascotas";
-import { no } from "zod/locales";
+import {no} from "zod/locales";
 
 export async function listarMascotas(): Promise<Mascota[]> {
     const {data, error} = await supabase
@@ -36,7 +36,7 @@ export async function crearMascota(input: unknown): Promise<Mascota> {
 
     const normalized = {
         ...parsed,
-        sexo: parsed.sexo.toLowerCase(), 
+        sexo: parsed.sexo.toLowerCase(),
     };
 
     const {data, error} = await supabase
@@ -56,8 +56,8 @@ export async function actualizarMascota(input: unknown): Promise<Mascota> {
     return data as Mascota;
 }
 
-export async function eliminarMascota(input: unknown): Promise<{success: boolean}> {
-    const parsed = DeleteMascotaSchema.parse(input);
+export async function eliminarMascota(id: string): Promise<{success: boolean}> {
+    const parsed = DeleteMascotaSchema.parse({id}); // 👈 validamos aquí
     const {error} = await supabase.from("mascotas").delete().eq("id", parsed.id);
     if (error) throw new Error(error.message);
     return {success: true};
