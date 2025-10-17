@@ -1,3 +1,4 @@
+"use server"
 import {createClient} from "@/lib/supabase/server";
 import {type CreateMascotaPayload} from "../dto/create-mascota.dto";
 import {type MascotaEntity} from "../entities/mascota.entity";
