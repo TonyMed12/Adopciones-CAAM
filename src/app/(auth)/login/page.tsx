@@ -49,14 +49,16 @@ export default function LoginCAAM() {
 
       if (data.user) {
         // Obtener perfil del usuario para verificar rol
+        console.log("Usuario logueado:", data.user.id);
         const { data: perfil } = await supabase
           .from("perfiles")
-          .select("rol")
+          .select("rol_id")
           .eq("id", data.user.id)
           .single();
+        console.log("Perfil encontrado:", perfil);
 
         // Redirigir al admin y a la prole
-        if (perfil?.rol === "administrador") {
+        if (perfil?.rol_id === 1) {
           router.push("/dashboards/administrador");
         } else {
           router.push("/dashboards/usuario");

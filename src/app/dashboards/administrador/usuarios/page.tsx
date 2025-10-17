@@ -31,12 +31,84 @@ type Usuario = {
 };
 
 const demoUsuarios: Usuario[] = [
-  { id: 1, nombres: "Ana", apellidos: "Ramírez López", correo: "ana@gmail.com", telefono: "55 1234 5678", ciudad: "Morelia", estado: "Michoacan", pais: "México", direccion: "Av. Siempre Viva 123", edad: 24, sexo: "M" },
-  { id: 2, nombres: "Carlos", apellidos: "García Pérez", correo: "carlos@gmail.com", telefono: "55 9876 5432", ciudad: "Morelia", estado: "Michoacan", pais: "México", direccion: "Calle Sol #45", edad: 27, sexo: "H" },
-  { id: 3, nombres: "Lucía", apellidos: "Hernández", correo: "lucia@hotmail.com", telefono: "81 123 4567", ciudad: "Morelia", estado: "Michoacan", pais: "México", direccion: "Insurgentes 200", edad: 22, sexo: "M" },
-  { id: 4, nombres: "Mario", apellidos: "Torres", correo: "mario@gmail.com", telefono: "33 555 0000", ciudad: "Morelia", estado: "Michoacan", pais: "México", direccion: "Lerdo 10", edad: 30, sexo: "H" },
-  { id: 5, nombres: "Diana", apellidos: "Flores", correo: "diana@gmail.com", telefono: "55 222 3333", ciudad: "Morelia", estado: "Michoacan", pais: "México", direccion: "Roma Nte.", edad: 26, sexo: "M" },
-  { id: 6, nombres: "Héctor", apellidos: "Mendoza", correo: "hector@gmail.com", telefono: "222 111 0000", ciudad: "Morelia", estado: "Michoacan", pais: "México", direccion: "Centro", edad: 31, sexo: "H" },
+  {
+    id: 1,
+    nombres: "Ana",
+    apellidos: "Ramírez López",
+    correo: "ana@gmail.com",
+    telefono: "55 1234 5678",
+    ciudad: "Morelia",
+    estado: "Michoacan",
+    pais: "México",
+    direccion: "Av. Siempre Viva 123",
+    edad: 24,
+    sexo: "M",
+  },
+  {
+    id: 2,
+    nombres: "Carlos",
+    apellidos: "García Pérez",
+    correo: "carlos@gmail.com",
+    telefono: "55 9876 5432",
+    ciudad: "Morelia",
+    estado: "Michoacan",
+    pais: "México",
+    direccion: "Calle Sol #45",
+    edad: 27,
+    sexo: "H",
+  },
+  {
+    id: 3,
+    nombres: "Lucía",
+    apellidos: "Hernández",
+    correo: "lucia@hotmail.com",
+    telefono: "81 123 4567",
+    ciudad: "Morelia",
+    estado: "Michoacan",
+    pais: "México",
+    direccion: "Insurgentes 200",
+    edad: 22,
+    sexo: "M",
+  },
+  {
+    id: 4,
+    nombres: "Mario",
+    apellidos: "Torres",
+    correo: "mario@gmail.com",
+    telefono: "33 555 0000",
+    ciudad: "Morelia",
+    estado: "Michoacan",
+    pais: "México",
+    direccion: "Lerdo 10",
+    edad: 30,
+    sexo: "H",
+  },
+  {
+    id: 5,
+    nombres: "Diana",
+    apellidos: "Flores",
+    correo: "diana@gmail.com",
+    telefono: "55 222 3333",
+    ciudad: "Morelia",
+    estado: "Michoacan",
+    pais: "México",
+    direccion: "Roma Nte.",
+    edad: 26,
+    sexo: "M",
+  },
+  {
+    id: 6,
+    nombres: "Héctor",
+    apellidos: "Mendoza",
+    correo: "hector@gmail.com",
+    telefono: "222 111 0000",
+    ciudad: "Morelia",
+    estado: "Michoacan",
+    pais: "México",
+    direccion: "Centro",
+    edad: 31,
+    sexo: "H",
+  },
 ];
 
 function Th(props: React.HTMLAttributes<HTMLTableCellElement>) {
@@ -79,15 +151,22 @@ function ConfirmModal({
         </header>
         <div className="space-y-3 px-4 py-4 text-sm">
           <p>
-            Vas a eliminar al usuario <b>{nombre}</b>. Esta acción no se puede deshacer.
+            Vas a eliminar al usuario <b>{nombre}</b>. Esta acción no se puede
+            deshacer.
           </p>
           <p className="text-[#6b4f40]">¿Deseas continuar?</p>
         </div>
         <footer className="flex items-center justify-end gap-2 border-t border-[#f0e6dc] bg-white px-4 py-3">
-          <button onClick={onCancel} className="rounded-lg border border-[#EADACB] bg-white px-3 py-1.5 text-sm font-semibold text-[#2B1B12] hover:bg-[#FFF4E7]">
+          <button
+            onClick={onCancel}
+            className="rounded-lg border border-[#EADACB] bg-white px-3 py-1.5 text-sm font-semibold text-[#2B1B12] hover:bg-[#FFF4E7]"
+          >
             Cancelar
           </button>
-          <button onClick={onConfirm} className="inline-flex items-center gap-2 rounded-lg bg-[#BC5F36] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-95">
+          <button
+            onClick={onConfirm}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#BC5F36] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-95"
+          >
             <Trash2 className="h-4 w-4" /> Eliminar
           </button>
         </footer>
@@ -133,7 +212,9 @@ export default function UsuariosPage() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-[#2B1B12]">Usuarios</h1>
-          <p className="text-sm text-[#6b4f40]">Listado general y panel de detalle.</p>
+          <p className="text-sm text-[#6b4f40]">
+            Listado general y panel de detalle.
+          </p>
         </div>
         {/* Controles */}
         <div className="flex items-center gap-2 rounded-2xl border border-[#EADACB] bg-white px-3 py-2">
@@ -183,22 +264,36 @@ export default function UsuariosPage() {
                         <UserCircle className="h-6 w-6" />
                       </div>
                       <div>
-                        <div>{u.nombres} {u.apellidos}</div>
-                        <div className="text-[11px] text-[#8b6f5d]">ID {u.id.toString().padStart(3, "0")}</div>
+                        <div>
+                          {u.nombres} {u.apellidos}
+                        </div>
+                        <div className="text-[11px] text-[#8b6f5d]">
+                          ID {u.id.toString().padStart(3, "0")}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-[#2B1B12]"><span title={u.correo}>{u.correo}</span></td>
-                  <td className="px-3 py-3 text-[#2B1B12]">{u.telefono || "—"}</td>
-                  <td className="px-3 py-3 text-[#2B1B12]">{u.ciudad || "—"}{u.estado ? `, ${u.estado}` : ""}</td>
-                  <td className="px-3 py-3"><Pill>Usuario</Pill></td>
+                  <td className="px-3 py-3 text-[#2B1B12]">
+                    <span title={u.correo}>{u.correo}</span>
+                  </td>
+                  <td className="px-3 py-3 text-[#2B1B12]">
+                    {u.telefono || "—"}
+                  </td>
+                  <td className="px-3 py-3 text-[#2B1B12]">
+                    {u.ciudad || "—"}
+                    {u.estado ? `, ${u.estado}` : ""}
+                  </td>
+                  <td className="px-3 py-3">
+                    <Pill>Usuario</Pill>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           {filtrados.length === 0 && (
             <div className="mt-4 grid place-items-center rounded-2xl border border-dashed border-[#EADACB] p-8 text-center text-[#6b4f40]">
-              No se encontraron resultados para <b className="mx-1">“{query}”</b>.
+              No se encontraron resultados para{" "}
+              <b className="mx-1">“{query}”</b>.
             </div>
           )}
         </div>
@@ -208,7 +303,9 @@ export default function UsuariosPage() {
           {!selected ? (
             <div className="grid place-items-center text-center text-[#6b4f40]">
               <UserCircle className="mb-3 h-12 w-12 text-[#BC5F36]" />
-              <p className="text-sm">Selecciona un usuario para ver sus detalles</p>
+              <p className="text-sm">
+                Selecciona un usuario para ver sus detalles
+              </p>
             </div>
           ) : (
             <div className="space-y-5">
@@ -217,27 +314,52 @@ export default function UsuariosPage() {
                   <UserCircle className="h-9 w-9" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-[#2B1B12]">{selected.nombres} {selected.apellidos}</h3>
+                  <h3 className="text-lg font-extrabold text-[#2B1B12]">
+                    {selected.nombres} {selected.apellidos}
+                  </h3>
                   <div className="text-[12px] text-[#8b6f5d]">Usuario</div>
                 </div>
               </div>
 
               <div className="space-y-2 text-sm text-[#2B1B12]">
-                <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-[#BC5F36]" /><span>{selected.correo}</span></div>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-[#BC5F36]" />
+                  <span>{selected.correo}</span>
+                </div>
                 {selected.telefono && (
-                  <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-[#BC5F36]" /><span>{selected.telefono}</span></div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-[#BC5F36]" />
+                    <span>{selected.telefono}</span>
+                  </div>
                 )}
                 {(selected.ciudad || selected.estado || selected.pais) && (
-                  <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-[#BC5F36]" /><span>{[selected.ciudad, selected.estado, selected.pais].filter(Boolean).join(", ")}</span></div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-[#BC5F36]" />
+                    <span>
+                      {[selected.ciudad, selected.estado, selected.pais]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </span>
+                  </div>
                 )}
                 {selected.direccion && (
-                  <div className="ml-6 text-[12px] text-[#6b4f40]">{selected.direccion}</div>
+                  <div className="ml-6 text-[12px] text-[#6b4f40]">
+                    {selected.direccion}
+                  </div>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                <Pill>{selected.sexo === "M" ? "Mujer" : selected.sexo === "H" ? "Hombre" : "—"}</Pill>
-                <Pill>{selected.edad ? `${selected.edad} años` : "Edad —"}</Pill>
+                <Pill>
+                  {selected.sexo === "M"
+                    ? "Mujer"
+                    : selected.sexo === "H"
+                    ? "Hombre"
+                    : "—"}
+                </Pill>
+                <Pill>
+                  {selected.edad ? `${selected.edad} años` : "Edad —"}
+                </Pill>
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2">
@@ -256,7 +378,9 @@ export default function UsuariosPage() {
       {/* Modal de confirmación */}
       <ConfirmModal
         open={confirmOpen}
-        nombre={selected ? `${selected.nombres} ${selected.apellidos}` : undefined}
+        nombre={
+          selected ? `${selected.nombres} ${selected.apellidos}` : undefined
+        }
         onCancel={() => {
           setConfirmOpen(false);
           setToDeleteId(null);
