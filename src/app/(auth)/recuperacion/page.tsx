@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Button, ButtonLink } from "@/components/ui/Button"; // Esto hace referencia a los botones estilizados
+import { Button, ButtonLink } from "@/components/ui/Button"; 
 
-export default function RecuperarContrasena() { // Componente para la página de recuperación de contraseña
+export default function RecuperarContrasena() { 
   const [correo, setCorreo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = (e: React.FormEvent) => { // onSumbit es la función que maneja el envío del formulario
-    e.preventDefault(); // previene el comportamiento por defecto del formulario que se refiere a recargar la página 
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!correo) {
       setError("Por favor ingresa tu correo electrónico.");
       return;
@@ -19,7 +19,6 @@ export default function RecuperarContrasena() { // Componente para la página de
     setError(null);
     setLoading(true);
 
-    // Simulación de envío de correo
     setTimeout(() => {
       setLoading(false);
       setSuccess("Si el correo existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.");

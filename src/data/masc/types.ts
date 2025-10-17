@@ -1,15 +1,20 @@
-export type Sexo = "M" | "H";
-export type Tamano = "Pequeño" | "Mediano" | "Grande";
+import { Sexo, Tamano, EstadoMascota } from "@/mascotas/mascotas";
 
-export type Mascota = {
-  id: string;
+export interface CreateMascotaPayload {
   nombre: string;
-  especie: string;
-  raza: string;
-  edadMeses: number;
-  descripcion?: string;
-  tamano: Tamano;
   sexo: Sexo;
-  fotoUrl?: string;
-  activo?: boolean;
-};
+  tamano?: Tamano;
+  edad?: string | null;
+  personalidad?: string | null;
+  descripcion_fisica?: string | null;
+  disponible_adopcion?: boolean;
+  esterilizado?: boolean;
+  peso_kg?: number | null;
+  altura_cm?: number | null;
+  colores?: string[];
+  lugar_rescate?: string | null;
+  condicion_ingreso?: string | null;
+  observaciones_medicas?: string | null;
+  raza_id?: string | null;
+  imagen_url?: string | null;
+}
