@@ -1,4 +1,12 @@
-function Stat({ label, value, tag }: { label: string; value: string | number; tag?: string }) {
+function Stat({
+  label,
+  value,
+  tag,
+}: {
+  label: string;
+  value: string | number;
+  tag?: string;
+}) {
   return (
     <div
       className="rounded-2xl border border-slate-100 bg-white p-5"
@@ -7,7 +15,9 @@ function Stat({ label, value, tag }: { label: string; value: string | number; ta
       <div className="text-slate-500 text-sm flex items-center gap-2">
         {label}
         {tag && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700">{tag}</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-700">
+            {tag}
+          </span>
         )}
       </div>
       <div className="mt-1 text-3xl font-bold text-slate-800">{value}</div>
@@ -15,13 +25,23 @@ function Stat({ label, value, tag }: { label: string; value: string | number; ta
   );
 }
 
-function Chip({ text, color = "emerald" }: { text: string; color?: "emerald" | "violet" | "amber" }) {
+function Chip({
+  text,
+  color = "emerald",
+}: {
+  text: string;
+  color?: "emerald" | "violet" | "amber";
+}) {
   const map = {
     emerald: "bg-emerald-100 text-emerald-700",
     violet: "bg-violet-100 text-violet-700",
     amber: "bg-amber-100 text-amber-700",
   } as const;
-  return <span className={`text-[11px] px-2 py-0.5 rounded-full ${map[color]}`}>{text}</span>;
+  return (
+    <span className={`text-[11px] px-2 py-0.5 rounded-full ${map[color]}`}>
+      {text}
+    </span>
+  );
 }
 
 export default function AdminHome() {
@@ -35,7 +55,9 @@ export default function AdminHome() {
             placeholder="Buscar…"
             className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white/70"
           />
-          <button className="rounded-xl px-4 py-2 text-sm bg-[#00375F] text-white">+ Nueva cita</button>
+          <button className="rounded-xl px-4 py-2 text-sm bg-[#00375F] text-white">
+            + Nueva cita
+          </button>
         </div>
       </div>
 
@@ -52,9 +74,24 @@ export default function AdminHome() {
         <h2 className="font-semibold text-slate-700">Próximas atenciones</h2>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[
-            { nombre: "Luna", tipo: "Perro", hora: "12:30 PM", chip: <Chip text="Confirmada" color="amber" /> },
-            { nombre: "Milo", tipo: "Gato", hora: "01:00 PM", chip: <Chip text="Llegó" color="violet" /> },
-            { nombre: "Nala", tipo: "Perro", hora: "01:30 PM", chip: <Chip text="Adoptable" color="emerald" /> },
+            {
+              nombre: "Luna",
+              tipo: "Perro",
+              hora: "12:30 PM",
+              chip: <Chip text="Confirmada" color="amber" />,
+            },
+            {
+              nombre: "Milo",
+              tipo: "Gato",
+              hora: "01:00 PM",
+              chip: <Chip text="Llegó" color="violet" />,
+            },
+            {
+              nombre: "Nala",
+              tipo: "Perro",
+              hora: "01:30 PM",
+              chip: <Chip text="Adoptable" color="emerald" />,
+            },
           ].map((c) => (
             <div
               key={c.nombre}

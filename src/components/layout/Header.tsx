@@ -50,9 +50,9 @@ export default function Header() {
           {/* Dropdown Adopta */}
           <li className="relative">
             <Link
-              href="/dashboards/usuario/mascotas"
+              href="/dashboards/mascotas"
               className={`${linkBase} ${
-                isActive("/dashboards/usuario/mascotas")
+                isActive("/dashboards/mascotas")
                   ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
                   : "text-[#FFF8F0] hover:text-[#FDE68A]"
               }`}
@@ -74,18 +74,6 @@ export default function Header() {
               Nosotros
             </Link>
             {/* Citas*/}
-          </li>
-          <li>
-            <Link
-              href="/dashboards/citas"
-              className={`${linkBase} ${
-                isActive("/dashboards/citas")
-                  ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
-                  : "text-[#FFF8F0] hover:text-[#FDE68A]"
-              }`}
-            >
-              Citas
-            </Link>
           </li>
 
           {/* CTA Login */}
