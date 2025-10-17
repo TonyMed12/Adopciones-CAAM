@@ -1,5 +1,5 @@
 // src/app/(marketing)/layout.tsx
-import Navbar from "../../components/layout/Header";
+import Navbar from "../../components/layout/HeaderUsr";
 
 export default function MarketingLayout({
   children,
@@ -8,7 +8,7 @@ export default function MarketingLayout({
 }) {
   return (
     <>
-      <Navbar />
+        
       {children}
       <footer className="mt-12 border-amber-600 ]">
         <div className="container mx-auto px-4 py-8 text-sm bg-amber-50 text-gray-600">
