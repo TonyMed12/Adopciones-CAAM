@@ -1,6 +1,5 @@
 "use client";
 import React from "react";
-import type { Sexo, Tamano, Mascota } from "@/types/mascotas.types"; 
 import { Button } from "@/components/ui/Button";
 
 function getFotoSrc(m: Partial<Mascota>) {
@@ -82,7 +81,7 @@ export default function MascotasTable({
                 </Td>
                 <Td>{m.raza || "Criollo"}</Td>
                 <Td>{m.tamano || "—"}</Td>
-                <Td>{m.edadMeses} m</Td>
+                <Td>{m.edadMeses} </Td>
                 <Td className="max-w-[320px]">
                   <p className="line-clamp-2 text-slate-700">
                     {m.descripcion || "—"}

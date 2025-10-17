@@ -52,9 +52,8 @@ const REQUISITOS: DocReq[] = [
 export default function ProcesoAdopcionPage() {
   const router = useRouter();
   const qs = useSearchParams();
-  const from = qs.get("from"); // id de mascota que inició el flujo (opcional)
+  const from = qs.get("from");
 
-  // Lee estado guardado (simulado hasta conectar back)
   const [estado, setEstado] = useState<Estado>("sin_documentos");
   useEffect(() => {
     const stored = (typeof window !== "undefined" &&
@@ -86,7 +85,6 @@ export default function ProcesoAdopcionPage() {
   async function uploadDocumento(file: File, tipo: string, perfilId?: string) {
     const safeName = sanitizeFileName(file.name);
 
-    // Usar tu perfil_id como valor predeterminado
     const perfil = perfilId ?? "e10181d6-1874-4be2-9c1b-521f7f431d19";
 
     const { data, error } = await supabase.storage
@@ -123,7 +121,6 @@ export default function ProcesoAdopcionPage() {
 
   async function enviar() {
     try {
-      // 👇 tu perfil_id real de la tabla perfiles
       const perfilId = "e10181d6-1874-4be2-9c1b-521f7f431d19";
 
       // Subir documentos
@@ -146,11 +143,9 @@ export default function ProcesoAdopcionPage() {
   }
 
   function simularAprobacion() {
-    // En real: esto lo dispararía el back mediante polling/WS
     setEstado("aprobado");
     localStorage.setItem("docEstado", "aprobado");
     if (from) {
-      // si viene de una mascota, lo regresamos directo a continuar la adopción
       router.push(`/usuario/mascotas?adoptId=${from}`);
     }
   }

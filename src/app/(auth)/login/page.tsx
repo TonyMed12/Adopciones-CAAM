@@ -25,7 +25,6 @@ export default function LoginCAAM() {
     setLoading(true);
 
     try {
-      // Usar Supabase en lugar de tu API custom
       const { data, error: authError } = await supabase.auth.signInWithPassword(
         {
           email: correo,
@@ -55,7 +54,6 @@ export default function LoginCAAM() {
           .eq("id", data.user.id)
           .single();
 
-        // Redirigir según el rol (mantener tu ruta /dashboards si prefieres)
         if (perfil?.rol === "administrador") {
           router.push("/dashboards/administrador");
         } else {

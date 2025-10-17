@@ -1,9 +1,18 @@
 "use client";
 import React, {useEffect, useRef, useState} from "react";
 import {ESPECIES} from "@/data/masc/constants";
-import type {CreateMascotaPayload} from "@/mascotas/service/mascota.service";
-/* ========= Dropdown con look & feel “Adopta” (sin negritas) ========= */
+import {crearMascota} from "@/mascotas/mascotas-actions";
+import {supabase} from "@/lib/supabase/client";
+
+import type {CreateMascotaPayload} from "@/data/masc/types";
 type Opt = {label: string; value: string};
+
+const { data: razas } = await supabase.from("razas").select("id, nombre, especie");
+
+const razaOpts = razas.map(r => ({
+  label: `${r.nombre} • ${r.especie}`,
+  value: r.id,
+}));
 
 function useClickOutside(ref: React.RefObject<HTMLElement | null>, onClose: () => void) {
     useEffect(() => {
@@ -136,9 +145,13 @@ export default function FormMascota({
     const [especie, setEspecie] = useState<string>(ESPECIES?.[0] ?? "Perro");
     const [sexo, setSexo] = useState<string>("Macho");
     const [tamano, setTamano] = useState<string>("Mediano");
-    const [razaId, setRazaId] = useState("");
     const [edadMeses, setEdadMeses] = useState<number>(0);
     const [descripcion, setDescripcion] = useState("");
+    const [razaId, setRazaId] = useState(razaOpts[0]?.value || "");
+    const [pesoKg, setPesoKg] = useState<number>(0);
+    const [alturaCm, setAlturaCm] = useState<number>(0);
+    const [esterilizado, setEsterilizado] = useState<boolean>(false);
+    const [personalidad, setPersonalidad] = useState<string>("");
 
     // foto
     const [fotoFile, setFotoFile] = useState<File | null>(null);
@@ -156,9 +169,9 @@ export default function FormMascota({
         {label: "Hembra", value: "Hembra"},
     ];
     const tamanoOpts: Opt[] = [
-        {label: "Pequeño", value: "Pequeño"},
-        {label: "Mediano", value: "Mediano"},
-        {label: "Grande", value: "Grande"},
+        {label: "Pequeño", value: "pequeño"},
+        {label: "Mediano", value: "mediano"},
+        {label: "Grande", value: "grande"},
     ];
 
     // handlers foto
@@ -199,17 +212,34 @@ export default function FormMascota({
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
 
-    function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        const payload: CreateMascotaPayload = {
+
+        const payload: any = {
             nombre,
             sexo: sexo as "Macho" | "Hembra",
+            tamano: tamano.toLowerCase() as any,
             raza_id: razaId,
-            descripcion_fisica: descripcion || undefined,
-            // imagen_url: (fotoPreview?.startsWith("http") ? fotoPreview : undefined), // lo haremos en el paso de imagen
-            // el resto de campos del DTO (opcional) los dejamos vacíos por ahora
+            edad: edadMeses ? `${edadMeses}` : null,
+            peso_kg: pesoKg || null,
+            altura_cm: alturaCm || null,
+            personalidad: personalidad || null,
+            descripcion_fisica: descripcion || null,
+            esterilizado,
+            disponible_adopcion: true,
+            imagen_url: fotoPreview || null,
         };
-        onSubmit(payload);
+
+        try {
+            const nuevaMascota = await crearMascota(payload);
+            console.log("Mascota creada ", nuevaMascota);
+            alert("Mascota guardada con éxito 🐾");
+            onSubmit(nuevaMascota);
+            onCancel();
+        } catch (err: any) {
+            console.error("Error al crear mascota:", err);
+            alert(err.message || "Error al crear la mascota");
+        }
     }
 
     return (
@@ -258,17 +288,11 @@ export default function FormMascota({
 
             {/* fila 3 */}
             <div className="row">
-                +{" "}
+                {" "}
                 <div className="field">
-                    <label>Raza ID</label>
-                    <input
-                        type="text"
-                        value={razaId}
-                        placeholder="uuid de la raza"
-                        onChange={(e) => setRazaId(e.target.value)}
-                        required
-                    />
-                    <small>Temporal: luego lo cambiamos por un selector.</small>
+                    <label>Raza</label>
+                    <MenuSelect value={razaId} onChange={setRazaId} options={razaOpts} ariaLabel="Seleccionar raza" />
+                    <small style={{color: "#7a5c49"}}>Selecciona una raza disponible.</small>
                 </div>
                 <div className="field">
                     <label>Edad (meses)</label>
@@ -317,6 +341,57 @@ export default function FormMascota({
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* fila 4: datos físicos */}
+            <div className="row">
+                <div className="field">
+                    <label>Peso (kg)</label>
+                    <input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step={0.1}
+                        value={pesoKg}
+                        onChange={(e) => setPesoKg(parseFloat(e.target.value) || 0)}
+                    />
+                </div>
+
+                <div className="field">
+                    <label>Altura (cm)</label>
+                    <input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step={0.1}
+                        value={alturaCm}
+                        onChange={(e) => setAlturaCm(parseFloat(e.target.value) || 0)}
+                    />
+                </div>
+            </div>
+
+            {/* fila 5: personalidad y esterilizado */}
+            <div className="row">
+                <div className="field">
+                    <label>Esterilizado</label>
+                    <select
+                        value={esterilizado ? "sí" : "no"}
+                        onChange={(e) => setEsterilizado(e.target.value === "sí")}
+                    >
+                        <option value="sí">Sí</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
+
+                <div className="field">
+                    <label>Personalidad</label>
+                    <input
+                        type="text"
+                        placeholder="Juguetón, tranquilo, curioso..."
+                        value={personalidad}
+                        onChange={(e) => setPersonalidad(e.target.value)}
+                    />
+                </div>
             </div>
 
             {/* fila 5 */}

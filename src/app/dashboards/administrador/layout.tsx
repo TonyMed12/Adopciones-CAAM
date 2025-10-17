@@ -22,7 +22,7 @@ export default function AdminLayout({
       {/* Contenido */}
       <main className="relative px-6 md:px-8 py-6">
         <div
-          className="mx-auto max-w-auto bg-white/85 backdrop-blur-sm rounded-3xl border border-slate-100 p-6 md:p-8"
+          className="mx-full max-w-full bg-white/85 backdrop-blur-sm rounded-3xl border border-slate-100 p-6 md:p-8"
           style={{ boxShadow: "0 20px 60px rgba(2,6,23,.06)" }}
         >
           {children}
