@@ -56,9 +56,35 @@ export default function ProcesoAdopcionPage() {
 
   const [estado, setEstado] = useState<Estado>("sin_documentos");
   useEffect(() => {
-    const stored = (typeof window !== "undefined" &&
-      localStorage.getItem("docEstado")) as Estado | null;
-    if (stored) setEstado(stored as Estado);
+    async function fetchEstado() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: docs, error } = await supabase
+        .from("documentos")
+        .select("tipo, status")
+        .eq("perfil_id", user.id);
+
+      if (error) {
+        console.error("Error obteniendo documentos:", error);
+        return;
+      }
+
+      if (!docs || docs.length === 0) {
+        setEstado("sin_documentos");
+        return;
+      }
+
+      const estados = docs.map((d) => d.status);
+
+      if (estados.every((s) => s === "aprobado")) setEstado("aprobado");
+      else if (estados.some((s) => s === "rechazado")) setEstado("rechazado");
+      else setEstado("en_revision");
+    }
+
+    fetchEstado();
   }, []);
 
   const [archivos, setArchivos] = useState<Record<string, File | null>>({
@@ -85,7 +111,13 @@ export default function ProcesoAdopcionPage() {
   async function uploadDocumento(file: File, tipo: string, perfilId?: string) {
     const safeName = sanitizeFileName(file.name);
 
-    const perfil = perfilId ?? "e10181d6-1874-4be2-9c1b-521f7f431d19";
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) throw new Error("No hay sesión activa");
+
+    const perfil = user.id;
 
     const { data, error } = await supabase.storage
       .from("documentos_adopcion")
@@ -100,11 +132,15 @@ export default function ProcesoAdopcionPage() {
 
     const { data: insertData, error: dbError } = await supabase
       .from("documentos")
-      .insert({
-        perfil_id: perfil,
-        tipo,
-        url: data.path,
-      })
+      .upsert(
+        {
+          perfil_id: perfilId,
+          tipo,
+          url: data.path,
+          status: "pendiente",
+        },
+        { onConflict: "perfil_id,tipo" }
+      )
       .select();
 
     if (dbError) {
@@ -121,7 +157,12 @@ export default function ProcesoAdopcionPage() {
 
   async function enviar() {
     try {
-      const perfilId = "e10181d6-1874-4be2-9c1b-521f7f431d19";
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("No hay sesión activa");
+
+      const perfilId = user.id;
 
       // Subir documentos
       await uploadDocumento(
@@ -132,10 +173,7 @@ export default function ProcesoAdopcionPage() {
       await uploadDocumento(archivos.comprobante!, "comprobante", perfilId);
       await uploadDocumento(archivos.carta!, "carta", perfilId);
 
-      // Cambiar estado
       setEstado("en_revision");
-      localStorage.setItem("docEstado", "en_revision");
-
       console.log("✅ Documentos enviados correctamente.");
     } catch (err) {
       console.error("Error subiendo documentos:", JSON.stringify(err, null, 2));
