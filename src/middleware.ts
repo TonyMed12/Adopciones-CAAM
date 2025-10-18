@@ -3,15 +3,29 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_PATHS = [
-  "/", "/adopciones", "/quienes-somos", "/contacto",
-  "/login", "/registro", "/recuperacion", "/recuperacion/reestablecer_contrasena", 
- "/verificar-email", "/confirmado", "/pendiente",
+  "/", 
+  "/adopciones", 
+  "/quienes-somos", 
+  "/contacto",
+  "/login", 
+  "/registro", 
+  "/recuperacion", 
+  "/recuperacion/reestablecer_contrasena", 
+  "/verificar-email", 
+  "/confirmado", 
+  "/pendiente",
+
+  // 👇 Rutas de API públicas (sin sesión)
+  "/api/auth/register",
+  "/api/auth/login",
+  "/api/auth/recover",
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  console.log("🔎 Middleware ejecutado para:", request.nextUrl.pathname);
 
-  // Permitir archivos estáticos
+  // ✅ Permitir archivos estáticos
   if (
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
@@ -20,15 +34,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Permitir rutas públicas
+  // ✅ Permitir rutas públicas
   if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) {
     return NextResponse.next();
   }
 
-  // Verificar sesión Supabase
+  // 🔒 Verificar sesión Supabase
   return updateSession(request);
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
