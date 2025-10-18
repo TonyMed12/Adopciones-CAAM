@@ -17,15 +17,16 @@ export default function LoginCAAM() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!correo || !contrasena) {
       setError("Por favor completa ambos campos.");
       return;
     }
+
     setError(null);
     setLoading(true);
 
     try {
-      // Usar Supabasex
       const { data, error: authError } = await supabase.auth.signInWithPassword(
         {
           email: correo,
@@ -47,17 +48,36 @@ export default function LoginCAAM() {
         return;
       }
 
+      // Validar de confirmado
+      if (data.user && !data.user.email_confirmed_at) {
+        await supabase.auth.signOut();
+        setError(
+          "Tu cuenta aún no ha sido verificada. Revisa tu bandeja de entrada."
+        );
+        setLoading(false);
+        return;
+      }
+
       if (data.user) {
-        // Obtener perfil del usuario para verificar rol
+        // obtener perfil del usuario
         console.log("Usuario logueado:", data.user.id);
-        const { data: perfil } = await supabase
+
+        const { data: perfil, error: perfilError } = await supabase
           .from("perfiles")
           .select("rol_id")
           .eq("id", data.user.id)
           .single();
+
+        if (perfilError) {
+          console.error("Error al obtener el perfil:", perfilError);
+          setError("Ocurrió un error al cargar tu perfil. Intenta nuevamente.");
+          setLoading(false);
+          return;
+        }
+
         console.log("Perfil encontrado:", perfil);
 
-        // Redirigir al admin y a la prole
+        //Redirigir según el rol
         if (perfil?.rol_id === 1) {
           router.push("/dashboards/administrador");
         } else {
@@ -65,6 +85,7 @@ export default function LoginCAAM() {
         }
       }
     } catch (err) {
+      console.error(err);
       setError("No se pudo conectar con el servidor. Inténtalo de nuevo.");
       setLoading(false);
     }
@@ -148,7 +169,7 @@ export default function LoginCAAM() {
 
             <div className="text-right -mt-2">
               <ButtonLink
-                href="/login/recuperar_contra"
+                href="/recuperacion"
                 variant="ghost"
                 className="text-[var(--brand-purple)]"
               >

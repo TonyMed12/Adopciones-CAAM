@@ -4,7 +4,8 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_PATHS = [
   "/", "/adopciones", "/quienes-somos", "/contacto",
-  "/login", "/registro", "/recuperacion", "/verificar-email",
+  "/login", "/registro", "/recuperacion", "/recuperacion/reestablecer_contrasena", 
+ "/verificar-email", "/confirmado", "/pendiente",
 ];
 
 export async function middleware(request: NextRequest) {

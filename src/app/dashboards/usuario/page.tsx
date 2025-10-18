@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PawPrint, ShieldCheck, Sparkles, Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import PageHead from "@/components/layout/PageHead";
-import Protected from "@/app/(auth)/Protected";
+import Protected from "@/components/Protected";
 import { getUserRole } from "@/lib/supabase/getRole";
 import { useRouter } from "next/navigation";
 

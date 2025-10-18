@@ -2,27 +2,44 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Button, ButtonLink } from "@/components/ui/Button"; 
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { createClient } from "@/lib/supabase/client";
 
-export default function RecuperarContrasena() { 
+export default function RecuperarContrasena() {
   const [correo, setCorreo] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null); // Usaremos solo "mensaje"
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = (e: React.FormEvent) => {
+  // 🔧 Debe ser async porque usamos "await"
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!correo) {
       setError("Por favor ingresa tu correo electrónico.");
       return;
     }
+
     setError(null);
+    setMensaje(null);
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess("Si el correo existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña.");
-    }, 1000);
+    const supabase = createClient(); // Crea cliente de Supabase
+
+    // ⚠️ Aquí faltaba el "await"
+    const { error } = await supabase.auth.resetPasswordForEmail(correo, {
+      redirectTo: `${window.location.origin}/recuperacion/reestablecer_contrasena`,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setError("Error: " + error.message);
+    } else {
+      setMensaje(
+        "Si el correo existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña."
+      );
+    }
   };
 
   return (
@@ -37,7 +54,7 @@ export default function RecuperarContrasena() {
         {/* Encabezado */}
         <div className="text-center mb-6">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Logo CAAM"
             width={200}
             height={200}
@@ -63,12 +80,12 @@ export default function RecuperarContrasena() {
             </div>
           )}
 
-          {success && (
+          {mensaje && (
             <div
               role="alert"
               className="mb-4 rounded-lg border border-green-200/70 bg-green-50 px-3 py-2 text-sm text-green-700"
             >
-              {success}
+              {mensaje}
             </div>
           )}
 
@@ -87,7 +104,7 @@ export default function RecuperarContrasena() {
               />
             </label>
 
-            <Button type="submit" full variant="primary">
+            <Button type="submit" full variant="primary" disabled={loading}>
               {loading ? "Enviando..." : "Enviar instrucciones"}
             </Button>
           </form>

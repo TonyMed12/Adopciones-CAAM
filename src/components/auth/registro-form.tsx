@@ -163,16 +163,19 @@ export default function RegistroForm() {
     setIsLoading(true);
 
     try {
-      // 1. Registrar en Supabase Auth
+      // 1️⃣ Registrar en Supabase Auth y enviar correo de confirmación
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email!,
         password: formData.password!,
+        options: {
+          emailRedirectTo: `${window.location.origin}/confirmado`,
+        },
       });
 
       if (authError) throw authError;
       if (!authData.user) throw new Error("No se pudo crear el usuario");
 
-      // 2. Crear perfil en public.perfiles
+      // 2Crear perfil en public.perfiles
       const { error: perfilError } = await supabase.from("perfiles").insert([
         {
           id: authData.user.id,
@@ -192,8 +195,8 @@ export default function RegistroForm() {
         console.error("Error creando perfil:", perfilError);
       }
 
-      // 3. Redirigir
-      router.push("/dashboards/usuarios");
+      // mensaje de verificación
+      router.push("/pendiente");
     } catch (error: any) {
       console.error("Error en registro:", error);
       setErrors({

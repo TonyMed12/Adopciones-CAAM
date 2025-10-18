@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import RegistroForm from '@/components/auth/registro-form'
 
 export const metadata: Metadata = {
-  title: 'Registro - Adopciones',
+  title: 'Registro de Adopciones',
   description: 'Crea tu cuenta para adoptar una mascota',
 }
 

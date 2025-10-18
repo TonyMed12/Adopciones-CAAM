@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Protected from "@/app/(auth)/Protected";
+import Protected from "@/components/Protected";
 import { getUserRole } from "@/lib/supabase/getRole";
 import AdminHeader from "@/components/layout/HeaderAd";
 
