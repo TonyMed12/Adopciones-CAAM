@@ -15,6 +15,9 @@ const PUBLIC_PATHS = [
   "/confirmado", 
   "/pendiente",
   "/dashboards/usuario/mascotas",
+  "/dashboards/mascotas",
+  "/dashboards/usuarios",
+  "/nosotros",
 
   // 👇 Rutas de API públicas (sin sesión)
   "/api/auth/register",

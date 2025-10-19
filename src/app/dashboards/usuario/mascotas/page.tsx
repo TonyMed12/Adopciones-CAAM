@@ -8,6 +8,7 @@ import Filters from "@/components/masc/Filters";
 import MascotaCard from "@/components/masc/MascotaCard";
 import { Button } from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { supabase } from "@/lib/supabase/client";
 
 import { ESPECIES, MOCK } from "@/data/masc/constants";
 import type { Mascota, Sexo } from "@/data/masc/types";
@@ -23,16 +24,49 @@ export default function MascotasPage() {
   const [q, setQ] = useState("");
   const [especie, setEspecie] = useState<string>(() => {
     const val = (especieQS || "").trim();
-    if (val && (val === "Todas" || (ESPECIES as readonly string[]).includes(val))) return val;
+    if (
+      val &&
+      (val === "Todas" || (ESPECIES as readonly string[]).includes(val))
+    )
+      return val;
     return "Todas";
   });
   const [sexo, setSexo] = useState<string>("Todos");
 
-  // Estado de documentos (simulado)
+  // Estado real de documentos
   const [docEstado, setDocEstado] = useState<DocEstado>("sin_documentos");
+
   useEffect(() => {
-    const stored = (typeof window !== "undefined" && localStorage.getItem("docEstado")) as DocEstado | null;
-    setDocEstado(stored ?? "sin_documentos");
+    async function fetchEstado() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: docs, error } = await supabase
+        .from("documentos")
+        .select("status")
+        .eq("perfil_id", user.id);
+
+      if (error) {
+        console.error("Error al obtener estado de documentos:", error);
+        return;
+      }
+
+      if (!docs || docs.length === 0) {
+        setDocEstado("sin_documentos");
+        return;
+      }
+
+      const estados = docs.map((d) => d.status);
+
+      if (estados.every((s) => s === "aprobado")) setDocEstado("aprobado");
+      else if (estados.some((s) => s === "rechazado"))
+        setDocEstado("rechazado");
+      else setDocEstado("en_revision");
+    }
+
+    fetchEstado();
   }, []);
 
   // Modal de bloqueo al adoptar
@@ -41,7 +75,10 @@ export default function MascotasPage() {
 
   useEffect(() => {
     const val = (especieQS || "").trim();
-    if (val && (val === "Todas" || (ESPECIES as readonly string[]).includes(val))) {
+    if (
+      val &&
+      (val === "Todas" || (ESPECIES as readonly string[]).includes(val))
+    ) {
       setEspecie(val);
     }
   }, [especieQS]);
@@ -58,7 +95,10 @@ export default function MascotasPage() {
   }, [items, q, especie, sexo]);
 
   function onSubmit(form: Mascota) {
-    setItems((prev) => [{ ...form, id: crypto.randomUUID(), activo: true }, ...prev]);
+    setItems((prev) => [
+      { ...form, id: crypto.randomUUID(), activo: true },
+      ...prev,
+    ]);
   }
 
   function handleAdopt(m: Mascota) {
@@ -71,11 +111,30 @@ export default function MascotasPage() {
   }
 
   // helpers visuales
-  const estadoText: Record<DocEstado, { title: string; desc: string; tone: "info" | "warn" | "ok" | "error" }> = {
-    sin_documentos: { title: "Necesitas validar tus documentos", desc: "Sube identificación, domicilio y carta compromiso.", tone: "warn" },
-    en_revision:    { title: "Documentos en revisión", desc: "Un administrador está revisando tus archivos.", tone: "info" },
-    rechazado:      { title: "Documentos con observaciones", desc: "Corrige lo indicado y vuelve a enviar.", tone: "error" },
-    aprobado:       { title: "Validación completa", desc: "Ya puedes iniciar el proceso de adopción.", tone: "ok" },
+  const estadoText: Record<
+    DocEstado,
+    { title: string; desc: string; tone: "info" | "warn" | "ok" | "error" }
+  > = {
+    sin_documentos: {
+      title: "Necesitas validar tus documentos para poder solicitar una adopción",
+      desc: "Sube identificación, domicilio y carta compromiso.",
+      tone: "warn",
+    },
+    en_revision: {
+      title: "Documentos en revisión",
+      desc: "Un administrador está revisando tus archivos.",
+      tone: "info",
+    },
+    rechazado: {
+      title: "Documentos con observaciones",
+      desc: "Corrige lo indicado y vuelve a enviar.",
+      tone: "error",
+    },
+    aprobado: {
+      title: "Validación completa",
+      desc: "Ya puedes iniciar el proceso de adopción.",
+      tone: "ok",
+    },
   };
 
   const toneClasses = {
@@ -87,15 +146,27 @@ export default function MascotasPage() {
 
   return (
     <>
-      <PageHead title="Mascotas" subtitle="Encuentra a tu nuevo mejor amigo 🐾" />
+      <PageHead
+        title="Mascotas"
+        subtitle="Encuentra a tu nuevo mejor amigo 🐾"
+      />
 
       {/* Banner de estado arriba del listado */}
-      <div className={`mb-4 rounded-xl border px-4 py-3 ${toneClasses[estadoText[docEstado].tone]} text-sm`}>
-        <p className="font-extrabold text-[#2b1b12]">{estadoText[docEstado].title}</p>
+      <div
+        className={`mb-4 rounded-xl border px-4 py-3 ${
+          toneClasses[estadoText[docEstado].tone]
+        } text-sm`}
+      >
+        <p className="font-extrabold text-[#2b1b12]">
+          {estadoText[docEstado].title}
+        </p>
         <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[#7a5c49]">
           <span>{estadoText[docEstado].desc}</span>
           {docEstado !== "aprobado" && (
-            <Button className="px-3 py-2" onClick={() => router.push("/dashboards/usuario/adopcion")}>
+            <Button
+              className="px-3 py-2"
+              onClick={() => router.push("/dashboards/usuario/adopcion")}
+            >
               Completar verificación
             </Button>
           )}
@@ -114,7 +185,12 @@ export default function MascotasPage() {
 
       <section className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
         {data.map((m) => (
-          <MascotaCard key={m.id} m={m} onView={() => {}} onAdopt={() => handleAdopt(m)} />
+          <MascotaCard
+            key={m.id}
+            m={m}
+            onView={() => {}}
+            onAdopt={() => handleAdopt(m)}
+          />
         ))}
         {data.length === 0 && (
           <div className="col-span-full py-10 text-center text-[#7a5c49]">
@@ -124,10 +200,16 @@ export default function MascotasPage() {
       </section>
 
       {/* Modal de gating al adoptar */}
-      <Modal open={gateOpen} onClose={() => setGateOpen(false)} title="Antes de adoptar">
+      <Modal
+        open={gateOpen}
+        onClose={() => setGateOpen(false)}
+        title="Antes de adoptar"
+      >
         <div className="p-4 text-[#2b1b12]">
           <p className="text-sm">
-            Para adoptar a <span className="font-extrabold">{selected?.nombre}</span> primero necesitamos validar tus documentos:
+            Para adoptar a{" "}
+            <span className="font-extrabold">{selected?.nombre}</span> primero
+            necesitamos validar tus documentos:
           </p>
           <ul className="mt-3 grid gap-2 text-sm text-[#7a5c49]">
             <li>• Identificación oficial (INE/ Pasaporte)</li>
@@ -136,14 +218,20 @@ export default function MascotasPage() {
           </ul>
 
           <div className="mt-5 flex justify-end gap-3">
-            <Button variant="ghost" className="px-4 py-2" onClick={() => setGateOpen(false)}>
+            <Button
+              variant="ghost"
+              className="px-4 py-2"
+              onClick={() => setGateOpen(false)}
+            >
               Luego
             </Button>
             <Button
               className="px-4 py-2"
               onClick={() => {
                 setGateOpen(false);
-                router.push(`/dashboards/usuario/adopcion?from=${selected?.id ?? ""}`);
+                router.push(
+                  `/dashboards/usuario/adopcion?from=${selected?.id ?? ""}`
+                );
               }}
             >
               Completar verificación

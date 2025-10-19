@@ -108,47 +108,51 @@ export default function ProcesoAdopcionPage() {
       .replace(/[^a-zA-Z0-9.\-_]/g, "_"); // reemplaza espacios y caracteres raros por "_"
   }
 
-  async function uploadDocumento(file: File, tipo: string, perfilId?: string) {
+  async function uploadDocumento(file: File, tipo: string) {
     const safeName = sanitizeFileName(file.name);
 
+    // Obtener usuario activo
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser();
 
+    if (userError) throw userError;
     if (!user) throw new Error("No hay sesión activa");
 
-    const perfil = user.id;
+    const perfilId = user.id;
 
+    // 1️⃣ Subir al Storage
     const { data, error } = await supabase.storage
       .from("documentos_adopcion")
-      .upload(`${perfil}/${tipo}-${Date.now()}-${safeName}`, file);
+      .upload(`${perfilId}/${tipo}-${Date.now()}-${safeName}`, file);
 
     if (error) {
-      console.error("Error en upload:", error);
+      console.error("Error subiendo archivo:", error);
       throw error;
     }
 
-    console.log("Archivo subido:", data);
-
-    const { data: insertData, error: dbError } = await supabase
-      .from("documentos")
-      .upsert(
-        {
-          perfil_id: perfilId,
-          tipo,
-          url: data.path,
-          status: "pendiente",
-        },
-        { onConflict: "perfil_id,tipo" }
-      )
-      .select();
+    // 2️⃣ Insertar / actualizar en documentos
+    const { error: dbError } = await supabase.from("documentos").upsert(
+      {
+        perfil_id: perfilId,
+        tipo,
+        url: data.path,
+        status: "pendiente",
+      },
+      { onConflict: "perfil_id,tipo" }
+    );
 
     if (dbError) {
-      console.error("Error insertando en documentos:", dbError);
+      console.error(
+        "Error insertando en documentos:",
+        dbError.message,
+        dbError.details
+      );
       throw dbError;
     }
 
-    console.log("Documento insertado en DB:", insertData);
+    console.log(`✅ ${tipo} subido correctamente`);
   }
 
   function onPick(id: string, file?: File) {
@@ -157,26 +161,14 @@ export default function ProcesoAdopcionPage() {
 
   async function enviar() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("No hay sesión activa");
-
-      const perfilId = user.id;
-
-      // Subir documentos
-      await uploadDocumento(
-        archivos.identificacion!,
-        "identificacion",
-        perfilId
-      );
-      await uploadDocumento(archivos.comprobante!, "comprobante", perfilId);
-      await uploadDocumento(archivos.carta!, "carta", perfilId);
+      await uploadDocumento(archivos.identificacion!, "identificacion");
+      await uploadDocumento(archivos.comprobante!, "comprobante");
+      await uploadDocumento(archivos.carta!, "carta");
 
       setEstado("en_revision");
-      console.log("✅ Documentos enviados correctamente.");
+      console.log("✅ Todos los documentos enviados correctamente.");
     } catch (err) {
-      console.error("Error subiendo documentos:", JSON.stringify(err, null, 2));
+      console.error("Error subiendo documentos:", err);
     }
   }
 
