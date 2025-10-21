@@ -1,4 +1,3 @@
-// usuarios-actions.ts
 "use server";
 
 import { supabase } from "@/lib/supabase/client";
@@ -26,8 +25,6 @@ export async function listarUsuarios(): Promise<PerfilConDocumentos[]> {
     console.error("Error cargando usuarios:", error.message);
     throw new Error(error.message);
   }
-
-  console.log("Usuarios con documentos desde Supabase:", data);
 
   return data as unknown as PerfilConDocumentos[];
 }
@@ -58,14 +55,9 @@ export async function eliminarUsuario(id: string): Promise<{ success: boolean }>
     throw new Error(error.message);
   }
 
-  console.log(`Usuario eliminado: ${parsed.id}`);
-
   return { success: true };
 }
 
-/** ---------------------------------------
- *  ACTUALIZAR ESTATUS DE DOCUMENTO
- *  --------------------------------------*/
 export async function actualizarDocumentoStatus(
   documentoId: string,
   nuevoStatus: string
@@ -80,6 +72,5 @@ export async function actualizarDocumentoStatus(
     throw new Error(error.message);
   }
 
-  console.log(`Documento ${documentoId} actualizado a ${nuevoStatus}`);
   return { success: true };
 }
