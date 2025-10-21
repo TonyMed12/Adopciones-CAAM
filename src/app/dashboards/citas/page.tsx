@@ -1,75 +1,181 @@
 "use client";
-import { useMemo, useState } from "react";
-import Topbar from "@/components/citas/TopBar";
-import Filtros from "@/components/citas/Filtros";
-import EmptyState from "@/components/citas/VAcio";
-import DayGroups from "@/components/citas/Dgroup";
-import Resumen from "@/components/citas/Resumen";
-import VeterinarioDestacado from "@/components/citas/Vet";
-import NuevoModal from "@/components/citas/ModalCita";
+import React, { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 
-import { Cita } from "@/data/citas/types";
-import { agrupaPorDia, filtraCitas, seedCitas, useFechasBase } from "@/components/citas/Helper";
+import PageHead from "@/components/layout/PageHead";
+import Button from "@/components/ui/Button2";
+import Modal from "@/components/ui/Modal";
 
-export default function CitasPage() {
-  const [query, setQuery] = useState("");
-  const [vista, setVista] = useState<"hoy" | "semana" | "mes">("hoy");
-  const [openNew, setOpenNew] = useState(false);
-  const [citas, setCitas] = useState<Cita[]>(() => seedCitas());
+import Filters from "@/components/masc/Filters";
+import FormMascota from "@/components/masc/FormMascota";
+import MascotasTableWithEditor from "@/components/masc/MascotasTable";
+import MascotaCardFull from "@/components/masc/MascotaCardFull";
 
-  const { hoyISO, inicioSemanaISO, finSemanaISO } = useFechasBase();
+import { listarMascotas, eliminarMascota } from "@/mascotas/mascotas-actions";
 
-  const citasFiltradas = useMemo(
-    () => filtraCitas(citas, { query, vista, hoyISO, inicioSemanaISO, finSemanaISO }),
-    [citas, query, vista, hoyISO, inicioSemanaISO, finSemanaISO]
-  );
-  const grupos = useMemo(() => agrupaPorDia(citasFiltradas), [citasFiltradas]);
+export default function MascotasPage() {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMascota, setSelectedMascota] = useState<any | null>(null);
 
-  const eliminar = (id: string) => setCitas((prev) => prev.filter((c) => c.id !== id));
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCardOpen, setIsCardOpen] = useState(false);
 
+  const [q, setQ] = useState("");
+  const [especie, setEspecie] = useState("Todas");
+  const [sexo, setSexo] = useState("Todos");
+
+  // ====================== CARGAR DATOS ======================
+  async function fetchMascotas() {
+    try {
+      const data = await listarMascotas();
+      setItems(data);
+    } catch (err) {
+      console.error("Error cargando mascotas:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchMascotas();
+  }, []);
+
+  // ====================== FILTROS ======================
+  const filtered = items.filter((m) => {
+    const matchQ =
+      q.trim() === "" ||
+      m.nombre?.toLowerCase().includes(q.toLowerCase()) ||
+      m.raza?.nombre?.toLowerCase().includes(q.toLowerCase());
+    const matchEspecie =
+      especie === "Todas" ||
+      (m.raza?.especie &&
+        m.raza.especie.toLowerCase() === especie.toLowerCase());
+    const matchSexo =
+      sexo === "Todos" || m.sexo?.toLowerCase() === sexo.toLowerCase();
+    return matchQ && matchEspecie && matchSexo;
+  });
+
+  const dataParaTabla = filtered.map((m) => {
+    const totalMeses = Number(m.edad ?? 0);
+    const años = Math.floor(totalMeses / 12);
+    const meses = totalMeses % 12;
+    const edadFormateada =
+      años > 0
+        ? `${años} año${años > 1 ? "s" : ""}${
+            meses > 0 ? ` y ${meses} mes${meses > 1 ? "es" : ""}` : ""
+          }`
+        : `${meses} mes${meses !== 1 ? "es" : ""}`;
+
+    return {
+      id: m.id,
+      nombre: m.nombre,
+      especie: m.raza?.especie || "Desconocido",
+      raza: m.raza?.nombre || "Mestizo",
+      sexo: m.sexo,
+      tamano: m.tamano,
+      edadMeses: edadFormateada,
+      descripcion: m.personalidad || m.descripcion_fisica || "",
+      foto: m.imagen_url,
+      original: m,
+    };
+  });
+
+  // ====================== ELIMINAR ======================
+  async function handleDeleteMascota(id: string) {
+    if (!confirm("¿Seguro que quieres eliminar esta mascota? 🐾")) return;
+    try {
+      await eliminarMascota(id);
+      await fetchMascotas();
+      alert("Mascota eliminada correctamente 🗑️");
+    } catch (err: any) {
+      console.error("Error eliminando mascota:", err);
+      alert(err.message || "No se pudo eliminar la mascota");
+    }
+  }
+
+  // ====================== RENDER ======================
   return (
-    <div className="bg-[#fff7ef]">
-      <Topbar onNueva={() => setOpenNew(true)} />
+    <>
+      {/* MODAL AGREGAR MASCOTA */}
+      <Modal
+        open={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        title="Agregar Mascota"
+      >
+        <FormMascota
+          key="new"
+          onCancel={() => setIsFormOpen(false)}
+          onSubmit={async () => {
+            await fetchMascotas();
+            setIsFormOpen(false);
+          }}
+        />
+      </Modal>
 
-      <main className="mx-auto w-full max-w-5xl px-3 sm:px-6 pb-8 md:pb-10">
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-          <section className="space-y-4">
-            <Filtros
-              vista={vista}
-              onChangeVista={setVista}
-              query={query}
-              onChangeQuery={setQuery}
-              onNueva={() => setOpenNew(true)}
-            />
-
-            {grupos.length === 0 ? (
-              <EmptyState onNueva={() => setOpenNew(true)} />
-            ) : (
-              <DayGroups grupos={grupos} onEliminar={eliminar} />
-            )}
-          </section>
-
-          <aside className="space-y-4">
-            <Resumen
-              hoyISO={hoyISO}
-              inicioSemanaISO={inicioSemanaISO}
-              finSemanaISO={finSemanaISO}
-              total={citas.length}
-              citas={citas}
-            />
-            <VeterinarioDestacado onNueva={() => setOpenNew(true)} />
-          </aside>
-        </div>
-      </main>
-
-      <NuevoModal
-        open={openNew}
-        onClose={() => setOpenNew(false)}
-        onSave={(c) => {
-          setCitas((prev) => [...prev, { ...c, id: crypto.randomUUID() }]);
-          setOpenNew(false);
+      {/* CARD DETALLE */}
+      <MascotaCardFull
+        m={selectedMascota}
+        open={isCardOpen}
+        onClose={() => setIsCardOpen(false)}
+        onEdit={() => {
+          setIsCardOpen(false);
+        }}
+        onDelete={async () => {
+          if (!selectedMascota) return;
+          await handleDeleteMascota(selectedMascota.id);
+          setIsCardOpen(false);
+          setSelectedMascota(null);
         }}
       />
-    </div>
+
+      <PageHead
+        title="Mascotas"
+        subtitle="Explora a nuestros adorables compañeros 🐾"
+        right={
+          <Button
+            onClick={() => {
+              setSelectedMascota(null);
+              setIsFormOpen(true);
+            }}
+          >
+            <Plus size={18} /> Agregar
+          </Button>
+        }
+      />
+
+      <Filters
+        q={q}
+        onQ={setQ}
+        especie={especie}
+        onEspecie={setEspecie}
+        sexo={sexo}
+        onSexo={setSexo}
+        ESPECIES={["Perro", "Gato", "Otro"]}
+      />
+
+      {loading ? (
+        <div className="text-center py-10">Cargando mascotas...</div>
+      ) : (
+        <div className="p-4">
+          <MascotasTableWithEditor
+            data={dataParaTabla}
+            actions={{
+              onViewCard: (m) => {
+                setSelectedMascota(m);
+                setIsCardOpen(true);
+              },
+              onEdited: async () => {
+                await fetchMascotas();
+              },
+              onDeleteClick: async (m) => {
+                await handleDeleteMascota(m.id);
+              },
+            }}
+            deleteDisabledForId={() => false}
+          />
+        </div>
+      )}
+    </>
   );
 }
