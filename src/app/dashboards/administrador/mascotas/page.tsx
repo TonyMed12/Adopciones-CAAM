@@ -14,9 +14,11 @@ import MascotaCardFull from "@/components/masc/MascotaCardFull";
 import {listarMascotas, eliminarMascota} from "@/mascotas/mascotas-actions";
 
 export default function MascotasPage() {
+    const [openForm, setOpenForm] = useState(false);
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [openForm, setOpenForm] = useState(false);
+    const [selectedMascota, setSelectedMascota] = useState<any | null>(null);
+    const [openCard, setOpenCard] = useState(false);
 
     async function fetchMascotas() {
         try {
@@ -97,7 +99,10 @@ export default function MascotasPage() {
                     <MascotasTable
                         data={dataParaTabla as any}
                         actions={{
-                            onViewCard: () => {},
+                            onViewCard: (m) => {
+                                setSelectedMascota(m);
+                                setOpenCard(true);
+                            },
                             onEdit: () => {},
                             onDelete: async (item: any) => {
                                 const id = typeof item === "string" ? item : item?.id; // 👈 extrae el id si viene como objeto
@@ -125,22 +130,26 @@ export default function MascotasPage() {
             )}
 
             <MascotaCardFull
-                m={{
-                    id: "",
-                    nombre: "",
-                    especie: "",
-                    raza: "",
-                    sexo: "Macho",
-                    tamano: "pequeño",
-                    edadMeses: 0,
-                    descripcion: "",
-                    foto: "",
-                    activo: true,
+                m={selectedMascota}
+                open={openCard}
+                onClose={() => setOpenCard(false)}
+                onEdit={() => {
+                    console.log("Editar mascota:", selectedMascota);
                 }}
-                open={false}
-                onClose={() => {}}
-                onEdit={() => {}}
-                onDelete={() => {}}
+                onDelete={async () => {
+                    if (!selectedMascota) return;
+                    if (!confirm("¿Seguro que quieres eliminar esta mascota? 🐾")) return;
+
+                    try {
+                        await eliminarMascota(selectedMascota.id);
+                        setItems((prev) => prev.filter((m) => m.id !== selectedMascota.id));
+                        setOpenCard(false);
+                        alert("Mascota eliminada correctamente 🗑️");
+                    } catch (err: any) {
+                        console.error("Error eliminando mascota:", err);
+                        alert(err.message || "Error eliminando mascota");
+                    }
+                }}
             />
         </>
     );
