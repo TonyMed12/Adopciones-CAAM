@@ -6,10 +6,10 @@ const SexoEnum = z.enum(["Macho", "Hembra"] satisfies [Sexo, Sexo]);
 const TamanoEnum = z.enum(["pequeño", "mediano", "grande"] satisfies [Tamano, Tamano, Tamano]);
 const EstadoEnum = z.enum(["disponible", "adoptado", "en proceso"] satisfies [EstadoMascota, EstadoMascota, EstadoMascota]);
 
-// 📌 Schema para crear mascota
+// Schema para crear mascota
 export const CreateMascotaSchema = z.object({
   nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  sexo: SexoEnum,
+  sexo: SexoEnum.transform((v) => v.toLowerCase()),
   tamano: TamanoEnum,
   disponible_adopcion: z.boolean().default(true),
   edad: z.string().optional().nullable(),

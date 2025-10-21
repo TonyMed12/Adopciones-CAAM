@@ -20,6 +20,11 @@ export default function MascotasPage() {
     const [selectedMascota, setSelectedMascota] = useState<any | null>(null);
     const [openCard, setOpenCard] = useState(false);
 
+    // Pa los filtros
+    const [q, setQ] = useState("");
+    const [especie, setEspecie] = useState("Todas");
+    const [sexo, setSexo] = useState("Todos");
+
     async function fetchMascotas() {
         try {
             const data = await listarMascotas();
@@ -35,7 +40,21 @@ export default function MascotasPage() {
         fetchMascotas();
     }, []);
 
-    const dataParaTabla = items.map((m) => {
+    const filteredItems = items.filter((m) => {
+        const matchQ =
+            q.trim() === "" ||
+            m.nombre?.toLowerCase().includes(q.toLowerCase()) ||
+            m.raza?.nombre?.toLowerCase().includes(q.toLowerCase());
+
+        const matchEspecie =
+            especie === "Todas" || (m.raza?.especie && m.raza.especie.toLowerCase() === especie.toLowerCase());
+
+        const matchSexo = sexo === "Todos" || m.sexo?.toLowerCase() === sexo.toLowerCase();
+
+        return matchQ && matchEspecie && matchSexo;
+    });
+
+    const dataParaTabla = filteredItems.map((m) => {
         const totalMeses = Number(m.edad ?? 0);
         const años = Math.floor(totalMeses / 12);
         const meses = totalMeses % 12;
@@ -66,8 +85,8 @@ export default function MascotasPage() {
                 <FormMascota
                     onCancel={() => setOpenForm(false)}
                     onSubmit={async (nuevaMascota) => {
-                        await fetchMascotas(); // 👈 recarga la tabla desde la BD
-                        setOpenForm(false); // 👈 cierra el modal
+                        await fetchMascotas();
+                        setOpenForm(false);
                     }}
                 />
             </Modal>
@@ -83,12 +102,12 @@ export default function MascotasPage() {
             />
 
             <Filters
-                q=""
-                onQ={() => {}}
-                especie="Todas"
-                onEspecie={() => {}}
-                sexo="Todos"
-                onSexo={() => {}}
+                q={q}
+                onQ={setQ}
+                especie={especie}
+                onEspecie={setEspecie}
+                sexo={sexo}
+                onSexo={setSexo}
                 ESPECIES={["Perro", "Gato", "Otro"]}
             />
 
@@ -99,14 +118,14 @@ export default function MascotasPage() {
                     <MascotasTable
                         data={dataParaTabla as any}
                         actions={{
-                            onViewCard: (m) => {
-                                setSelectedMascota(m);
+                            onViewCard: (rowMascota) => {
+                                const mascotaCompleta = items.find((item) => item.id === rowMascota.id);
+                                setSelectedMascota(mascotaCompleta);
                                 setOpenCard(true);
                             },
                             onEdit: () => {},
                             onDelete: async (item: any) => {
-                                const id = typeof item === "string" ? item : item?.id; // 👈 extrae el id si viene como objeto
-
+                                const id = typeof item === "string" ? item : item?.id;
                                 if (!id) {
                                     alert("No se pudo determinar el ID de la mascota 😿");
                                     return;

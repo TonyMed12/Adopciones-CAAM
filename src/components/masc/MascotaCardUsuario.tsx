@@ -77,7 +77,7 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm text-slate-700">
                         <div>
                             <dt className="font-semibold text-slate-800">Raza</dt>
-                            <dd>{m.raza?.nombre || "Criollo"}</dd>
+                            <dd>{m.raza  || "Criollo"}</dd>
                         </div>
                         <div>
                             <dt className="font-semibold text-slate-800">Tamaño</dt>
@@ -167,16 +167,6 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                             </pre>
                         </div>
                     )}
-
-                    {/* Botones */}
-                    <div className="mt-auto flex items-center gap-3 pt-2">
-                        <Button variant="ghost" size="md" onClick={onEdit}>
-                            Editar
-                        </Button>
-                        <Button variant="primary" size="md" onClick={onDelete} disabled={deleteDisabled}>
-                            Eliminar
-                        </Button>
-                    </div>
                 </div>
             </article>
         </div>

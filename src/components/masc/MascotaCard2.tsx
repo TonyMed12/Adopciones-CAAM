@@ -54,10 +54,6 @@ export default function MascotaCard({m, onView, onAdopt, adoptDisabled = false}:
                     <Button variant="ghost" size="md" onClick={onView}>
                         Ver más
                     </Button>
-
-                    <Button variant="primary" size="md" onClick={onAdopt} disabled={adoptDisabled}>
-                        Adoptar
-                    </Button>
                 </footer>
             </div>
 

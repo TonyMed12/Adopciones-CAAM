@@ -1,80 +1,134 @@
 "use client";
-
-import React, { useMemo, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import React, {useEffect, useState} from "react";
 
 import PageHead from "@/components/layout/PageHead";
-
 import Filters from "@/components/masc/Filters";
-import MascotaCard from "@/components/masc/MascotaCard";
+import MascotaCard2 from "@/components/masc/MascotaCard2";
+import MascotaCardUsuario from "@/components/masc/MascotaCardUsuario";
 
-import { ESPECIES, MOCK } from "@/data/masc/constants";
-import type { Mascota, Sexo } from "@/data/masc/types";
+import {listarMascotas} from "@/mascotas/mascotas-actions";
 
-export default function MascotasPage() {
-  const searchParams = useSearchParams();
-  const especieQS = searchParams.get("especie");
+export default function MascotasPublicPage() {
+    const [items, setItems] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedMascota, setSelectedMascota] = useState<any | null>(null);
+    const [openCard, setOpenCard] = useState(false);
 
-  const [items, setItems] = useState<Mascota[]>(MOCK);
-  const [q, setQ] = useState("");
-  const [especie, setEspecie] = useState<string>(() => {
-    const val = (especieQS || "").trim();
-    if (val && (val === "Todas" || (ESPECIES as readonly string[]).includes(val))) return val;
-    return "Todas";
-  });
-  const [sexo, setSexo] = useState<string>("Todos");
-  const [openForm, setOpenForm] = useState(false);
+    // Filtros
+    const [q, setQ] = useState("");
+    const [especie, setEspecie] = useState("Todas");
+    const [sexo, setSexo] = useState("Todos");
 
-  useEffect(() => {
-    const val = (especieQS || "").trim();
-    if (val && (val === "Todas" || (ESPECIES as readonly string[]).includes(val))) {
-      setEspecie(val);
+    async function fetchMascotas() {
+        try {
+            const data = await listarMascotas();
+
+            if (!data || data.length === 0) {
+                console.warn("No se encontraron mascotas en listarMascotas()");
+                setItems([]);
+                return;
+            }
+
+            // Solo las disponibles para adopción
+            const disponibles = data.filter(
+                (m) => m.disponible_adopcion === true || m.estado === "disponible" || m.activo === true
+            );
+
+            // Formatear campos para el card
+            const formateadas = disponibles.map((m) => {
+                const totalMeses = Number(m.edad ?? 0);
+                const años = Math.floor(totalMeses / 12);
+                const meses = totalMeses % 12;
+                const edadFormateada =
+                    años > 0
+                        ? `${años} año${años > 1 ? "s" : ""}${
+                              meses > 0 ? ` y ${meses} mes${meses > 1 ? "es" : ""}` : ""
+                          }`
+                        : `${meses} mes${meses !== 1 ? "es" : ""}`;
+
+                const razaNombre = m.raza?.nombre || m.raza || "Mestizo";
+                const especieNombre = m.raza?.especie || m.especie || "Desconocido";
+
+                return {
+                    ...m,
+                    raza: razaNombre,
+                    especie: especieNombre,
+                    edadMeses: edadFormateada,
+                    descripcion: m.personalidad || m.descripcion_fisica || m.descripcion || "Sin descripción",
+                    foto: m.imagen_url || m.foto || m.imagen || m.image || m.fotoUrl || null,
+                };
+            });
+
+            setItems(formateadas);
+        } catch (err) {
+            console.error("Error cargando mascotas:", err);
+        } finally {
+            setLoading(false);
+        }
     }
-  }, [especieQS]);
 
-  const data = useMemo(() => {
-    return items.filter((m) => {
-      const matchesQ = [m.nombre, m.raza, m.descripcion, m.especie].some((v) =>
-        v?.toLowerCase().includes(q.toLowerCase())
-      );
-      const matchesEsp = especie === "Todas" || m.especie === especie;
-      const matchesSexo = sexo === "Todos" || m.sexo === (sexo as Sexo);
-      return matchesQ && matchesEsp && matchesSexo;
+    useEffect(() => {
+        fetchMascotas();
+    }, []);
+
+    // Aplicar filtros
+    const filteredItems = items.filter((m) => {
+        const matchQ =
+            q.trim() === "" ||
+            m.nombre?.toLowerCase().includes(q.toLowerCase()) ||
+            m.raza?.toLowerCase().includes(q.toLowerCase());
+
+        const matchEspecie = especie === "Todas" || (m.especie && m.especie.toLowerCase() === especie.toLowerCase());
+
+        const matchSexo = sexo === "Todos" || (m.sexo && m.sexo.toLowerCase() === sexo.toLowerCase());
+
+        return matchQ && matchEspecie && matchSexo;
     });
-  }, [items, q, especie, sexo]);
 
-  function onSubmit(form: Mascota) {
-    setItems((prev) => [{ ...form, id: crypto.randomUUID(), activo: true }, ...prev]);
-    setOpenForm(false);
-  }
+    return (
+        <>
+            <PageHead title="Mascotas" subtitle="Explora a nuestros adorables compañeros 🐾" />
 
-  return (
-    <>
-      <PageHead
-        title="Mascotas"
-        subtitle="Explora a nuestros adorables compañeros 🐾"       
-      />
+            <Filters
+                q={q}
+                onQ={setQ}
+                especie={especie}
+                onEspecie={setEspecie}
+                sexo={sexo}
+                onSexo={setSexo}
+                ESPECIES={["Perro", "Gato", "Otro"]}
+            />
 
-      <Filters
-        q={q}
-        onQ={setQ}
-        especie={especie}
-        onEspecie={setEspecie}
-        sexo={sexo}
-        onSexo={setSexo}
-        ESPECIES={ESPECIES}
-      />
+            {loading ? (
+                <div className="text-center py-10 text-[#7a5c49]">Cargando mascotas...</div>
+            ) : filteredItems.length === 0 ? (
+                <div className="text-center py-10 text-[#7a5c49]">No hay resultados con esos filtros 🐾</div>
+            ) : (
+                <section className="grid gap-3 p-4 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
+                    {filteredItems.map((m) => (
+                        <MascotaCard2
+                            key={m.id}
+                            m={m}
+                            onView={() => {
+                                setSelectedMascota(m);
+                                setOpenCard(true);
+                            }}
+                            onAdopt={() => {
+                                alert(`Solicitud de adopción para ${m.nombre}`);
+                            }}
+                        />
+                    ))}
+                </section>
+            )}
 
-      <section className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
-        {data.map((m) => (
-          <MascotaCard key={m.id} m={m} onView={() => {}} onAdopt={() => {}} />
-        ))}
-        {data.length === 0 && (
-          <div className="col-span-full text-center text-[#7a5c49] py-10">
-            No hay resultados con esos filtros
-          </div>
-        )}
-      </section>
-    </>
-  );
+            {/* Modal con la tarjeta completa */}
+            <MascotaCardUsuario
+                m={selectedMascota}
+                open={openCard}
+                onClose={() => setOpenCard(false)}
+                onEdit={undefined}
+                onDelete={undefined}
+            />
+        </>
+    );
 }

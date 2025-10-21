@@ -5,6 +5,7 @@ import {crearMascota} from "@/mascotas/mascotas-actions";
 import {supabase} from "@/lib/supabase/client";
 
 import type {CreateMascotaPayload} from "@/data/masc/types";
+import {SelectorColores} from "@/components/masc/SelectorColores";
 type Opt = {label: string; value: string};
 
 const {data: razas} = await supabase.from("razas").select("id, nombre, especie");
@@ -151,7 +152,13 @@ export default function FormMascota({
     const [pesoKg, setPesoKg] = useState<number>(0);
     const [alturaCm, setAlturaCm] = useState<number>(0);
     const [esterilizado, setEsterilizado] = useState<boolean>(false);
-    const [personalidad, setPersonalidad] = useState<string>("");
+    const [personalidad, setPersonalidad] = useState<string>("por evaluar");
+    const [colores, setColores] = useState<string[]>([]);
+
+    // datos médicos / de ingreso
+    const [lugarRescate, setLugarRescate] = useState("");
+    const [condicionIngreso, setCondicionIngreso] = useState("sano");
+    const [observacionesMedicas, setObservacionesMedicas] = useState("");
 
     // foto
     const [fotoFile, setFotoFile] = useState<File | null>(null);
@@ -172,6 +179,28 @@ export default function FormMascota({
         {label: "Pequeño", value: "pequeño"},
         {label: "Mediano", value: "mediano"},
         {label: "Grande", value: "grande"},
+    ];
+
+    const condicionOpts: Opt[] = [
+        {label: "Sano / sin lesiones", value: "sano"},
+        {label: "Heridas leves", value: "heridas leves"},
+        {label: "Heridas graves", value: "heridas graves"},
+        {label: "Desnutrido", value: "desnutrido"},
+        {label: "Deshidratado", value: "deshidratado"},
+        {label: "Maltrato evidente", value: "maltrato"},
+        {label: "Otro / en observación", value: "otro"},
+    ];
+
+    const personalidadOpts: Opt[] = [
+        {label: "Por evaluar", value: "por evaluar"},
+        {label: "Tranquilo", value: "tranquilo"},
+        {label: "Tímido / asustadizo", value: "tímido"},
+        {label: "Juguetón", value: "juguetón"},
+        {label: "Sociable", value: "sociable"},
+        {label: "Curioso", value: "curioso"},
+        {label: "Protector", value: "protector"},
+        {label: "Ansioso", value: "ansioso"},
+        {label: "Independiente", value: "independiente"},
     ];
 
     // handlers foto
@@ -228,6 +257,10 @@ export default function FormMascota({
             esterilizado,
             disponible_adopcion: true,
             imagen_url: fotoPreview || null,
+            colores,
+            lugar_rescate: lugarRescate || null,
+            condicion_ingreso: condicionIngreso || null,
+            observaciones_medicas: observacionesMedicas || null,
         };
 
         try {
@@ -305,6 +338,12 @@ export default function FormMascota({
                         onChange={(e) => setEdadMeses(parseInt(e.target.value || "0", 10))}
                     />
                 </div>
+            </div>
+
+            <div className="field">
+                <label>Colores del pelaje</label>
+                <SelectorColores value={colores} onChange={setColores} />
+                {colores.length > 0 && <small style={{color: "#7a5c49"}}>Seleccionados: {colores.join(", ")}</small>}
             </div>
 
             {/* fila 4: Foto */}
@@ -388,12 +427,15 @@ export default function FormMascota({
 
                 <div className="field">
                     <label>Personalidad</label>
-                    <input
-                        type="text"
-                        placeholder="Juguetón, tranquilo, curioso..."
+                    <MenuSelect
                         value={personalidad}
-                        onChange={(e) => setPersonalidad(e.target.value)}
+                        onChange={setPersonalidad}
+                        options={personalidadOpts}
+                        ariaLabel="Seleccionar personalidad"
                     />
+                    <small style={{color: "#7a5c49"}}>
+                        Selecciona un tipo general; puedes actualizarlo después si cambia su comportamiento.
+                    </small>
                 </div>
             </div>
 
@@ -405,6 +447,39 @@ export default function FormMascota({
                     value={descripcion}
                     placeholder="Cuenta un poco sobre su personalidad, cuidados, etc."
                     onChange={(e) => setDescripcion(e.target.value)}
+                />
+            </div>
+
+            {/* datos médicos / de ingreso */}
+            <div className="row">
+                <div className="field">
+                    <label>Lugar de rescate</label>
+                    <input
+                        type="text"
+                        placeholder="Ej. Casa del Tony, Calle Cantera #13, etc."
+                        value={lugarRescate}
+                        onChange={(e) => setLugarRescate(e.target.value)}
+                    />
+                </div>
+
+                <div className="field">
+                    <label>Condición al ingreso</label>
+                    <MenuSelect
+                        value={condicionIngreso}
+                        onChange={setCondicionIngreso}
+                        options={condicionOpts}
+                        ariaLabel="Seleccionar condición de ingreso"
+                    />
+                </div>
+            </div>
+
+            <div className="field">
+                <label>Observaciones médicas</label>
+                <textarea
+                    rows={3}
+                    placeholder="Ej. Desnutrición leve, se aplicó antiparasitario, control en 7 días..."
+                    value={observacionesMedicas}
+                    onChange={(e) => setObservacionesMedicas(e.target.value)}
                 />
             </div>
 
