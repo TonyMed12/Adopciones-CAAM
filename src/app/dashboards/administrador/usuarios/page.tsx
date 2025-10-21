@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   UserCircle,
   Search,
@@ -11,113 +11,18 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+import { listarUsuarios, eliminarUsuario, actualizarDocumentoStatus, obtenerUrlDocumento } from "@/usuarios/usuarios-actions";
+import type { PerfilConDocumentos } from "@/usuarios/usuarios";
 
 // Paleta del proyecto Adopciones
 // primario: #BC5F36, acento: #FF8414, fondo suave: #FFF4E7, bordes: #EADACB, texto: #2B1B12
-
-type Usuario = {
-  id: number;
-  nombres: string;
-  apellidos: string;
-  correo: string;
-  telefono?: string;
-  ciudad?: string;
-  estado?: string;
-  pais?: string;
-  direccion?: string;
-  edad?: number;
-  sexo?: "M" | "H" | "";
-  imagenUrl?: string;
-};
-
-const demoUsuarios: Usuario[] = [
-  {
-    id: 1,
-    nombres: "Ana",
-    apellidos: "Ramírez López",
-    correo: "ana@gmail.com",
-    telefono: "55 1234 5678",
-    ciudad: "Morelia",
-    estado: "Michoacan",
-    pais: "México",
-    direccion: "Av. Siempre Viva 123",
-    edad: 24,
-    sexo: "M",
-  },
-  {
-    id: 2,
-    nombres: "Carlos",
-    apellidos: "García Pérez",
-    correo: "carlos@gmail.com",
-    telefono: "55 9876 5432",
-    ciudad: "Morelia",
-    estado: "Michoacan",
-    pais: "México",
-    direccion: "Calle Sol #45",
-    edad: 27,
-    sexo: "H",
-  },
-  {
-    id: 3,
-    nombres: "Lucía",
-    apellidos: "Hernández",
-    correo: "lucia@hotmail.com",
-    telefono: "81 123 4567",
-    ciudad: "Morelia",
-    estado: "Michoacan",
-    pais: "México",
-    direccion: "Insurgentes 200",
-    edad: 22,
-    sexo: "M",
-  },
-  {
-    id: 4,
-    nombres: "Mario",
-    apellidos: "Torres",
-    correo: "mario@gmail.com",
-    telefono: "33 555 0000",
-    ciudad: "Morelia",
-    estado: "Michoacan",
-    pais: "México",
-    direccion: "Lerdo 10",
-    edad: 30,
-    sexo: "H",
-  },
-  {
-    id: 5,
-    nombres: "Diana",
-    apellidos: "Flores",
-    correo: "diana@gmail.com",
-    telefono: "55 222 3333",
-    ciudad: "Morelia",
-    estado: "Michoacan",
-    pais: "México",
-    direccion: "Roma Nte.",
-    edad: 26,
-    sexo: "M",
-  },
-  {
-    id: 6,
-    nombres: "Héctor",
-    apellidos: "Mendoza",
-    correo: "hector@gmail.com",
-    telefono: "222 111 0000",
-    ciudad: "Morelia",
-    estado: "Michoacan",
-    pais: "México",
-    direccion: "Centro",
-    edad: 31,
-    sexo: "H",
-  },
-];
 
 function Th(props: React.HTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
       {...props}
-      className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#2b1b12] ${
-        props.className || ""
-      }`}
+      className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#2b1b12] ${props.className || ""
+        }`}
     />
   );
 }
@@ -177,10 +82,26 @@ function ConfirmModal({
 
 export default function UsuariosPage() {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Usuario | null>(null);
-  const [usuarios, setUsuarios] = useState<Usuario[]>(demoUsuarios);
+  const [usuarios, setUsuarios] = useState<PerfilConDocumentos[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<PerfilConDocumentos | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [toDeleteId, setToDeleteId] = useState<number | null>(null);
+  const [toDeleteId, setToDeleteId] = useState<string | null>(null);
+
+  /** Cargar usuarios reales */
+  useEffect(() => {
+    async function fetchUsuarios() {
+      try {
+        const data = await listarUsuarios();
+        setUsuarios(data);
+      } catch (err) {
+        console.error("Error cargando usuarios:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUsuarios();
+  }, []);
 
   const filtrados = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -188,22 +109,30 @@ export default function UsuariosPage() {
     return usuarios.filter(
       (u) =>
         u.nombres.toLowerCase().includes(q) ||
-        u.apellidos.toLowerCase().includes(q) ||
-        u.correo.toLowerCase().includes(q)
+        u.apellido_paterno.toLowerCase().includes(q) ||
+        u.apellido_materno?.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q)
     );
   }, [query, usuarios]);
 
-  const askEliminar = (id: number) => {
+  const askEliminar = (id: string) => {
     setToDeleteId(id);
     setConfirmOpen(true);
   };
 
-  const handleConfirmEliminar = () => {
-    if (toDeleteId == null) return;
-    setUsuarios((prev) => prev.filter((u) => u.id !== toDeleteId));
-    if (selected?.id === toDeleteId) setSelected(null);
-    setConfirmOpen(false);
-    setToDeleteId(null);
+  const handleConfirmEliminar = async () => {
+    if (!toDeleteId) return;
+    try {
+      await eliminarUsuario(toDeleteId);
+      setUsuarios((prev) => prev.filter((u) => u.id !== toDeleteId));
+      if (selected?.id === toDeleteId) setSelected(null);
+    } catch (err) {
+      console.error("Error eliminando usuario:", err);
+      alert("No se pudo eliminar el usuario");
+    } finally {
+      setConfirmOpen(false);
+      setToDeleteId(null);
+    }
   };
 
   return (
@@ -216,6 +145,7 @@ export default function UsuariosPage() {
             Listado general y panel de detalle.
           </p>
         </div>
+
         {/* Controles */}
         <div className="flex items-center gap-2 rounded-2xl border border-[#EADACB] bg-white px-3 py-2">
           <Search className="h-4 w-4 text-[#8b6f5d]" />
@@ -236,150 +166,273 @@ export default function UsuariosPage() {
       </div>
 
       {/* Contenido */}
-      <div className="flex gap-6">
-        {/* Tabla */}
-        <div className="w-full overflow-x-auto">
-          <table className="w-full rounded-2xl overflow-hidden">
-            <thead>
-              <tr className="bg-[#FFF4E7] border-b border-[#EADACB]">
-                <Th className="text-left">Nombre</Th>
-                <Th className="text-left">Correo</Th>
-                <Th className="text-left">Teléfono</Th>
-                <Th className="text-left">Ubicación</Th>
-                <Th className="text-left">Etiqueta</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtrados.map((u, idx) => (
-                <tr
-                  key={u.id}
-                  onClick={() => setSelected(u)}
-                  className={`cursor-pointer border-b border-[#F3E8DC] transition-colors ${
-                    idx % 2 === 0 ? "bg-white" : "bg-[#FFF9F3]"
-                  } hover:bg-[#FFF4E7]`}
-                >
-                  <td className="px-3 py-3 font-semibold text-[#2B1B12]">
-                    <div className="flex items-center gap-3">
-                      <div className="grid h-10 w-10 place-items-center rounded-full border border-[#EADACB] bg-white text-[#BC5F36]">
-                        <UserCircle className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <div>
-                          {u.nombres} {u.apellidos}
-                        </div>
-                        <div className="text-[11px] text-[#8b6f5d]">
-                          ID {u.id.toString().padStart(3, "0")}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 text-[#2B1B12]">
-                    <span title={u.correo}>{u.correo}</span>
-                  </td>
-                  <td className="px-3 py-3 text-[#2B1B12]">
-                    {u.telefono || "—"}
-                  </td>
-                  <td className="px-3 py-3 text-[#2B1B12]">
-                    {u.ciudad || "—"}
-                    {u.estado ? `, ${u.estado}` : ""}
-                  </td>
-                  <td className="px-3 py-3">
-                    <Pill>Usuario</Pill>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtrados.length === 0 && (
-            <div className="mt-4 grid place-items-center rounded-2xl border border-dashed border-[#EADACB] p-8 text-center text-[#6b4f40]">
-              No se encontraron resultados para{" "}
-              <b className="mx-1">“{query}”</b>.
-            </div>
-          )}
+      {loading ? (
+        <div className="py-12 text-center text-[#6b4f40]">
+          Cargando usuarios...
         </div>
+      ) : (
+        <div className="flex gap-6">
+          {/* Tabla */}
+          <div className="w-full overflow-x-auto">
+            <table className="w-full rounded-2xl overflow-hidden">
+              <thead>
+                <tr className="bg-[#FFF4E7] border-b border-[#EADACB]">
+                  <Th className="text-left">Nombre</Th>
+                  <Th className="text-left">Correo</Th>
+                  <Th className="text-left">Teléfono</Th>
+                  <Th className="text-left">Ocupación</Th>
+                  <Th className="text-left">Estado</Th>
+                  <Th className="text-left">Documentos</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtrados.map((u, idx) => (
+                  <tr
+                    key={u.id}
+                    onClick={() => setSelected(u)}
+                    className={`cursor-pointer border-b border-[#F3E8DC] transition-colors ${u.documentos?.some((d) => d.status === "pendiente")
+                      ? "bg-[#FFF9F3]" // color más cálido si tiene documentos pendientes
+                      : idx % 2 === 0
+                        ? "bg-white"
+                        : "bg-[#FFFDF9]"
+                      } hover:bg-[#FFF4E7]`}
+                  >
+                    <td className="px-3 py-3 font-semibold text-[#2B1B12]">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 place-items-center rounded-full border border-[#EADACB] bg-white text-[#BC5F36]">
+                          <UserCircle className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <div>
+                            {u.nombres} {u.apellido_paterno}{" "}
+                            {u.apellido_materno || ""}
+                          </div>
+                          <div className="text-[11px] text-[#8b6f5d]">
+                            ID {u.id.slice(0, 6)}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-[#2B1B12]">{u.email}</td>
+                    <td className="px-3 py-3 text-[#2B1B12]">
+                      {u.telefono || "—"}
+                    </td>
+                    <td className="px-3 py-3 text-[#2B1B12]">
+                      {u.ocupacion || "—"}
+                    </td>
+                    <td className="px-3 py-3">
+                      <Pill>{u.activo ? "Activo" : "Inactivo"}</Pill>
+                    </td>
+                    <td className="px-3 py-3 text-[#2B1B12]">
+                      {u.documentos && u.documentos.length > 0 ? (
+                        (() => {
+                          const pendientes = u.documentos.filter(d => d.status === "pendiente").length;
+                          const aprobados = u.documentos.filter(d => d.status === "aprobado").length;
+                          const rechazados = u.documentos.filter(d => d.status === "rechazado").length;
 
-        {/* Perfil lateral */}
-        <aside className="sticky top-4 h-fit w/full max-w-sm rounded-2xl border border-[#EADACB] bg-white p-6">
-          {!selected ? (
-            <div className="grid place-items-center text-center text-[#6b4f40]">
-              <UserCircle className="mb-3 h-12 w-12 text-[#BC5F36]" />
-              <p className="text-sm">
-                Selecciona un usuario para ver sus detalles
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <div className="flex items-center gap-4">
-                <div className="grid h-16 w-16 place-items-center rounded-full border border-[#EADACB] bg-[#FFF4E7] text-[#BC5F36]">
-                  <UserCircle className="h-9 w-9" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-extrabold text-[#2B1B12]">
-                    {selected.nombres} {selected.apellidos}
-                  </h3>
-                  <div className="text-[12px] text-[#8b6f5d]">Usuario</div>
-                </div>
+                          let color = "#BC5F36";
+                          let texto = "";
+
+                          if (pendientes > 0) {
+                            color = "#FF8414";
+                            texto = `${pendientes} pendiente${pendientes > 1 ? "s" : ""}`;
+                          } else if (rechazados > 0) {
+                            color = "#E63946";
+                            texto = `${rechazados} rechazado${rechazados > 1 ? "s" : ""}`;
+                          } else if (aprobados === u.documentos.length && aprobados > 0) {
+                            color = "#2A9D8F";
+                            texto = "completos";
+                          } else {
+                            texto = "sin documentos";
+                            color = "#8b6f5d";
+                          }
+
+                          return (
+                            <span
+                              style={{
+                                color,
+                                fontWeight: 600,
+                                fontSize: "13px",
+                                backgroundColor: `${color}20`,
+                                borderRadius: "12px",
+                                padding: "4px 8px",
+                                display: "inline-block",
+                              }}
+                            >
+                              {texto}
+                            </span>
+                          );
+                        })()
+                      ) : (
+                        <span className="text-[#8b6f5d] text-sm italic">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {filtrados.length === 0 && (
+              <div className="mt-4 grid place-items-center rounded-2xl border border-dashed border-[#EADACB] p-8 text-center text-[#6b4f40]">
+                No se encontraron resultados para{" "}
+                <b className="mx-1">“{query}”</b>.
               </div>
+            )}
+          </div>
 
-              <div className="space-y-2 text-sm text-[#2B1B12]">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-[#BC5F36]" />
-                  <span>{selected.correo}</span>
+          {/* Perfil lateral */}
+          <aside className="sticky top-4 h-fit w/full max-w-sm rounded-2xl border border-[#EADACB] bg-white p-6">
+            {!selected ? (
+              <div className="grid place-items-center text-center text-[#6b4f40]">
+                <UserCircle className="mb-3 h-12 w-12 text-[#BC5F36]" />
+                <p className="text-sm">
+                  Selecciona un usuario para ver sus detalles
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  <div className="grid h-16 w-16 place-items-center rounded-full border border-[#EADACB] bg-[#FFF4E7] text-[#BC5F36]">
+                    <UserCircle className="h-9 w-9" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-[#2B1B12]">
+                      {selected.nombres} {selected.apellido_paterno}{" "}
+                      {selected.apellido_materno || ""}
+                    </h3>
+                    <div className="text-[12px] text-[#8b6f5d]">Usuario</div>
+                  </div>
                 </div>
-                {selected.telefono && (
+
+                <div className="space-y-2 text-sm text-[#2B1B12]">
                   <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-[#BC5F36]" />
-                    <span>{selected.telefono}</span>
+                    <Mail className="h-4 w-4 text-[#BC5F36]" />
+                    <span>{selected.email}</span>
                   </div>
-                )}
-                {(selected.ciudad || selected.estado || selected.pais) && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#BC5F36]" />
-                    <span>
-                      {[selected.ciudad, selected.estado, selected.pais]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </span>
-                  </div>
-                )}
-                {selected.direccion && (
-                  <div className="ml-6 text-[12px] text-[#6b4f40]">
-                    {selected.direccion}
-                  </div>
-                )}
-              </div>
 
-              <div className="flex items-center gap-2">
-                <Pill>
-                  {selected.sexo === "M"
-                    ? "Mujer"
-                    : selected.sexo === "H"
-                    ? "Hombre"
-                    : "—"}
-                </Pill>
-                <Pill>
-                  {selected.edad ? `${selected.edad} años` : "Edad —"}
-                </Pill>
-              </div>
+                  {selected.telefono && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-[#BC5F36]" />
+                      <span>{selected.telefono}</span>
+                    </div>
+                  )}
 
-              <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  onClick={() => selected && askEliminar(selected.id)}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#EADACB] bg-white px-3 py-1.5 text-sm font-semibold text-[#BC5F36] hover:bg-[#FFF4E7]"
-                >
-                  <Trash2 className="h-4 w-4" /> Eliminar
-                </button>
+                  {selected.ocupacion && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-[#BC5F36]" />
+                      <span>{selected.ocupacion}</span>
+                    </div>
+                  )}
+                </div>
+
+                {selected.documentos && selected.documentos.length > 0 && (
+                  <div className="pt-3 border-t border-[#EADACB] mt-3">
+                    <h4 className="text-sm font-extrabold text-[#2B1B12] mb-2">
+                      Documentos del usuario
+                    </h4>
+                    <ul className="space-y-2 text-sm">
+                      {selected.documentos.map((doc) => (
+                        <li
+                          key={doc.id}
+                          className="flex items-center justify-between border border-[#EADACB] rounded-lg px-3 py-2 bg-[#FFF9F3]"
+                        >
+                          <div>
+                            <p className="font-semibold text-[#2B1B12]">{doc.tipo}</p>
+                            <p className="text-xs text-[#6b4f40] capitalize">
+                              Estado:{" "}
+                              <span
+                                className={`font-semibold ${doc.status === "aprobado"
+                                  ? "text-green-600"
+                                  : doc.status === "rechazado"
+                                    ? "text-red-600"
+                                    : "text-[#BC5F36]"
+                                  }`}
+                              >
+                                {doc.status || "pendiente"}
+                              </span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {/* Botón para ver el documento */}
+                            <a
+                              href="#"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                try {
+                                  const publicUrl = await obtenerUrlDocumento(doc.url);
+                                  if (!publicUrl) {
+                                    alert("No se pudo obtener la URL del documento");
+                                    return;
+                                  }
+                                  window.open(publicUrl, "_blank");
+                                } catch (err) {
+                                  console.error("Error abriendo documento:", err);
+                                  alert("Error al abrir el documento");
+                                }
+                              }}
+                              className="text-[#BC5F36] text-xs font-semibold hover:underline cursor-pointer"
+                            >
+                              Ver
+                            </a>
+
+                            {/* Selector de estado */}
+                            <select
+                              className="text-xs border border-[#EADACB] rounded-md bg-white px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#BC5F36]"
+                              value={doc.status || "pendiente"}
+                              onChange={async (e) => {
+                                const nuevoStatus = e.target.value;
+                                try {
+                                  await actualizarDocumentoStatus(doc.id, nuevoStatus);
+                                  // Actualizar el estado local
+                                  setSelected((prev) =>
+                                    prev
+                                      ? {
+                                        ...prev,
+                                        documentos: prev.documentos?.map((d) =>
+                                          d.id === doc.id ? { ...d, status: nuevoStatus } : d
+                                        ),
+                                      }
+                                      : prev
+                                  );
+                                } catch (err) {
+                                  console.error("Error cambiando estado del documento:", err);
+                                  alert("No se pudo actualizar el estado del documento");
+                                }
+                              }}
+                            >
+                              <option value="pendiente">pendiente</option>
+                              <option value="aprobado">aprobado</option>
+                              <option value="rechazado">rechazado</option>
+                            </select>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <button
+                    onClick={() => selected && askEliminar(selected.id)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#EADACB] bg-white px-3 py-1.5 text-sm font-semibold text-[#BC5F36] hover:bg-[#FFF4E7]"
+                  >
+                    <Trash2 className="h-4 w-4" /> Eliminar
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </aside>
-      </div>
+            )}
+          </aside>
+        </div>
+      )}
 
       {/* Modal de confirmación */}
       <ConfirmModal
         open={confirmOpen}
         nombre={
-          selected ? `${selected.nombres} ${selected.apellidos}` : undefined
+          selected
+            ? `${selected.nombres} ${selected.apellido_paterno} ${selected.apellido_materno || ""}`
+            : undefined
         }
         onCancel={() => {
           setConfirmOpen(false);
