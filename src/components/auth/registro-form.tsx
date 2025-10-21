@@ -531,10 +531,10 @@ export default function RegistroForm() {
   );
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full max-w-md mx-auto border border-gray-200 shadow-md bg-white">
       <CardHeader>
-        <CardTitle>Registro de Adoptante</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-[#2E2E2E]">Registro de Adoptante</CardTitle>
+        <CardDescription className="text-[#6B6B6B]">
           Paso {currentStep} de {totalSteps}
         </CardDescription>
 
@@ -544,8 +544,8 @@ export default function RegistroForm() {
             <div
               key={step}
               className={cn(
-                "flex-1 h-2 rounded-full",
-                step <= currentStep ? "bg-blue-600" : "bg-gray-200"
+                "flex-1 h-2 rounded-full transition-all duration-300",
+                step <= currentStep ? "bg-[#8B5E34]" : "bg-gray-300"
               )}
             />
           ))}
@@ -574,6 +574,7 @@ export default function RegistroForm() {
               variant="ghost"
               onClick={handlePrevStep}
               disabled={currentStep === 1 || isLoading}
+              className="text-[#8B5E34] hover:bg-[#F5EFE9]"
             >
               <ChevronLeft className="h-4 w-4 mr-2" />
               Anterior
@@ -581,25 +582,36 @@ export default function RegistroForm() {
 
             {currentStep < totalSteps ? (
               <Button
-                variant="primary"
                 onClick={handleNextStep}
                 disabled={isLoading}
+                className="bg-[#8B5E34] hover:bg-[#734C29] text-white font-semibold"
               >
                 Siguiente
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
               <Button
-                variant="primary"
                 onClick={handleSubmit}
                 disabled={isLoading}
+                className="bg-[#8B5E34] hover:bg-[#734C29] text-white font-semibold"
               >
                 {isLoading ? "Registrando..." : "Crear Cuenta"}
               </Button>
             )}
           </div>
+
+          {/* Enlace de inicio de sesión */}
+          <p className="mt-6 text-sm text-center text-[#6B6B6B]">
+            ¿Ya tienes cuenta?{" "}
+            <a
+              href="/login"
+              className="text-[#B87333] font-medium hover:underline"
+            >
+              Inicia sesión
+            </a>
+          </p>
         </form>
       </CardContent>
     </Card>
-  );
+  )
 }
