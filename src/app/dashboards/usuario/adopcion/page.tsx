@@ -330,6 +330,18 @@ export default function ProcesoAdopcionPage() {
         </section>
       )}
 
+
+      {/* Botón Agendar Cita */}
+      <div className="flex justify-center">
+        <Link href="/dashboards/usuario/citas">
+          <Button className="px-6 py-3">
+            <CalendarCheck className="h-5 w-5" />
+            Agendar cita
+          </Button>
+        </Link>
+      </div>
+
+
       {/* FAQs */}
       <section className="rounded-2xl border border-[#eadacb] bg-white p-5 text-[#2b1b12] shadow-[0_6px_14px_rgba(43,27,18,.08)]">
         <div className="flex items-center gap-2">
@@ -386,8 +398,8 @@ function Stepper({ estado }: { estado: Estado }) {
                   done
                     ? "bg-[#BC5F36] text-white"
                     : active
-                    ? "bg-[#BC5F36]/15 text-[#BC5F36]"
-                    : "bg-[#f5ebe1] text-[#7a5c49]",
+                      ? "bg-[#BC5F36]/15 text-[#BC5F36]"
+                      : "bg-[#f5ebe1] text-[#7a5c49]",
                 ].join(" ")}
               >
                 {done ? "✓" : idx + 1}
