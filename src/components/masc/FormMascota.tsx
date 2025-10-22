@@ -1,20 +1,16 @@
 "use client";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState, useMemo} from "react";
 import {ESPECIES} from "@/data/masc/constants";
 import {crearMascota, actualizarMascota} from "@/mascotas/mascotas-actions";
 import {supabase} from "@/lib/supabase/client";
 import type {CreateMascotaPayload} from "@/data/masc/types";
 import {SelectorColores} from "@/components/masc/SelectorColores";
-import "@/styles/form-mascota.css"; // ✅ estilos globales
+import "@/styles/form-mascota.css";
+import {listarRazas} from "@/mascotas/razas/razas-actions";
 
 type Opt = {label: string; value: string};
 
 const {data: razas} = await supabase.from("razas").select("id, nombre, especie");
-const razaOpts =
-    razas?.map((r) => ({
-        label: `${r.nombre} • ${r.especie}`,
-        value: r.id,
-    })) ?? [];
 
 /* Detectar clic fuera del menú */
 function useClickOutside(ref: React.RefObject<HTMLElement | null>, onClose: () => void) {
@@ -100,7 +96,7 @@ export default function FormMascota({
     const [tamano, setTamano] = useState<string>("Mediano");
     const [edadMeses, setEdadMeses] = useState<number>(0);
     const [descripcion, setDescripcion] = useState("");
-    const [razaId, setRazaId] = useState(razaOpts[0]?.value || "");
+    const [razaId, setRazaId] = useState("");
     const [pesoKg, setPesoKg] = useState<number>(0);
     const [alturaCm, setAlturaCm] = useState<number>(0);
     const [esterilizado, setEsterilizado] = useState<boolean>(false);
@@ -112,6 +108,32 @@ export default function FormMascota({
     const [fotoFile, setFotoFile] = useState<File | null>(null);
     const [fotoPreview, setFotoPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [todasRazas, setTodasRazas] = useState<{id: string; nombre: string; especie: string}[]>([]);
+    const [busquedaRaza, setBusquedaRaza] = useState("");
+    const [openRaza, setOpenRaza] = useState(false);
+
+    useEffect(() => {
+        async function cargarRazas() {
+            try {
+                const data = await listarRazas();
+                setTodasRazas(data);
+            } catch (err) {
+                console.error("Error al cargar razas:", err);
+            }
+        }
+        cargarRazas();
+    }, []);
+
+    const razasFiltradas = useMemo(() => {
+        const filtradas = todasRazas.filter((r) => r.especie.toLowerCase() === especie.toLowerCase());
+        if (!busquedaRaza.trim()) return filtradas;
+        return filtradas.filter((r) => r.nombre.toLowerCase().includes(busquedaRaza.toLowerCase()));
+    }, [todasRazas, especie, busquedaRaza]);
+
+    const razaOpts = razasFiltradas.map((r) => ({
+        label: r.nombre,
+        value: r.id,
+    }));
 
     /* ✅ Si estamos editando, llenar campos */
     useEffect(() => {
@@ -250,21 +272,51 @@ export default function FormMascota({
                 </div>
             </div>
 
-            {/* Raza + Edad */}
-            <div className="row">
-                <div className="field">
-                    <label>Raza</label>
-                    <MenuSelect value={razaId} onChange={setRazaId} options={razaOpts} ariaLabel="Seleccionar raza" />
-                </div>
-                <div className="field">
-                    <label>Edad (meses)</label>
+            {/* 🐶 Combobox de razas con búsqueda incluida */}
+            <div className="field relative w-full">
+                <label>Raza</label>
+                <div className="relative">
                     <input
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={edadMeses}
-                        onChange={(e) => setEdadMeses(parseInt(e.target.value || "0", 10))}
+                        type="text"
+                        placeholder="Buscar o seleccionar raza..."
+                        value={busquedaRaza || razaOpts.find((r) => r.value === razaId)?.label || ""}
+                        onChange={(e) => {
+                            setBusquedaRaza(e.target.value);
+                            setRazaId(""); // limpiamos selección al escribir
+                        }}
+                        onFocus={() => setOpenRaza(true)}
+                        className="w-full rounded-lg border border-[#FF8414]/40 px-3 py-2 focus:border-[#FF8414] focus:outline-none bg-white"
                     />
+
+                    {openRaza && (
+                        <div
+                            className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-[#FF8414]/40 bg-white shadow-lg"
+                            onMouseLeave={() => setOpenRaza(false)}
+                        >
+                            {razaOpts.length === 0 ? (
+                                <div className="px-3 py-2 text-sm text-gray-500">No hay razas disponibles</div>
+                            ) : (
+                                razaOpts
+                                .filter((r) => r.label.toLowerCase().includes(busquedaRaza.toLowerCase()))
+                                .map((r) => (
+                                    <button
+                                        key={r.value}
+                                        type="button"
+                                        onClick={() => {
+                                            setRazaId(r.value);
+                                            setBusquedaRaza(r.label);
+                                            setOpenRaza(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-[#fff2e6] ${
+                                            razaId === r.value ? "bg-[#FF8414]/10 font-medium text-[#8B4513]" : ""
+                                        }`}
+                                    >
+                                        {r.label}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -348,27 +400,41 @@ export default function FormMascota({
                 </div>
             </div>
 
-            {/* Peso + Altura */}
-            <div className="row">
-                <div className="field">
-                    <label>Peso (kg)</label>
+            {/* 🟢 Edad + Peso + Altura — siempre en la misma línea */}
+            <div className="flex items-end justify-center gap-6 w-full whitespace-nowrap">
+                <div className="inline-flex flex-col items-start">
+                    <label className="mb-1 text-sm font-semibold text-[#2b1b12]">Edad (meses)</label>
+                    <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={edadMeses}
+                        onChange={(e) => setEdadMeses(parseInt(e.target.value || "0", 10))}
+                        className="w-[110px] rounded-lg border border-[#FF8414]/40 px-2 py-2 text-center focus:border-[#FF8414] focus:outline-none"
+                    />
+                </div>
+
+                <div className="inline-flex flex-col items-start">
+                    <label className="mb-1 text-sm font-semibold text-[#2b1b12]">Peso (kg)</label>
                     <input
                         type="number"
                         min={0}
                         step={0.1}
                         value={pesoKg}
                         onChange={(e) => setPesoKg(parseFloat(e.target.value) || 0)}
+                        className="w-[110px] rounded-lg border border-[#FF8414]/40 px-2 py-2 text-center focus:border-[#FF8414] focus:outline-none"
                     />
                 </div>
 
-                <div className="field">
-                    <label>Altura (cm)</label>
+                <div className="inline-flex flex-col items-start">
+                    <label className="mb-1 text-sm font-semibold text-[#2b1b12]">Altura (cm)</label>
                     <input
                         type="number"
                         min={0}
                         step={0.1}
                         value={alturaCm}
                         onChange={(e) => setAlturaCm(parseFloat(e.target.value) || 0)}
+                        className="w-[110px] rounded-lg border border-[#FF8414]/40 px-2 py-2 text-center focus:border-[#FF8414] focus:outline-none"
                     />
                 </div>
             </div>

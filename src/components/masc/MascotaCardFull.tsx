@@ -84,8 +84,25 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                         </span>
                                     )}
                                     {m.estado && (
-                                        <span className="rounded-full bg-green-100 text-green-700 px-3 py-1 text-sm font-semibold">
-                                            {m.estado}
+                                        <span
+                                            className={`rounded-full px-3 py-1 text-sm font-semibold
+      ${
+          m.estado === "en_proceso"
+              ? "bg-yellow-100 text-yellow-700"
+              : m.estado === "disponible"
+              ? "bg-green-100 text-green-700"
+              : m.estado === "adoptado"
+              ? "bg-blue-100 text-blue-700"
+              : "bg-gray-100 text-gray-700"
+      }`}
+                                        >
+                                            {m.estado === "en_proceso"
+                                                ? "En proceso"
+                                                : m.estado === "disponible"
+                                                ? "Disponible"
+                                                : m.estado === "adoptado"
+                                                ? "Adoptado"
+                                                : m.estado}
                                         </span>
                                     )}
                                 </div>
@@ -190,7 +207,6 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                         </div>
                                     </div>
                                 )}
-
                             </section>
                             <div className="mt-6 flex justify-end gap-3 border-t border-slate-200 pt-4">
                                 <Button variant="ghost" size="sm" onClick={onEdit}>

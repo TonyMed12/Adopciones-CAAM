@@ -23,6 +23,7 @@ const PUBLIC_PATHS = [
   "/api/auth/register",
   "/api/auth/login",
   "/api/auth/recover",
+  "/mascota",
 ];
 
 export async function middleware(request: NextRequest) {

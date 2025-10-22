@@ -33,9 +33,14 @@ const COLORES_DISPONIBLES = [
 export function SelectorColores({value, onChange}: {value: string[]; onChange: (colores: string[]) => void}) {
     const toggleColor = (nombre: string) => {
         if (value.includes(nombre)) {
+            // si ya está seleccionado, lo quitamos
             onChange(value.filter((c) => c !== nombre));
-        } else {
+        } else if (value.length < 3) {
+            // si hay menos de 3 seleccionados, agregamos
             onChange([...value, nombre]);
+        } else {
+            // opcional: podrías mostrar una alerta o mensaje visual
+            alert("Solo puedes seleccionar hasta 3 colores");
         }
     };
 
@@ -43,14 +48,19 @@ export function SelectorColores({value, onChange}: {value: string[]; onChange: (
         <div className="flex flex-wrap gap-2">
             {COLORES_DISPONIBLES.map(({nombre, hex}) => {
                 const activo = value.includes(nombre);
+                const maximoAlcanzado = value.length >= 3 && !activo;
+
                 return (
                     <button
                         key={nombre}
                         type="button"
                         onClick={() => toggleColor(nombre)}
+                        disabled={maximoAlcanzado}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition font-medium ${
                             activo
                                 ? "bg-[#FF8414] border-[#FF8414] text-white"
+                                : maximoAlcanzado
+                                ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
                                 : "bg-white border-[#FF8414] text-[#2b1b12] hover:bg-[#fff0e0]"
                         }`}
                     >

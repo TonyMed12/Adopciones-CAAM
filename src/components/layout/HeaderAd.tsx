@@ -47,7 +47,7 @@ export default function AdminHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#BC5F36] shadow-md">
+    <header className="fixed top-0 z-50 w-full bg-[#BC5F36] shadow-md">
       <nav className="container mx-auto flex items-center justify-between px-6 py-5">
         <Link
           href="/dashboards/administrador"
