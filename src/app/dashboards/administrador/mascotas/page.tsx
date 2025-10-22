@@ -1,6 +1,6 @@
 "use client";
-import React, {useEffect, useState} from "react";
-import {Plus} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 
 import PageHead from "@/components/layout/PageHead";
 import Button from "@/components/ui/Button2";
@@ -10,8 +10,9 @@ import Filters from "@/components/masc/Filters";
 import FormMascota from "@/components/masc/FormMascota";
 import MascotasTable from "@/components/masc/MascotasTable";
 import MascotaCardFull from "@/components/masc/MascotaCardFull";
+import GestionRazas from "@/components/razas/GestionRazas";
 
-import {listarMascotas, eliminarMascota} from "@/mascotas/mascotas-actions";
+import { listarMascotas, eliminarMascota } from "@/mascotas/mascotas-actions";
 
 export default function MascotasPage() {
     const [openForm, setOpenForm] = useState(false);
@@ -19,6 +20,7 @@ export default function MascotasPage() {
     const [loading, setLoading] = useState(true);
     const [selectedMascota, setSelectedMascota] = useState<any | null>(null);
     const [openCard, setOpenCard] = useState(false);
+    const [openRazas, setOpenRazas] = useState(false);
 
     // Pa los filtros
     const [q, setQ] = useState("");
@@ -95,9 +97,14 @@ export default function MascotasPage() {
                 title="Mascotas"
                 subtitle="Explora a nuestros adorables compañeros 🐾"
                 right={
-                    <Button onClick={() => setOpenForm(true)}>
-                        <Plus size={18} /> Agregar
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button onClick={() => setOpenForm(true)}>
+                            <Plus size={18} /> Agregar
+                        </Button>
+                        <Button onClick={() => setOpenRazas(true)}>
+                            🐶 Gestionar Razas
+                        </Button>
+                    </div>
                 }
             />
 
@@ -123,7 +130,7 @@ export default function MascotasPage() {
                                 setSelectedMascota(mascotaCompleta);
                                 setOpenCard(true);
                             },
-                            onEdit: () => {},
+                            onEdit: () => { },
                             onDelete: async (item: any) => {
                                 const id = typeof item === "string" ? item : item?.id;
                                 if (!id) {
@@ -170,6 +177,7 @@ export default function MascotasPage() {
                     }
                 }}
             />
+            <GestionRazas open={openRazas} onClose={() => setOpenRazas(false)} />
         </>
     );
 }
