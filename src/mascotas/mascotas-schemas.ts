@@ -14,7 +14,7 @@ export const CreateMascotaSchema = z.object({
   disponible_adopcion: z.boolean().default(true),
   edad: z.string().optional().nullable(),
   personalidad: z.string().optional().nullable(),
-  imagen_url: z.string().url("Debe ser una URL válida").optional().nullable(),
+  imagen_url: z.string().url("Debe ser una URL válida").nullable().default(null),
   esterilizado: z.boolean().default(false),
   peso_kg: z.number().optional().nullable(),
   altura_cm: z.number().optional().nullable(),
@@ -25,8 +25,15 @@ export const CreateMascotaSchema = z.object({
   condicion_ingreso: z.string().optional().nullable(),
   observaciones_medicas: z.string().optional().nullable(),
   raza_id: z.string().uuid("ID de raza inválido").optional().nullable(),
-  qr_code: z.string().optional().nullable(),
+  qr_code: z.string().nullable().default(null),
   estado: EstadoEnum.default("disponible"),
+});
+
+export const MascotaArchivoSchema = z.object({
+  imagen: z
+    .instanceof(File)
+    .refine((file) => file.size <= 5 * 1024 * 1024, "La imagen no puede pesar más de 5 MB")
+    .refine((file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type), "Formato de imagen inválido"),
 });
 
 export const UpdateMascotaSchema = CreateMascotaSchema.extend({
