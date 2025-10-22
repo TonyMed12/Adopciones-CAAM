@@ -33,15 +33,15 @@ export async function obtenerUrlDocumento(ruta: string) {
   if (!ruta) throw new Error("Ruta de documento no especificada");
 
   const { data } = await supabase
-  .storage
-  .from("documentos_adopcion")
-  .getPublicUrl(ruta);
+    .storage
+    .from("documentos_adopcion")
+    .getPublicUrl(ruta);
 
-if (!data?.publicUrl) {
-  throw new Error("No se pudo generar la URL del documento");
-}
+  if (!data?.publicUrl) {
+    throw new Error("No se pudo generar la URL del documento");
+  }
 
-return data.publicUrl;
+  return data.publicUrl;
 
 }
 
@@ -73,4 +73,18 @@ export async function actualizarDocumentoStatus(
   }
 
   return { success: true };
+}
+
+export async function contarUsuarios(): Promise<number> {
+  const { count, error } = await supabase
+    .from("perfiles")
+    .select("*", { count: "exact", head: true })
+    .eq("rol_id", 2); 
+
+  if (error) {
+    console.error("Error contando usuarios:", error.message);
+    throw new Error(error.message);
+  }
+
+  return count ?? 0;
 }
