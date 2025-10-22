@@ -130,7 +130,7 @@ export default function MascotasPage() {
                                 setSelectedMascota(mascotaCompleta);
                                 setOpenCard(true);
                             },
-                            onEdit: () => { },
+                            
                             onDelete: async (item: any) => {
                                 const id = typeof item === "string" ? item : item?.id;
                                 if (!id) {

@@ -127,17 +127,26 @@ export default function MascotaCard({m, onView, onAdopt, adoptDisabled = false}:
                     font-weight: 600;
                     font-size: 12px;
                 }
-
                 .meta {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 12px;
-                    color: #6c5241;
-                    font-size: 14px;
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 4px;
+                color: #6c5241;
+                font-size: 14px;
+                margin-top: 4px;
                 }
+
+                .meta span {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                line-height: 1.4;
+                }
+
                 .meta strong {
-                    color: #2b1b12;
-                    font-weight: 700;
+                color: #2b1b12;
+                font-weight: 700;
+                min-width: 75px;
                 }
                 .desc {
                     color: #2b1b12;

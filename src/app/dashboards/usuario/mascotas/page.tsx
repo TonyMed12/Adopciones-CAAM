@@ -43,10 +43,6 @@ export default function MascotasPage() {
     // Modal de card de usuario
     const [openCard, setOpenCard] = useState(false);
     const [selectedMascota, setSelectedMascota] = useState<Mascota | null>(null);
-
-    // ----------------------------------------------------
-    // 📑 Estado de documentos
-    // ----------------------------------------------------
     useEffect(() => {
         async function fetchEstado() {
             const {
@@ -74,10 +70,6 @@ export default function MascotasPage() {
 
         fetchEstado();
     }, []);
-
-    // ----------------------------------------------------
-    // 🐾 Cargar mascotas con listarMascotas()
-    // ----------------------------------------------------
     useEffect(() => {
         async function fetchMascotas() {
             try {
@@ -130,10 +122,6 @@ export default function MascotasPage() {
 
         fetchMascotas();
     }, []);
-
-    // ----------------------------------------------------
-    // 🎯 Filtros
-    // ----------------------------------------------------
     useEffect(() => {
         const val = (especieQS || "").trim();
         if (val && (val === "Todas" || (ESPECIES as readonly string[]).includes(val))) {
@@ -158,18 +146,65 @@ export default function MascotasPage() {
     // ----------------------------------------------------
     // 🐕 Adopción
     // ----------------------------------------------------
-    function handleAdopt(m: Mascota) {
-        if (docEstado === "aprobado") {
-            router.push(`/usuario/mascotas?adoptId=${m.id}`);
-        } else {
+    async function handleAdopt(m: Mascota) {
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            alert("Debes iniciar sesión para adoptar una mascota.");
+            return;
+        }
+
+        if (docEstado !== "aprobado") {
             setSelected(m);
             setGateOpen(true);
+            return;
+        }
+        // Verificar si ya existe una solicitud pendiente para esta mascota y usuario
+        const { data: existente } = await supabase
+        .from("solicitudes_adopcion")
+        .select("id, estado")
+        .eq("usuario_id", user.id)
+        .eq("mascota_id", m.id)
+        .in("estado", ["pendiente", "aprobada"]);
+
+        if (existente && existente.length > 0) {
+        alert("Ya tienes una solicitud activa para esta mascota 🐾");
+        return;
+        }
+        try {
+            // Crear solicitud
+            const numero = "SOL-" + Math.floor(100000 + Math.random() * 900000); // Ejemplo simple
+            const { data: solicitud, error } = await supabase
+            .from("solicitudes_adopcion")
+            .insert([
+                {
+                numero_solicitud: numero,
+                usuario_id: user.id,
+                mascota_id: m.id,
+                motivo_adopcion: "Pendiente de llenar",
+                estado: "pendiente",
+                },
+            ])
+            .select()
+            .single();
+
+            if (error) throw error;
+
+            // Actualizar mascota
+            await supabase
+            .from("mascotas")
+            .update({ estado: "en_proceso", disponible_adopcion: false })
+            .eq("id", m.id);
+
+            alert("Tu solicitud fue registrada exitosamente 🐾");
+            router.push(`/dashboards/usuario/adopcion/`);
+        } catch (err) {
+            console.error(err);
+            alert("Hubo un error al registrar la solicitud.");
         }
     }
-
-    // ----------------------------------------------------
-    // 🧩 Render
-    // ----------------------------------------------------
     const estadoText: Record<DocEstado, {title: string; desc: string; tone: "info" | "warn" | "ok" | "error"}> = {
         sin_documentos: {
             title: "Necesitas validar tus documentos para poder solicitar una adopción",
