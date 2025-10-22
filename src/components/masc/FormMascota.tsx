@@ -348,6 +348,31 @@ export default function FormMascota({
                 </div>
             </div>
 
+            {/* Peso + Altura */}
+            <div className="row">
+                <div className="field">
+                    <label>Peso (kg)</label>
+                    <input
+                        type="number"
+                        min={0}
+                        step={0.1}
+                        value={pesoKg}
+                        onChange={(e) => setPesoKg(parseFloat(e.target.value) || 0)}
+                    />
+                </div>
+
+                <div className="field">
+                    <label>Altura (cm)</label>
+                    <input
+                        type="number"
+                        min={0}
+                        step={0.1}
+                        value={alturaCm}
+                        onChange={(e) => setAlturaCm(parseFloat(e.target.value) || 0)}
+                    />
+                </div>
+            </div>
+
             {/* Descripción */}
             <div className="field">
                 <label>Descripción</label>

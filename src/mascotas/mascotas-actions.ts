@@ -68,7 +68,7 @@ export async function uploadMascotaArchivos(file: File, id?: string) {
         if (typeof window !== "undefined") baseUrl = window.location.origin;
         else if (process.env.VERCEL_URL) baseUrl = `https://${process.env.VERCEL_URL}`;
 
-        // 3️Construir el link del QR
+        // 3Construir el link del QR
         const qrLink = `${baseUrl}/mascota/${uuid}`;
 
         // 4️Generar QR con esa URL
