@@ -12,11 +12,14 @@ export async function POST(req: Request) {
       email: formData.email,
       password: formData.password,
       options: {
+        data: {
+          nombre: formData.nombres,
+        },
         emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/confirmado`,
       },
     });
 
-    console.log("🧩 Resultado signUp:", authData, authError);
+    console.log(" Resultado signUp:", authData, authError);
 
     if (authError) {
       console.error("❌ Error creando usuario:", authError.message);

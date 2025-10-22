@@ -20,7 +20,9 @@ export default function LoginCAAM() {
     e.preventDefault();
 
     if (!correo || !contrasena) {
-      setError("Por favor completa ambos campos.");
+      //setError("Por favor completa ambos campos.");
+      setError("Checa tu info papito.");
+
       return;
     }
 
@@ -102,7 +104,7 @@ export default function LoginCAAM() {
     >
       <div className="w-full max-w-md">
         {/* Encabezado */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 mt-15">
           <Link href="http://localhost:3000">
             <Image
               src="/logo.png"
@@ -166,7 +168,13 @@ export default function LoginCAAM() {
               />
             </label>
 
-            <Button type="submit" full variant="primary" disabled={loading}>
+            <Button
+              className="cursor-pointer"
+              type="submit"
+              full
+              variant="primary"
+              disabled={loading}
+            >
               {loading ? "Entrando..." : "Iniciar sesión"}
             </Button>
 
@@ -185,35 +193,39 @@ export default function LoginCAAM() {
               variant="secondary"
               className="bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2"
               onClick={async () => {
-              setLoading(true);
-              try {
-                const { error } = await supabase.auth.signInWithOAuth({
-                provider: "google",
-                options: {
-                  redirectTo: `${window.location.origin}/auth/callback`,
-                },
-                });
-                if (error) {
-                console.error("Error al iniciar con Google:", error);
-                setError("No se pudo iniciar sesión con Google. Intenta nuevamente.");
+                setLoading(true);
+                try {
+                  const { error } = await supabase.auth.signInWithOAuth({
+                    provider: "google",
+                    options: {
+                      redirectTo: `${window.location.origin}/auth/callback`,
+                    },
+                  });
+                  if (error) {
+                    console.error("Error al iniciar con Google:", error);
+                    setError(
+                      "No se pudo iniciar sesión con Google. Intenta nuevamente."
+                    );
+                  }
+                } catch (err) {
+                  console.error(err);
+                  setError(
+                    "No se pudo iniciar sesión con Google. Intenta nuevamente."
+                  );
+                } finally {
+                  setLoading(false);
                 }
-              } catch (err) {
-                console.error(err);
-                setError("No se pudo iniciar sesión con Google. Intenta nuevamente.");
-              } finally {
-                setLoading(false);
-              }
               }}
             >
               <Image
-              src="/google.png"
-              alt="Google logo"
-              width={18}
-              height={18}
-              className="inline-block"
+                src="/google.png"
+                alt="Google logo"
+                width={18}
+                height={18}
+                className="inline-block"
               />
               <span className="text-[var(--brand-dark)] font-medium">
-              Iniciar sesión con Google
+                Iniciar sesión con Google
               </span>
             </Button>
 

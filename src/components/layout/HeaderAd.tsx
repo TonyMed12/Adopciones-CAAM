@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
@@ -12,7 +12,9 @@ import {
   FileText,
   Menu,
   X,
+  User,
   LogOutIcon,
+  ChevronDown,
 } from "lucide-react";
 
 const adminNav = [
@@ -27,13 +29,15 @@ const adminNav = [
     label: "Usuarios",
     icon: Users,
   },
-  //{ href: "/dashboards/administrador/reportes", label: "Reportes", icon: FileText },
+  // { href: "/dashboards/administrador/reportes", label: "Reportes", icon: FileText },
 ];
 
 export default function AdminHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [adminName, setAdminName] = useState<string>("Cargando...");
   const supabase = createClient();
 
   const isActive = (href: string) =>
@@ -41,14 +45,41 @@ export default function AdminHeader() {
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
+  // nombre del admin logueado
+  useEffect(() => {
+    const fetchAdmin = async () => {
+      const { data } = await supabase.auth.getUser();
+
+      if (data.user) {
+        const nombre = data.user.user_metadata?.nombre;
+        setAdminName(nombre || "Administrador");
+      } else {
+        setAdminName("Administrador");
+      }
+    };
+
+    // Cargar al montar
+    fetchAdmin();
+
+    // Escuchar cambios de sesión
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      fetchAdmin();
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
   const handleLogout = async () => {
-    await supabase.auth.signOut(); // borra token y adios
-    router.push("/"); // al inicio
+    await supabase.auth.signOut();
+    router.push("/");
   };
 
   return (
     <header className="fixed top-0 z-50 w-full bg-[#BC5F36] shadow-md">
       <nav className="container mx-auto flex items-center justify-between px-6 py-5">
+        {/* Logo */}
         <Link
           href="/dashboards/administrador"
           className="flex items-center gap-3"
@@ -59,14 +90,16 @@ export default function AdminHeader() {
           </span>
         </Link>
 
+        {/* Botón móvil */}
         <button
-          className="lg:hidden text-[#FFF8F0] p-2"
+          className="lg:hidden text-[#FFF8F0] p-2 cursor-pointer"
           onClick={() => setOpen((v) => !v)}
           aria-label="Abrir menú"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
 
+        {/* NAV DESKTOP */}
         <ul className="hidden lg:flex items-center gap-8">
           {adminNav.map(({ href, label, icon: Icon }) => {
             const active = isActive(href);
@@ -75,7 +108,7 @@ export default function AdminHeader() {
                 <Link
                   href={href}
                   className={[
-                    "group flex items-center gap-2 rounded-md px-4 py-2 transition text-lg font-medium",
+                    "group flex items-center gap-2 rounded-md px-4 py-2 transition text-lg font-medium cursor-pointer",
                     active
                       ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
                       : "text-[#FFF8F0] hover:text-[#FDE68A]",
@@ -94,19 +127,43 @@ export default function AdminHeader() {
               </li>
             );
           })}
-          {/* Pinche boton de logout */}
-          <li>
+
+          {/* Menú Admin */}
+          <li className="relative">
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-[#FFF8F0] cursor-pointer hover:text-[#FDE68A] transition text-lg font-medium"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex items-center gap-2 text-[#FFF8F0] hover:text-[#FDE68A] transition text-lg font-medium cursor-pointer"
             >
-              <LogOutIcon size={18} />
-              <span>Cerrar sesión</span>
+              <User size={18} />
+              <span>{adminName}</span>
+              <ChevronDown size={16} />
             </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
+                <Link
+                  //href="/dashboards/administrador/perfil"
+                  href="https://www.youtube.com/watch?v=xvFZjo5PgG0"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <User size={16} />
+                  <span>Mi perfil</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
+                >
+                  <LogOutIcon size={16} />
+                  <span>Cerrar sesión</span>
+                </button>
+              </div>
+            )}
           </li>
         </ul>
       </nav>
 
+      {/* NAV MÓVIL */}
       {open && (
         <div className="lg:hidden border-t border-white/20 bg-[#BC5F36]">
           <div className="container mx-auto px-6 py-3">
@@ -119,7 +176,7 @@ export default function AdminHeader() {
                       href={href}
                       onClick={() => setOpen(false)}
                       className={[
-                        "flex items-center gap-3 rounded-md px-3 py-2 transition text-base",
+                        "flex items-center gap-3 rounded-md px-3 py-2 transition text-base cursor-pointer",
                         active
                           ? "bg-[#FFF1E6] text-[#8B4513] font-medium"
                           : "text-[#FFF8F0] hover:text-[#FDE68A]",
@@ -135,14 +192,24 @@ export default function AdminHeader() {
                 );
               })}
 
-              {/* boton logout */}
-              <li>
+              {/* Menú admin móvil */}
+              <li className="mt-2 border-t border-white/20 pt-2">
+                <p className="text-[#FFF8F0] font-medium mb-2">{adminName}</p>
+                <Link
+                  //href="/dashboards/administrador/perfil"
+                  href="https://www.youtube.com/watch?v=xvFZjo5PgG0"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-[#FFF8F0] hover:text-[#FDE68A] cursor-pointer"
+                >
+                  <User size={18} />
+                  <span>Mi perfil</span>
+                </Link>
                 <button
                   onClick={() => {
                     setOpen(false);
                     handleLogout();
                   }}
-                  className="flex items-center gap-3 px-3 py-2 text-[#FFF8F0] hover:text-[#FDE68A]"
+                  className="flex items-center gap-3 px-3 py-2 text-[#FFF8F0] hover:text-[#FDE68A] cursor-pointer"
                 >
                   <LogOutIcon size={18} />
                   <span>Cerrar sesión</span>
