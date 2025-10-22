@@ -78,6 +78,7 @@ export default function MascotasPage() {
             edadMeses: edadFormateada,
             descripcion: m.personalidad || m.descripcion_fisica || "",
             foto: m.imagen_url,
+            original: m,
         };
     });
 

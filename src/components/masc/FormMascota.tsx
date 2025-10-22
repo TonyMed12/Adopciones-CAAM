@@ -10,8 +10,6 @@ import {listarRazas} from "@/mascotas/razas/razas-actions";
 
 type Opt = {label: string; value: string};
 
-const {data: razas} = await supabase.from("razas").select("id, nombre, especie");
-
 /* Detectar clic fuera del menú */
 function useClickOutside(ref: React.RefObject<HTMLElement | null>, onClose: () => void) {
     useEffect(() => {
@@ -140,8 +138,8 @@ export default function FormMascota({
         if (mascota) {
             setNombre(mascota.nombre || "");
             setEspecie(mascota.raza?.especie || "Perro");
-            setSexo(mascota.sexo || "Macho");
-            setTamano(mascota.tamano || "Mediano");
+            setSexo(mascota.sexo || "macho");
+            setTamano(mascota.tamano || "mediano");
             setEdadMeses(Number(mascota.edad ?? 0));
             setDescripcion(mascota.descripcion_fisica || "");
             setRazaId(mascota.raza_id || "");
@@ -183,13 +181,15 @@ export default function FormMascota({
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
 
+    const sexoNormalizado = sexo?.charAt(0).toUpperCase() + sexo.slice(1).toLowerCase();
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
 
-        const payload: any = {
+        const payload = {
             id: mascota?.id,
             nombre,
-            sexo,
+            sexo: sexoNormalizado,
             tamano: tamano.toLowerCase(),
             raza_id: razaId,
             edad: String(edadMeses),
@@ -208,7 +208,7 @@ export default function FormMascota({
         try {
             let result;
             if (mascota?.id) {
-                result = await actualizarMascota(payload);
+                result = await actualizarMascota(payload, fotoFile || undefined);
                 alert("Mascota actualizada 🐾");
             } else {
                 result = await crearMascota(payload, fotoFile || undefined);
@@ -250,8 +250,8 @@ export default function FormMascota({
                         value={sexo}
                         onChange={setSexo}
                         options={[
-                            {label: "Macho", value: "Macho"},
-                            {label: "Hembra", value: "Hembra"},
+                            {label: "Macho", value: "macho"},
+                            {label: "Hembra", value: "hembra"},
                         ]}
                         ariaLabel="Seleccionar sexo"
                     />

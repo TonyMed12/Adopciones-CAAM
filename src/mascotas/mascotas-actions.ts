@@ -96,12 +96,36 @@ export async function uploadMascotaArchivos(file: File, id?: string) {
     }
 }
 
-export async function actualizarMascota(input: unknown): Promise<Mascota> {
-    const parsed = UpdateMascotaSchema.parse(input);
-    const {id, ...updates} = parsed;
-    const {data, error} = await supabase.from("mascotas").update(updates).eq("id", id).select().single();
-    if (error) throw new Error(error.message);
-    return data as Mascota;
+export async function actualizarMascota(payload: unknown, fotoFile?: File) {
+    const parsed = UpdateMascotaSchema.parse(payload);
+
+    try {
+        let imagen_url = parsed.imagen_url ?? null;
+
+        // 🖼 Si hay nueva foto, súbela
+        if (fotoFile) {
+            const path = `mascotas/${parsed.id}-${Date.now()}.jpg`;
+            const {error: uploadError} = await supabase.storage.from("mascotas").upload(path, fotoFile, {upsert: true});
+            if (uploadError) throw uploadError;
+
+            const {data: urlData} = supabase.storage.from("mascotas").getPublicUrl(path);
+            imagen_url = urlData.publicUrl;
+        }
+
+        // 🐾 Actualizar en Supabase
+        const {data, error} = await supabase
+        .from("mascotas")
+        .update({...parsed, imagen_url})
+        .eq("id", parsed.id)
+        .select()
+        .single();
+
+        if (error) throw error;
+        return data;
+    } catch (err) {
+        console.error("Error actualizando mascota:", err);
+        throw err;
+    }
 }
 
 export async function eliminarMascota(id: string): Promise<{success: boolean}> {
