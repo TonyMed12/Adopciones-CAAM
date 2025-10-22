@@ -18,8 +18,7 @@ const PUBLIC_PATHS = [
   "/dashboards/mascotas",
   "/dashboards/usuarios",
   "/nosotros",
-
-  // 👇 Rutas de API públicas (sin sesión)
+  "usuario/adopcion",
   "/api/auth/register",
   "/api/auth/login",
   "/api/auth/recover",
@@ -27,9 +26,9 @@ const PUBLIC_PATHS = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  console.log("🔎 Middleware ejecutado para:", request.nextUrl.pathname);
+  console.log("Middleware activao papito:", request.nextUrl.pathname);
 
-  // ✅ Permitir archivos estáticos
+  // archivos estáticos
   if (
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
@@ -38,7 +37,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ✅ Permitir rutas públicas
+  // Permitir rutas públicas
   if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) {
     return NextResponse.next();
   }
@@ -47,7 +46,7 @@ export async function middleware(request: NextRequest) {
   return updateSession(request);
 }
 
-export const config = {
+export const config = { //todo a 5 varos, csm
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],

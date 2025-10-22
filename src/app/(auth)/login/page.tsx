@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 export default function LoginCAAM() {
   const router = useRouter();
@@ -102,14 +103,16 @@ export default function LoginCAAM() {
       <div className="w-full max-w-md">
         {/* Encabezado */}
         <div className="text-center mb-6">
-          <Image
-            src="/logo.png"
-            alt="Logo CAAM"
-            width={900}
-            height={900}
-            className="mx-auto mb-4 h-20 w-auto"
-            priority
-          />
+          <Link href="http://localhost:3000">
+            <Image
+              src="/logo.png"
+              alt="Logo CAAM"
+              width={900}
+              height={900}
+              className="mx-auto mb-4 h-20 w-auto"
+              priority
+            />
+          </Link>
           <h1 className="text-3xl font-extrabold tracking-tight text-[var(--brand-dark)]">
             ¡Bienvenido!
           </h1>
@@ -165,6 +168,53 @@ export default function LoginCAAM() {
 
             <Button type="submit" full variant="primary" disabled={loading}>
               {loading ? "Entrando..." : "Iniciar sesión"}
+            </Button>
+
+            {/* Divider visual */}
+            <div className="flex items-center my-4">
+              <div className="flex-1 border-t border-gray-300"></div>
+              <span className="px-3 text-sm text-gray-500">o</span>
+              <div className="flex-1 border-t border-gray-300"></div>
+            </div>
+
+            {/* Botón Google */}
+            <Button
+              disabled
+              type="button"
+              full
+              variant="secondary"
+              className="bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2"
+              onClick={async () => {
+              setLoading(true);
+              try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                  redirectTo: `${window.location.origin}/auth/callback`,
+                },
+                });
+                if (error) {
+                console.error("Error al iniciar con Google:", error);
+                setError("No se pudo iniciar sesión con Google. Intenta nuevamente.");
+                }
+              } catch (err) {
+                console.error(err);
+                setError("No se pudo iniciar sesión con Google. Intenta nuevamente.");
+              } finally {
+                setLoading(false);
+              }
+              }}
+            >
+              <Image
+              src="/google.png"
+              alt="Google logo"
+              width={18}
+              height={18}
+              className="inline-block"
+              />
+              <span className="text-[var(--brand-dark)] font-medium">
+              Iniciar sesión con Google
+              </span>
             </Button>
 
             <div className="text-right -mt-2">
