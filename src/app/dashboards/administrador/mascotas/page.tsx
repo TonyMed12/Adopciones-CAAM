@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import React, {useEffect, useState} from "react";
+import {Plus} from "lucide-react";
 
 import PageHead from "@/components/layout/PageHead";
 import Button from "@/components/ui/Button2";
@@ -12,7 +12,7 @@ import MascotasTable from "@/components/masc/MascotasTable";
 import MascotaCardFull from "@/components/masc/MascotaCardFull";
 import GestionRazas from "@/components/razas/GestionRazas";
 
-import { listarMascotas, eliminarMascota } from "@/mascotas/mascotas-actions";
+import {listarMascotas, eliminarMascota} from "@/mascotas/mascotas-actions";
 
 export default function MascotasPage() {
     const [openForm, setOpenForm] = useState(false);
@@ -87,8 +87,15 @@ export default function MascotasPage() {
             <Modal open={openForm} onClose={() => setOpenForm(false)} title="Agregar Mascota">
                 <FormMascota
                     onCancel={() => setOpenForm(false)}
-                    onSubmit={async (nuevaMascota) => {
-                        await fetchMascotas();
+                    onSubmit={async (saved) => {
+                        // 🔁 Inserta/actualiza en memoria sin pedir al servidor
+                        setItems((prev) => {
+                            const idx = prev.findIndex((m) => m.id === saved.id);
+                            if (idx === -1) return [saved, ...prev]; // crear
+                            const next = [...prev]; // actualizar
+                            next[idx] = saved;
+                            return next;
+                        });
                         setOpenForm(false);
                     }}
                 />
@@ -102,9 +109,7 @@ export default function MascotasPage() {
                         <Button onClick={() => setOpenForm(true)}>
                             <Plus size={18} /> Agregar
                         </Button>
-                        <Button onClick={() => setOpenRazas(true)}>
-                            🐶 Gestionar Razas
-                        </Button>
+                        <Button onClick={() => setOpenRazas(true)}>🐶 Gestionar Razas</Button>
                     </div>
                 }
             />
@@ -131,7 +136,10 @@ export default function MascotasPage() {
                                 setSelectedMascota(mascotaCompleta);
                                 setOpenCard(true);
                             },
-                            
+                            onEdited: async () => {
+                                // 🔁 volver a pedir la lista actualizada
+                                await fetchMascotas();
+                            },
                             onDelete: async (item: any) => {
                                 const id = typeof item === "string" ? item : item?.id;
                                 if (!id) {
