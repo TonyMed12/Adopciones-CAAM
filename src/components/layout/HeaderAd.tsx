@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
-  CalendarClock,
+  CalendarDays,
   Users,
   FileText,
   Menu,
@@ -20,16 +20,26 @@ import {
 const adminNav = [
   { href: "/dashboards/administrador", label: "Inicio", icon: LayoutDashboard },
   {
+    href: "/dashboards/administrador/gestion_citas",
+    label: "Gestión de citas",
+    icon: CalendarDays,
+  },
+  {
     href: "/dashboards/administrador/mascotas",
     label: "Mascotas",
-    icon: CalendarClock,
+    icon: FileText,
   },
   {
     href: "/dashboards/administrador/usuarios",
     label: "Usuarios",
     icon: Users,
   },
-  // { href: "/dashboards/administrador/reportes", label: "Reportes", icon: FileText },
+  {
+    href: "/dashboards/administrador/reportes",
+    label: "Reportes",
+    icon: FileText,
+    disabled: true, 
+  },
 ];
 
 export default function AdminHeader() {
@@ -85,9 +95,14 @@ export default function AdminHeader() {
           className="flex items-center gap-3"
         >
           <Image src="/logo.png" alt="CAAM" width={40} height={40} />
-          <span className="font-bold text-lg text-[#FFF8F0]">
-            Centro de Atención Animal Morelia
-          </span>
+          <div className="flex flex-col items-start">
+            <span className="font-bold text-xl text-[#FFF8F0]">
+              Centro de Atención Animal
+            </span>
+            <span className="font-medium text-lg text-[#FFF8F0]">
+              Morelia, Michoacán{" "}
+            </span>
+          </div>
         </Link>
 
         {/* Botón móvil */}
