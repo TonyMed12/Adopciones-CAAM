@@ -119,8 +119,9 @@ export async function reprogramarCita(
   fecha_cita: string,
   hora_cita: string
 ) {
+
   const supabase = await createClient();
-  const { data, error } = await supabase
+   const { data, error } = await supabase
     .from("citas_adopcion")
     .update({
       fecha_cita,
@@ -129,18 +130,26 @@ export async function reprogramarCita(
     })
     .eq("id", id)
     .select(`
-      id, fecha_cita, hora_cita, estado, usuario_id, mascota_id,
+      id,
+      fecha_cita,
+      hora_cita,
+      estado,
+      usuario_id,
+      mascota_id,
       mascotas (id, nombre)
     `)
     .single();
 
   if (error) throw new Error(error.message);
 
-  const { data: perfil } = await supabase
+ // Obtener también el usuario
+  const { data: perfil, error: perfilError } = await supabase
     .from("perfiles")
     .select("id, nombres, email")
     .eq("id", data.usuario_id)
     .single();
+
+  if (perfilError) throw new Error(perfilError.message);
 
   return { ...data, usuario: perfil || null };
 }
@@ -159,18 +168,26 @@ export async function actualizarEstadoCita(
     })
     .eq("id", id)
     .select(`
-      id, fecha_cita, hora_cita, estado, usuario_id, mascota_id,
+      id,
+      fecha_cita,
+      hora_cita,
+      estado,
+      usuario_id,
+      mascota_id,
       mascotas (id, nombre)
     `)
     .single();
 
   if (error) throw new Error(error.message);
 
-  const { data: perfil } = await supabase
+  const { data: perfil, error: perfilError } = await supabase
     .from("perfiles")
     .select("id, nombres, email")
     .eq("id", data.usuario_id)
     .single();
 
+  if (perfilError) throw new Error(perfilError.message);
+
   return { ...data, usuario: perfil || null };
 }
+

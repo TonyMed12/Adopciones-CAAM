@@ -86,7 +86,10 @@ export default function CitasPage() {
           c.mascotas?.nombre ?? "Mascota"
         }`,
         start: buildDate(c.fecha_cita, c.hora_cita),
-        end: buildDate(c.fecha_cita, c.hora_cita),
+        end: new Date(
+          buildDate(c.fecha_cita, c.hora_cita).getTime() + 30 * 60 * 1000
+        ),
+
         resource: c,
         allDay: false,
       })),
@@ -106,6 +109,36 @@ export default function CitasPage() {
         alert("Fecha y hora son obligatorias");
         return;
       }
+
+      const ahora = new Date();
+      const citaFecha = new Date(`${formFecha}T${formHora}:00`);
+      const diferenciaHoras =
+        (citaFecha.getTime() - ahora.getTime()) / 1000 / 60 / 60;
+
+      // 1️⃣ Validar que sea al menos 3 h después
+      if (diferenciaHoras < 3) {
+        alert("Debes programar con al menos 3 horas de anticipación.");
+        return;
+      }
+
+      // 1️⃣ Validar que la fecha no sea pasada
+      if (citaFecha < ahora) {
+        alert("No puedes programar una cita en una fecha u hora pasada.");
+        return;
+      }
+
+      // 2️⃣ Validar rango permitido (8:30 am a 2 pm)
+      const hora = citaFecha.getHours();
+      const minutos = citaFecha.getMinutes();
+
+      const inicioPermitido = hora > 8 || (hora === 8 && minutos >= 30);
+      const finPermitido = hora < 14 || (hora === 14 && minutos === 0);
+
+      if (!inicioPermitido || !finPermitido) {
+        alert("Las citas solo pueden programarse entre 8:30 am y 2:00 pm.");
+        return;
+      }
+
       const updated = await reprogramarCita(edicionId!, formFecha, formHora);
       setCitas((prev) =>
         prev.map((c) => (c.id === edicionId ? (updated as any) : c))
@@ -297,8 +330,20 @@ export default function CitasPage() {
             popup
             min={new Date(0, 0, 0, 8, 0)} // empieza 8:00 am
             max={new Date(0, 0, 0, 15, 0)} // termina 3:00 pm
+            step={30} // ⏱️ cada 30 minutos
             selectable={false}
-            onSelectEvent={(e: any) => openEdit(e.resource)}
+            onSelectEvent={(e: any) => {
+              const citaFecha = new Date(
+                `${e.resource.fecha_cita}T${e.resource.hora_cita}`
+              );
+              const ahora = new Date();
+
+              if (citaFecha < ahora) {
+                alert("No puedes reprogramar una cita que ya pasó.");
+                return;
+              }
+              openEdit(e.resource);
+            }}
             messages={{
               next: "Sig.",
               previous: "Ant.",
@@ -306,6 +351,20 @@ export default function CitasPage() {
               month: "Mes",
               week: "Semana",
               day: "Día",
+            }}
+            dayPropGetter={(date) => {
+              const now = new Date();
+              const isPast =
+                date <
+                new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              return {
+                style: {
+                  backgroundColor: isPast ? "#F9F9F9" : "white",
+                  color: isPast ? "#B0A7A0" : "#1F2937",
+                  cursor: isPast ? "not-allowed" : "default",
+                  transition: "all 0.3s ease",
+                },
+              };
             }}
             eventPropGetter={(event: any) => {
               const estado = event.resource.estado;
@@ -365,9 +424,21 @@ export default function CitasPage() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-sm transition-all duration-300">
           <div className="w-full max-w-md rounded-2xl border border-[#EADACB] bg-white p-5 shadow-lg animate-fadeIn">
-            <h3 className="text-lg font-extrabold text-[#2B1B12] mb-3">
+            <h3 className="text-lg font-extrabold text-[#2B1B12] mb-1">
               Reprogramar cita
             </h3>
+
+            <p className="text-sm text-[#6b4f40] mb-4">
+              <span className="font-semibold text-[#2B1B12]">
+                {citas.find((c) => c.id === edicionId)?.usuario?.nombres ||
+                  "Usuario desconocido"}
+              </span>{" "}
+              —{" "}
+              <span className="italic">
+                {citas.find((c) => c.id === edicionId)?.mascotas?.nombre ||
+                  "Mascota no asignada"}
+              </span>
+            </p>
 
             <div className="mb-3 grid grid-cols-2 gap-3">
               <div>
@@ -378,19 +449,40 @@ export default function CitasPage() {
                   type="date"
                   value={formFecha}
                   onChange={(e) => setFormFecha(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-[#EADACB] px-3 py-2 text-sm transition-all focus:ring-1 focus:ring-[#BC5F36]"
+                  min={new Date().toISOString().split("T")[0]} // 🔒 Bloquea fechas pasadas
+                  className="mt-1 w-full rounded-md border border-[#EADACB] px-3 py-2 text-sm transition-all focus:ring-1 focus:ring-[#BC5F36] cursor-pointer"
                 />
               </div>
+
               <div>
                 <label className="text-sm font-semibold text-[#2B1B12]">
                   Nueva hora
                 </label>
-                <input
-                  type="time"
+                <select
                   value={formHora}
                   onChange={(e) => setFormHora(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-[#EADACB] px-3 py-2 text-sm transition-all focus:ring-1 focus:ring-[#BC5F36]"
-                />
+                  className="mt-1 w-full rounded-md border border-[#EADACB] px-3 py-2 text-sm transition-all focus:ring-1 focus:ring-[#BC5F36] cursor-pointer"
+                >
+                  <option value="">Selecciona hora</option>
+                  {[
+                    "08:30",
+                    "09:00",
+                    "09:30",
+                    "10:00",
+                    "10:30",
+                    "11:00",
+                    "11:30",
+                    "12:00",
+                    "12:30",
+                    "13:00",
+                    "13:30",
+                    "14:00",
+                  ].map((hora) => (
+                    <option key={hora} value={hora}>
+                      {hora}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
