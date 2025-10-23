@@ -7,6 +7,7 @@ import type {CreateMascotaPayload} from "@/data/masc/types";
 import {SelectorColores} from "@/components/masc/SelectorColores";
 import "@/styles/form-mascota.css";
 import {listarRazas} from "@/mascotas/razas/razas-actions";
+import { useRouter } from "next/navigation";
 
 type Opt = {label: string; value: string};
 
@@ -109,6 +110,7 @@ export default function FormMascota({
     const [todasRazas, setTodasRazas] = useState<{id: string; nombre: string; especie: string}[]>([]);
     const [busquedaRaza, setBusquedaRaza] = useState("");
     const [openRaza, setOpenRaza] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         async function cargarRazas() {
@@ -167,9 +169,10 @@ export default function FormMascota({
             return;
         }
 
+        // Guardar en memoria la nueva imagen temporal
         setFotoFile(file);
 
-        // ✅ Mostrar la preview local inmediatamente
+        // Mostrar la vista previa local (sin subir todavía)
         const reader = new FileReader();
         reader.onload = () => setFotoPreview(reader.result as string);
         reader.readAsDataURL(file);
@@ -185,6 +188,8 @@ export default function FormMascota({
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+
+        const noHayFoto = !fotoFile && !fotoPreview;
 
         const payload = {
             id: mascota?.id,
@@ -203,6 +208,8 @@ export default function FormMascota({
             lugar_rescate: lugarRescate,
             condicion_ingreso: condicionIngreso,
             observaciones_medicas: observacionesMedicas,
+            imagen_url: noHayFoto ? null : mascota?.imagen_url || fotoPreview || null,
+            qr_code: mascota?.qr_code || null,
         };
 
         try {
@@ -214,7 +221,7 @@ export default function FormMascota({
                 result = await crearMascota(payload, fotoFile || undefined);
                 alert("Mascota creada 🐾");
             }
-            onSubmit(result);
+            await onSubmit(result);
             onCancel();
         } catch (err: any) {
             console.error("Error al guardar mascota:", err);
@@ -326,44 +333,54 @@ export default function FormMascota({
                 <SelectorColores value={colores} onChange={setColores} />
             </div>
 
-            {/* Foto */}
-            <div className="field">
-                <label>Foto</label>
+            {/* 🖼️ Campo de Foto */}
+            <div className="field flex flex-col items-center">
+                <label className="mb-2">Foto</label>
 
-                {/* ✅ Si NO hay preview, mostrar cuadro de subida */}
-                {!fotoPreview ? (
-                    <div className="upload" onClick={() => fileInputRef.current?.click()}>
-                        <div className="upload-inner">
-                            <div className="upload-icon">📷</div>
-                            <div className="upload-text">
-                                <strong>Sube una foto</strong> o arrástrala aquí
-                                <div className="upload-hint">JPG, PNG o WEBP (máx. 5MB)</div>
-                            </div>
-                        </div>
+                {fotoPreview ? (
+                    // ✅ Si hay foto actual
+                    <div className="flex flex-col items-center">
+                        <img
+                            src={fotoPreview}
+                            alt="Vista previa"
+                            className="rounded-xl w-64 h-64 object-cover shadow-md border border-[#FF8414]/20"
+                        />
+
+                        <button
+                            type="button"
+                            className="btn btn-ghost mt-2"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            Cambiar
+                        </button>
+
+                        {/* Input oculto */}
                         <input
                             ref={fileInputRef}
                             type="file"
                             accept="image/*"
-                            onChange={(e) => handleFile(e.target.files?.[0])}
                             hidden
+                            onChange={(e) => handleFile(e.target.files?.[0])}
                         />
                     </div>
                 ) : (
-                    /* ✅ Si hay preview, mostrar imagen seleccionada */
-                    <div className="preview">
-                        <img src={fotoPreview} alt="Vista previa" className="rounded-xl w-64 h-64 object-cover" />
+                    // 📷 Si no hay imagen (centrado)
+                    <div className="flex justify-center items-center w-full">
+                        <div
+                            className="flex flex-col items-center justify-center w-64 h-64 rounded-xl border-2 border-dashed border-[#FF8414]/50 bg-[#fff9f4] text-[#8B4513] hover:border-[#FF8414] transition cursor-pointer"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <span className="text-4xl mb-2">🐾</span>
+                            <p className="text-sm font-medium">Sube una foto</p>
+                            <p className="text-xs opacity-70 mt-1">Haz clic para seleccionar</p>
 
-                        <div className="preview-actions">
-                            <button
-                                type="button"
-                                className="btn btn-ghost"
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                Cambiar
-                            </button>
-                            <button type="button" className="btn btn-danger" onClick={clearPhoto}>
-                                Quitar
-                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={(e) => handleFile(e.target.files?.[0])}
+                            />
                         </div>
                     </div>
                 )}
