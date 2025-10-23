@@ -15,7 +15,7 @@ import {
   PawPrint,
   ArrowLeft,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import PageHead from "@/components/layout/PageHead";
 import { Button } from "@/components/ui/Button";
 
@@ -33,9 +33,11 @@ export default function ProcesoAdopcionPage() {
   // Estado de carga de documentos
   useEffect(() => {
     async function fetchEstado() {
+      const supabase = createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
       if (!user) return;
 
       const { data: docs, error } = await supabase
@@ -67,27 +69,40 @@ export default function ProcesoAdopcionPage() {
   );
 
   async function uploadDocumento(file: File, tipo: string) {
+    const supabase = createClient();
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser();
-    if (!user) throw new Error("No hay sesión activa");
+
+    if (userError || !user) throw new Error("No hay sesión activa");
 
     const safe = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
-    const { data, error } = await supabase.storage
+    const path = `${user.id}/${tipo}-${Date.now()}-${safe}`;
+
+    console.log("⬆️ Subiendo a ruta:", path);
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from("documentos_adopcion")
-      .upload(`${user.id}/${tipo}-${Date.now()}-${safe}`, file);
+      .upload(path, file, { upsert: true });
 
-    if (error) throw error;
+    if (uploadError) throw uploadError;
 
-    await supabase.from("documentos").upsert(
+    console.log("✅ Archivo subido:", uploadData?.path);
+
+    const { error: dbError } = await supabase.from("documentos").upsert(
       {
         perfil_id: user.id,
         tipo,
-        url: data.path,
+        url: uploadData.path,
         status: "pendiente",
       },
       { onConflict: "perfil_id,tipo" }
     );
+
+    if (dbError) throw dbError;
+
+    console.log("🗃️ Registro insertado/actualizado en documentos.");
   }
 
   async function enviar() {
@@ -173,7 +188,7 @@ export default function ProcesoAdopcionPage() {
                   title="1) Elegir mascota"
                   desc="Revisa perfiles y elige a tu compañerito."
                   action={
-                    <Link href="/usuario/mascotas">
+                    <Link href="/dashboards/usuario/mascotas">
                       <Button className="w-full">Ir a ver mascotas</Button>
                     </Link>
                   }
@@ -199,7 +214,7 @@ export default function ProcesoAdopcionPage() {
                   action={
                     <Button variant="ghost" className="w-full" asChild>
                       <Link href={"/dashboards/usuario/solicitudes"}>
-                      Abrir solicitud
+                        Abrir solicitud
                       </Link>
                     </Button>
                   }
@@ -425,20 +440,40 @@ function SeccionCarga({
       </p>
 
       <div className="mt-5 grid gap-3">
-        {["identificación", "comprobante", "carta"].map((req) => (
+        {["identificacion", "comprobante", "carta"].map((req) => (
           <div
             key={req}
             className="flex items-center justify-between gap-3 rounded-xl border border-[#f0e6dc] bg-[#fffaf4] p-3"
           >
-            <p className="text-sm font-extrabold text-[#2b1b12] capitalize">
-              {req}
-            </p>
+            <div>
+              <p className="text-sm font-extrabold text-[#2b1b12] capitalize">
+                {req}
+              </p>
+
+              {/* ✅ Mostrar nombre del archivo si ya fue seleccionado */}
+              {archivos[req] ? (
+                <p className="text-xs text-[#6b4f40] mt-1 truncate max-w-[240px]">
+                  {archivos[req]?.name}
+                </p>
+              ) : (
+                <p className="text-xs text-[#b09a8c] mt-1">
+                  Ningún archivo seleccionado
+                </p>
+              )}
+            </div>
+
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
               id={`file-${req}`}
               className="hidden"
-              onChange={(e) => onPick(req, e.target.files?.[0] || undefined)}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  console.log(`📂 Archivo seleccionado (${req}):`, file.name);
+                  onPick(req, file);
+                }
+              }}
             />
             <Button
               variant="ghost"
@@ -451,7 +486,13 @@ function SeccionCarga({
       </div>
 
       <div className="mt-6 flex justify-end">
-        <Button disabled={deshabilitarEnviar} onClick={onEnviar}>
+        <Button
+          disabled={deshabilitarEnviar}
+          onClick={() => {
+            console.log("🚀 Enviando documentos...", archivos);
+            onEnviar();
+          }}
+        >
           <FileCheck2 className="h-5 w-5 mr-1" /> Enviar para revisión
         </Button>
       </div>

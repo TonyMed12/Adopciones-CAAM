@@ -1,0 +1,31 @@
+a626f97 2025-10-22 Gestion de citas en administrador funcional
+a50bf32 2025-10-22 Navbars actualizados, gestión de citas en administrador incompleto
+13ce28e 2025-10-22 Updated navbar, some details
+d7dbd44 2025-10-21 ya edita mas o menos, nomas que no cambia la foto
+d50efb8 2025-10-21 Algo de mascotas en admin
+466fce3 2025-10-21 Algo de mascotas en admin
+6679ec6 2025-10-21 Un botón nuevo y bonito
+ceec8d5 2025-10-21 Ya se ven los QRs
+b3e7ed4 2025-10-21 Ya agrega fotos y genera QRs de Mascotas
+351b270 2025-10-21 Se modifico la informacion de inicio en vista de admin
+d56bc1e 2025-10-21 Proceso de adopcion listo hasta agendar una cita y manejo de estados de las mascotas para evitar solicitudes multiples
+358c7ff 2025-10-21 Implementacion del crud de razas
+01ba011 2025-10-21 Cambios que pidio cesar
+af38fde 2025-10-21 Cambio en los colores del registro
+7d80dfe 2025-10-21 Correccion del guardar con todos los datos y las vistas de usuario y la publica ya pueden ver las mascotas
+66d80c8 2025-10-21 Abre el card de mascotas
+b1fc6df 2025-10-20 Olvide quitar los logs de consola
+f02c7be 2025-10-20 Panel de usuarios funcional con la funcion de ver y validar documentos en la vista de administrador
+45c6b97 2025-10-18 Corrección de proceso de subida de documentos, subido correctamente a bucket de documentos, flujo correcto por parte de usuarios
+0f3f4ed 2025-10-18 Inicio de integración funcional de proceso de documentación de usuario
+518ad75 2025-10-18 Autenticación con verificación de correos, registro, recuperacion de contraseña, redireccionamientos correctos y reparación de fallos V2
+4ca0d17 2025-10-18 Autenticación con verificación de correos, registro, recuperacion de contraseña, redireccionamientos correctos y reparación de fallos
+2001fca 2025-10-17 Ya elimina mascotas en el admin
+9727000 2025-10-17 Ya elimina mascotas en el admin
+687319d 2025-10-17 Merge branch 'dev' of https://github.com/TonyMed12/Adopciones-CAAM into dev
+861e2d7 2025-10-17 Auth actualizado con cierre de sesión funcional por token
+728b2e3 2025-10-17 CAmbios en el back de mascotas
+cb701ff 2025-10-17 Cambios en el back de mascotas
+e7fb153 2025-10-17 Auth actualizado con protección de rutas, limpieza de estructura de dashboards
+bc4dd16 2025-10-17 Resuelvo conflicto en mascota.service.ts
+e76c110 2025-10-17 Algo ha de hacer
