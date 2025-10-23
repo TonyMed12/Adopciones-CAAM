@@ -125,7 +125,9 @@ export default function ProcesoAdopcionPage() {
       {estado === "sin_documentos" && (
         <SeccionCarga
           archivos={archivos}
-          onPick={(id, file) => setArchivos({ ...archivos, [id]: file ?? null })}
+          onPick={(id, file) =>
+            setArchivos({ ...archivos, [id]: file ?? null })
+          }
           onEnviar={enviar}
           deshabilitarEnviar={!completos}
         />
@@ -155,7 +157,9 @@ export default function ProcesoAdopcionPage() {
             <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle2 className="h-5 w-5 text-[#2e7d32]" />
-                <h3 className="text-sm font-extrabold">¡Documentos aprobados!</h3>
+                <h3 className="text-sm font-extrabold">
+                  ¡Documentos aprobados!
+                </h3>
               </div>
               <p className="text-sm text-[#7a5c49]">
                 Ahora sí, continúa con tu proceso de adopción. Si llegaste desde
@@ -193,12 +197,10 @@ export default function ProcesoAdopcionPage() {
                   title="3) Solicitud y contrato"
                   desc="Llena la solicitud y firma el compromiso."
                   action={
-                    <Button
-                      variant="ghost"
-                      className="w-full"
-                      onClick={() => router.push("/dashboards/usuario/solicitudes")}
-                    >
+                    <Button variant="ghost" className="w-full" asChild>
+                      <Link href={"/dashboards/usuario/solicitudes"}>
                       Abrir solicitud
+                      </Link>
                     </Button>
                   }
                 />
@@ -313,7 +315,9 @@ function Stepper({ estado }: { estado: Estado }) {
         <li
           key={s.key}
           className={`rounded-xl border p-4 shadow-sm ${
-            i === current ? "border-[#BC5F36] bg-[#fff4e7]" : "border-[#eadacb] bg-white"
+            i === current
+              ? "border-[#BC5F36] bg-[#fff4e7]"
+              : "border-[#eadacb] bg-white"
           }`}
         >
           <div className="flex items-center gap-2">
@@ -412,9 +416,12 @@ function SeccionCarga({
 }) {
   return (
     <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-extrabold text-[#2b1b12]">Sube tus documentos</h3>
+      <h3 className="text-sm font-extrabold text-[#2b1b12]">
+        Sube tus documentos
+      </h3>
       <p className="mt-1 text-sm text-[#7a5c49]">
-        Adjunta los archivos requeridos. Puedes arrastrar y soltar o seleccionar desde tu dispositivo.
+        Adjunta los archivos requeridos. Puedes arrastrar y soltar o seleccionar
+        desde tu dispositivo.
       </p>
 
       <div className="mt-5 grid gap-3">

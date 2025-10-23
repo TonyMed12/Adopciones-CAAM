@@ -56,7 +56,7 @@ export default function RegistroForm() {
 
   const totalSteps = 3;
 
-  // Manejar cambios en inputs
+  //  cambios en inputs
   const handleInputChange = (
     field: keyof RegistroAdoptanteData,
     value: string | boolean
@@ -68,7 +68,7 @@ export default function RegistroForm() {
     }
   };
 
-  // Obtener datos del paso actual
+  //  datos del paso actual
   const getStepData = (step: number) => {
     switch (step) {
       case 1:
@@ -97,7 +97,7 @@ export default function RegistroForm() {
     }
   };
 
-  // Obtener schema del paso actual
+  // Schema del paso actual
   const getStepSchema = (step: number) => {
     switch (step) {
       case 1:
@@ -111,7 +111,7 @@ export default function RegistroForm() {
     }
   };
 
-  // Validar paso actual
+  // Validar  actual
   const validateCurrentStep = () => {
     const stepData = getStepData(currentStep);
     const result = getStepSchema(currentStep).safeParse(stepData);
@@ -131,14 +131,14 @@ export default function RegistroForm() {
     return true;
   };
 
-  // Ir al siguiente paso
+  // siguiente paso
   const handleNextStep = () => {
     if (validateCurrentStep()) {
       setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     }
   };
 
-  // Ir al paso anterior
+  //  paso anterior
   const handlePrevStep = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
     setErrors({});
@@ -147,7 +147,7 @@ export default function RegistroForm() {
   const handleSubmit = async () => {
     const result = registroAdoptanteSchema.safeParse(formData);
     if (!result.success) {
-      /* validación igual que antes */ return;
+      return;
     }
 
     setIsLoading(true);
@@ -173,7 +173,7 @@ export default function RegistroForm() {
     }
   };
 
-  // Renderizar paso 1: Datos personales
+  // Datos personales
   const renderStep1 = () => (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -304,7 +304,7 @@ export default function RegistroForm() {
     </div>
   );
 
-  // Renderizar paso 2: Información adicional
+  // Información adicional
   const renderStep2 = () => (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -386,7 +386,7 @@ export default function RegistroForm() {
     </div>
   );
 
-  // Renderizar paso 3: Contraseña y términos
+  // Contraseña y términos
   const renderStep3 = () => (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -613,5 +613,5 @@ export default function RegistroForm() {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

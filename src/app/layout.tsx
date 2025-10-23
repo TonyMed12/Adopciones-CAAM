@@ -29,7 +29,7 @@ export default function RootLayout({
       lang="es"
       className={`${inter.className} ${montserrat.variable} ${zain.variable}`}
     >
-      <body className="bg-white text-gray-900 min-h-screen">
+      <body suppressHydrationWarning className="bg-white text-gray-900 min-h-screen">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

@@ -9,22 +9,20 @@ export async function POST(request: Request) {
     const validation = LoginSchema.safeParse(body);
 
     if (!validation.success) {
-      // Si la validación falla, devolvemos los detalles de los errores encontrados por Zod.
+      // Detalles de los errores encontrados de Zod.
       return NextResponse.json(
         { error: 'Datos de entrada inválidos', issues: validation.error.issues },
         { status: 400 }
       );
     }
 
-    // Si los datos son válidos, llamamos a nuestra función de servicio pasándole los datos ya limpios y validados.
     const { error } = await signInWithEmail(validation.data);
 
     if (error) {
-      // Si el servicio devuelve un error
+      // Si srvicio devuelve un error
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    // Si no hubo errores, la sesión se inició correctamente en Supabase.
     return NextResponse.json(
       { message: 'Inicio de sesión exitoso' },
       { status: 200 }

@@ -76,9 +76,14 @@ export default function UserHeader() {
         {/* Logo */}
         <Link href="/dashboards/usuario" className="flex items-center gap-3">
           <Image src="/logo.png" alt="CAAM" width={40} height={40} />
-          <span className="font-bold text-lg text-[#FFF8F0]">
-            Centro de Atención Animal Morelia
-          </span>
+          <div className="flex flex-col items-start">
+            <span className="font-bold text-xl text-[#FFF8F0]">
+              Centro de Atención Animal
+            </span>
+            <span className="font-medium text-lg text-[#FFF8F0]">
+              Morelia, Michoacán{" "}
+            </span>
+          </div>
         </Link>
 
         {/* Botón móvil */}
