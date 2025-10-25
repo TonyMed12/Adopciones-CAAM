@@ -139,7 +139,7 @@ export default function UserHeader() {
               <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
                 <Link
                   //href="/dashboards/administrador/perfil"
-                  href="https://www.youtube.com/watch?v=xvFZjo5PgG0"
+                  href="/dashboards/mascotas/perfil"
                   className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
                   onClick={() => setMenuOpen(false)}
                 >
