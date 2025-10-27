@@ -21,12 +21,17 @@ const adminNav = [
   { href: "/dashboards/administrador", label: "Inicio", icon: LayoutDashboard },
   {
     href: "/dashboards/administrador/gestion_citas",
-    label: "Gestión de citas",
+    label: "Citas",
     icon: CalendarDays,
   },
   {
     href: "/dashboards/administrador/mascotas",
     label: "Mascotas",
+    icon: FileText,
+  },
+  {
+    href: "/dashboards/administrador/documentos",
+    label: "Documentos",
     icon: FileText,
   },
   {
@@ -158,7 +163,7 @@ export default function AdminHeader() {
               <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
                 <Link
                   //href="/dashboards/administrador/perfil"
-                  href="https://www.youtube.com/watch?v=xvFZjo5PgG0"
+                  href="/dashboards/perfil"
                   className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
                   onClick={() => setMenuOpen(false)}
                 >
@@ -212,7 +217,7 @@ export default function AdminHeader() {
                 <p className="text-[#FFF8F0] font-medium mb-2">{adminName}</p>
                 <Link
                   //href="/dashboards/administrador/perfil"
-                  href="https://www.youtube.com/watch?v=xvFZjo5PgG0"
+                  href="/dashboards/perfil"
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-[#FFF8F0] hover:text-[#FDE68A] cursor-pointer"
                 >
