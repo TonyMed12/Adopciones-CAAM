@@ -44,7 +44,7 @@ export default function PerfilPage() {
   return (
     <>
       {HeaderByRole}
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-6 max-w-6xl mx-auto mt-20">
         <h1 className="text-3xl font-bold text-[#8b4513] mb-6">Mi perfil</h1>
         <PerfilCard
           perfil={perfil}
