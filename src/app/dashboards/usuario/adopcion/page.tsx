@@ -26,6 +26,7 @@ export default function ProcesoAdopcionPage() {
   const router = useRouter();
   const qs = useSearchParams();
   const from = qs.get("from");
+  const [solicitudActiva, setSolicitudActiva] = useState<any | null>(null);
 
   const [estado, setEstado] = useState<Estado>("sin_documentos");
   const [docs, setDocs] = useState<
@@ -40,37 +41,100 @@ export default function ProcesoAdopcionPage() {
   const [citaActiva, setCitaActiva] = useState<any | null>(null);
 
   useEffect(() => {
-    async function fetchCita() {
-      const supabase = createClient();
+    const supabase = createClient();
+
+    const ejecutarVerificacion = async () => {
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
-      if (!user) return;
 
-      const { data: citas, error } = await supabase
+      if (userError) {
+        console.error("❌ Error obteniendo sesión:", userError);
+        return;
+      }
+      if (!user) {
+        console.warn("⚠️ No hay sesión activa todavía, reintentando...");
+        return;
+      }
+
+      console.log("✅ Usuario autenticado:", user.id);
+
+      const { data: perfil, error: perfilError } = await supabase
+        .from("perfiles")
+        .select("id, email, nombres")
+        .eq("email", user.email) // 👈 usa el correo como vínculo
+        .maybeSingle();
+
+      if (perfilError) {
+        console.error("❌ Error obteniendo perfil:", perfilError);
+        return;
+      }
+      if (!perfil) {
+        console.warn("⚠️ No se encontró perfil para este usuario:", user.email);
+        return;
+      }
+
+      console.log("👤 Perfil encontrado:", perfil);
+
+      // 2️⃣ Buscar solicitud activa
+      const { data: solicitud, error: solError } = await supabase
+        .from("solicitudes_adopcion")
+        .select("id, estado, mascota_id")
+        .eq("usuario_id", perfil.id)
+        .in("estado", ["pendiente", "en_proceso", "aprobada"])
+        .maybeSingle();
+
+      if (solError) {
+        console.error("❌ Error buscando solicitud:", solError);
+        return;
+      }
+
+      if (solicitud) {
+        console.log("📋 Solicitud activa encontrada:", solicitud);
+        setSolicitudActiva(solicitud);
+      } else {
+        console.log("ℹ️ No hay solicitud activa");
+      }
+
+      // 3️⃣ Buscar cita asociada (si existe)
+      const { data: cita, error: citaError } = await supabase
         .from("citas_adopcion")
         .select(
           `
-          id,
-          fecha_cita,
-          hora_cita,
-          estado,
-          mascota:mascotas (nombre, imagen_url)
-        `
+        id,
+        fecha_cita,
+        hora_cita,
+        estado,
+        mascota:mascotas (nombre, imagen_url)
+      `
         )
-        .eq("usuario_id", user.id)
-        .in("estado", ["programada", "confirmada"])
-        .limit(1)
-        .single();
+        .eq("usuario_id", perfil.id)
+        .eq("solicitud_id", solicitud?.id || "")
+        .in("estado", ["pendiente", "programada", "confirmada"])
+        .maybeSingle();
 
-      if (error) {
-        console.warn("No hay citas activas:", error);
+      if (citaError) {
+        console.error("❌ Error buscando cita activa:", citaError);
         return;
       }
-      setCitaActiva(citas);
-    }
 
-    fetchCita();
+      console.log("📅 Cita activa:", cita);
+      setCitaActiva(cita || null);
+    };
+
+    // 🔁 Espera hasta que Supabase cargue sesión
+    const interval = setInterval(async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        clearInterval(interval);
+        ejecutarVerificacion();
+      }
+    }, 800); // reintenta cada 0.8 segundos hasta que haya sesión
+
+    return () => clearInterval(interval);
   }, []);
 
   const [mostrarAgendar, setMostrarAgendar] = useState(false);
@@ -267,11 +331,6 @@ export default function ProcesoAdopcionPage() {
         }
       />
 
-      {estado !== "aprobado" ? (
-        <Stepper estado={estado} />
-      ) : (
-        <StepperAdopcion />
-      )}
       {estado === "rechazado" && (
         <PanelEstado
           tone="danger"
@@ -329,7 +388,7 @@ export default function ProcesoAdopcionPage() {
       {/* -------- Vista Aprobado -------- */}
       {estado === "aprobado" && (
         <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
-          {/* Panel principal */}
+          {/* 🟢 Panel principal */}
           <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -343,36 +402,63 @@ export default function ProcesoAdopcionPage() {
             </p>
           </div>
 
-          {/* Si hay cita activa */}
+          {/* 🔹 Stepper dinámico */}
+          <StepperAdopcion
+            activeStep={citaActiva ? 3 : solicitudActiva ? 2 : 1}
+          />
+
+          {/* 🔸 Bloque según estado */}
           {citaActiva ? (
-            <div className="rounded-xl border border-[#cdeccd] bg-[#f6fff6] p-5 mb-4">
+            /* ✅ CASO 3: Ya tiene cita activa */
+            <div className="rounded-xl border border-[#cdeccd] bg-[#f6fff6] p-5 mb-4 mt-5">
               <h3 className="text-sm font-extrabold text-green-700 flex items-center gap-2">
                 <CalendarCheck className="h-4 w-4" /> ¡Tienes una cita
                 programada!
               </h3>
               <div className="mt-2 text-sm text-[#497a49]">
                 <p>
-                  <strong>Mascota:</strong> {citaActiva.mascota.nombre}
+                  <strong>Mascota:</strong>{" "}
+                  {citaActiva.mascota?.nombre || "Sin nombre"}
                 </p>
                 <p>
                   <strong>Fecha:</strong> {citaActiva.fecha_cita} —{" "}
                   <strong>Hora:</strong> {citaActiva.hora_cita}
                 </p>
                 <p className="mt-2">
-                  Te esperamos en el CAAM para tu visita 🐾 Recuerda llegar 10
-                  minutos antes.
+                  Te esperamos en el CAAM 🐾 Recuerda llegar 10 minutos antes.
                 </p>
               </div>
               <div className="mt-4 text-right">
                 <Button
                   onClick={() => router.push("/dashboards/usuario/citas")}
+                  className="bg-[#BC5F36] hover:bg-[#a64d2e]"
                 >
                   Ver mis citas
                 </Button>
               </div>
             </div>
+          ) : solicitudActiva ? (
+            /* 🟠 CASO 2: Tiene solicitud activa pero sin cita */
+            <div className="rounded-xl border border-[#ffedd5] bg-[#fffaf4] p-5 mb-4 mt-5">
+              <h3 className="text-sm font-extrabold text-[#BC5F36] flex items-center gap-2">
+                <PawPrint className="h-4 w-4" /> Solicitud pendiente
+              </h3>
+              <p className="mt-2 text-sm text-[#7a5c49]">
+                Ya tienes una solicitud activa. Ahora puedes continuar con el
+                proceso y agendar tu cita para conocer a{" "}
+                <strong>tu mascota seleccionada</strong>.
+              </p>
+              <div className="mt-4 text-right">
+                <Button
+                  className="bg-[#BC5F36] hover:bg-[#a64d2e]"
+                  onClick={() => router.push("/dashboards/usuario/citas")}
+                >
+                  <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
+                </Button>
+              </div>
+            </div>
           ) : (
-            // Si NO tiene cita, muestra pasos
+            /* ⚪ CASO 1: Aún sin solicitud ni cita */
             <div className="grid gap-3 sm:grid-cols-2 mt-5">
               <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
                 <div className="flex items-center gap-2">
@@ -384,11 +470,12 @@ export default function ProcesoAdopcionPage() {
                 <p className="mt-1 text-sm text-[#7a5c49]">
                   Elige la mascota que te gustaría conocer.
                 </p>
-                <Link href="/dashboards/usuario/mascotas">
-                  <Button className="mt-3 w-full">
-                    Ver mascotas disponibles
-                  </Button>
-                </Link>
+                <Button
+                  className="mt-3 w-full"
+                  onClick={() => router.push("/dashboards/usuario/mascotas")}
+                >
+                  Ver mascotas disponibles
+                </Button>
               </div>
 
               <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
@@ -403,7 +490,7 @@ export default function ProcesoAdopcionPage() {
                 </p>
                 <Button
                   variant="ghost"
-                  className="mt-3 w-full"
+                  className="mt-3 w-full text-[#BC5F36]"
                   onClick={() => router.push("/dashboards/usuario/citas")}
                 >
                   Agendar visita
