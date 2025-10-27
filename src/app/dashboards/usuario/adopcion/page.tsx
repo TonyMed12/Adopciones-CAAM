@@ -37,8 +37,73 @@ export default function ProcesoAdopcionPage() {
       url?: string;
     }[]
   >([]);
+  const [citaActiva, setCitaActiva] = useState<any | null>(null);
+
+  useEffect(() => {
+    async function fetchCita() {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: citas, error } = await supabase
+        .from("citas_adopcion")
+        .select(
+          `
+          id,
+          fecha_cita,
+          hora_cita,
+          estado,
+          mascota:mascotas (nombre, imagen_url)
+        `
+        )
+        .eq("usuario_id", user.id)
+        .in("estado", ["programada", "confirmada"])
+        .limit(1)
+        .single();
+
+      if (error) {
+        console.warn("No hay citas activas:", error);
+        return;
+      }
+      setCitaActiva(citas);
+    }
+
+    fetchCita();
+  }, []);
 
   const [mostrarAgendar, setMostrarAgendar] = useState(false);
+  const nombreMascota = qs.get("nombre");
+  function BotonesProceso({ paso }: { paso: string | null }) {
+    const router = useRouter();
+
+    // Si viene del flujo automático (paso=2), mostramos solo el botón de agendar cita
+    if (paso === "2") {
+      return (
+        <div className="mt-5 flex justify-center">
+          <Button
+            className="flex items-center gap-2"
+            onClick={() => router.push("/dashboards/usuario/adopcion?paso=2")}
+          >
+            <CalendarCheck className="h-4 w-4" /> Agendar cita
+          </Button>
+        </div>
+      );
+    }
+
+    // De lo contrario, flujo normal (ver mascotas disponibles)
+    return (
+      <div className="mt-5 flex justify-center">
+        <Button
+          className="flex items-center gap-2"
+          onClick={() => router.push("/dashboards/usuario/mascotas")}
+        >
+          <PawPrint className="h-4 w-4" /> Ver mascotas disponibles
+        </Button>
+      </div>
+    );
+  }
 
   // --------------------------------------------------------
   // 🔍 Obtener estado actual de documentos del usuario
@@ -263,54 +328,90 @@ export default function ProcesoAdopcionPage() {
 
       {/* -------- Vista Aprobado -------- */}
       {estado === "aprobado" && (
-        <>
-          {!mostrarAgendar ? (
-            <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
-              <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  <h3 className="text-sm font-extrabold text-green-800">
-                    ¡Tus documentos fueron aprobados!
-                  </h3>
-                </div>
-                <p className="mt-1 text-sm text-green-700">
-                  Todo está en orden. Ya puedes continuar con el proceso de
-                  adopción: elige una mascota, agenda tu visita para conocerla y
-                  continúa con tu proceso de adopción.
+        <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
+          {/* Panel principal */}
+          <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <h3 className="text-sm font-extrabold text-green-800">
+                ¡Tus documentos fueron aprobados!
+              </h3>
+            </div>
+            <p className="mt-1 text-sm text-green-700">
+              Todo está en orden. Ya puedes continuar con el proceso de
+              adopción.
+            </p>
+          </div>
+
+          {/* Si hay cita activa */}
+          {citaActiva ? (
+            <div className="rounded-xl border border-[#cdeccd] bg-[#f6fff6] p-5 mb-4">
+              <h3 className="text-sm font-extrabold text-green-700 flex items-center gap-2">
+                <CalendarCheck className="h-4 w-4" /> ¡Tienes una cita
+                programada!
+              </h3>
+              <div className="mt-2 text-sm text-[#497a49]">
+                <p>
+                  <strong>Mascota:</strong> {citaActiva.mascota.nombre}
+                </p>
+                <p>
+                  <strong>Fecha:</strong> {citaActiva.fecha_cita} —{" "}
+                  <strong>Hora:</strong> {citaActiva.hora_cita}
+                </p>
+                <p className="mt-2">
+                  Te esperamos en el CAAM para tu visita 🐾 Recuerda llegar 10
+                  minutos antes.
                 </p>
               </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <StepCard
-                  icon={<PawPrint className="h-5 w-5" />}
-                  title="1) Ver mascotas"
-                  desc="Elige la mascota que te gustaría conocer."
-                  action={
-                    <Link href="/dashboards/usuario/mascotas">
-                      <Button className="w-full">Ir a ver mascotas</Button>
-                    </Link>
-                  }
-                />
-                <StepCard
-                  icon={<CalendarCheck className="h-5 w-5" />}
-                  title="2) Agendar visita"
-                  desc="Programa una cita para convivir con la mascota."
-                  action={
-                    <Button
-                      variant="ghost"
-                      className="w-full"
-                      onClick={() => setMostrarAgendar(true)}
-                    >
-                      Agendar cita
-                    </Button>
-                  }
-                />
+              <div className="mt-4 text-right">
+                <Button
+                  onClick={() => router.push("/dashboards/usuario/citas")}
+                >
+                  Ver mis citas
+                </Button>
               </div>
-            </section>
+            </div>
           ) : (
-            <CardAgendar onBack={() => setMostrarAgendar(false)} />
+            // Si NO tiene cita, muestra pasos
+            <div className="grid gap-3 sm:grid-cols-2 mt-5">
+              <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
+                <div className="flex items-center gap-2">
+                  <PawPrint className="h-5 w-5 text-[#BC5F36]" />
+                  <p className="text-sm font-extrabold text-[#2b1b12]">
+                    1) Ver mascotas
+                  </p>
+                </div>
+                <p className="mt-1 text-sm text-[#7a5c49]">
+                  Elige la mascota que te gustaría conocer.
+                </p>
+                <Link href="/dashboards/usuario/mascotas">
+                  <Button className="mt-3 w-full">
+                    Ver mascotas disponibles
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
+                <div className="flex items-center gap-2">
+                  <CalendarCheck className="h-5 w-5 text-[#BC5F36]" />
+                  <p className="text-sm font-extrabold text-[#2b1b12]">
+                    2) Agendar visita
+                  </p>
+                </div>
+                <p className="mt-1 text-sm text-[#7a5c49]">
+                  Programa una cita para convivir con tu mascota favorita.
+                </p>
+                <Button
+                  variant="ghost"
+                  className="mt-3 w-full"
+                  onClick={() => router.push("/dashboards/usuario/citas")}
+                >
+                  Agendar visita
+                </Button>
+              </div>
+            </div>
           )}
-        </>
+        </section>
       )}
 
       {/* FAQs */}
@@ -333,6 +434,50 @@ export default function ProcesoAdopcionPage() {
 }
 
 /* ---------------- COMPONENTES ---------------- */
+function BotonesProceso() {
+  const [tieneSolicitudes, setTieneSolicitudes] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function fetchSolicitudes() {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("solicitudes_adopcion")
+        .select("id, estado")
+        .eq("perfil_id", user.id)
+        .in("estado", ["pendiente", "aprobada"]);
+
+      setTieneSolicitudes(!!data?.length);
+    }
+
+    fetchSolicitudes();
+  }, []);
+
+  return (
+    <div className="mt-5 flex justify-center">
+      {tieneSolicitudes ? (
+        <Button
+          className="w-full sm:w-auto"
+          onClick={() => router.push("/dashboards/usuario/citas")}
+        >
+          <CalendarCheck className="h-5 w-5 mr-2" /> Agendar visita
+        </Button>
+      ) : (
+        <Button
+          className="w-full sm:w-auto"
+          onClick={() => router.push("/dashboards/usuario/mascotas")}
+        >
+          <PawPrint className="h-5 w-5 mr-2" /> Ver mascotas disponibles
+        </Button>
+      )}
+    </div>
+  );
+}
 
 function CardAgendar({ onBack }: { onBack: () => void }) {
   const router = useRouter();

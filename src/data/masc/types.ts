@@ -17,4 +17,18 @@ export interface CreateMascotaPayload {
   observaciones_medicas?: string | null;
   raza_id?: string | null;
   imagen_url?: string | null;
+  descripcion?: string;
+
+}
+
+export interface Mascota extends CreateMascotaPayload {
+  id: string;
+  estado?: EstadoMascota | string;
+  activo?: boolean;
+  especie?: string;
+  raza?: string;
+  edadMeses?: string; // para el formateo que haces en el front
+  foto?: string;
+  created_at?: string;
+  updated_at?: string;
 }
