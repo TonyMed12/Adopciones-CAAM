@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { listarRazas, crearRaza, eliminarRaza } from "@/mascotas/razas/razas-actions";
 import { RazaSchema } from "@/mascotas/razas/razas-schemas";
+import { toast } from "sonner";
+import { toastConfirm } from "@/components/ui/toastConfirm";
 
 export default function GestionRazas({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [razas, setRazas] = useState<any[]>([]);
@@ -49,14 +51,15 @@ export default function GestionRazas({ open, onClose }: { open: boolean; onClose
       setEspecie("Perro");
       setTamano("mediano");
     } catch (err: any) {
-      setError(err.message || "Error al crear la raza");
+      toast.error(err.message || "Error al crear la raza");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Seguro que deseas eliminar esta raza?")) return;
+    const confirm = await toastConfirm("?Seguro que deseas eliminar esta raza?");
+    if (!confirm) return;
     await eliminarRaza(id);
     await fetchRazas();
   }

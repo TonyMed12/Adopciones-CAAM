@@ -226,7 +226,9 @@ export default function MascotasPage() {
                   }}
                   onDelete={async () => {
                     if (!selectedMascota) return;
-                    if (!confirm("¿Seguro que quieres eliminar esta mascota? 🐾")) return;
+
+                    const confirm = await toastConfirm(":¿Seguro que deseas eliminar esta mascota?");
+                    if (!confirm) return;
 
                     try {
                       await eliminarMascota(selectedMascota.id);
