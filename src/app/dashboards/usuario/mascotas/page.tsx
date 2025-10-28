@@ -318,13 +318,6 @@ export default function MascotasPage() {
         );
     }
 
-    // --------------------------------------------------------
-    // 💅 Render principal
-    // --------------------------------------------------------
-
-    return (
-        <>
-            <PageHead title="Mascotas" subtitle="Encuentra a tu nuevo mejor amigo 🐾" />
   // 💅 Render principal
   return (
     <>
