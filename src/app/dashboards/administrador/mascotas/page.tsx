@@ -11,7 +11,8 @@ import FormMascota from "@/components/masc/FormMascota";
 import MascotasTable from "@/components/masc/MascotasTable";
 import MascotaCardFull from "@/components/masc/MascotaCardFull";
 import GestionRazas from "@/components/razas/GestionRazas";
-
+import { toast } from "sonner";
+import { toastConfirm } from "@/components/ui/toastConfirm";
 import { listarMascotas, eliminarMascota } from "@/mascotas/mascotas-actions";
 import { createPortal } from "react-dom";
 
@@ -180,19 +181,20 @@ export default function MascotasPage() {
               onDelete: async (item: any) => {
                 const id = typeof item === "string" ? item : item?.id;
                 if (!id) {
-                  alert("No se pudo determinar el ID de la mascota 😿");
+                  toast.error("No se pudo determinar el ID de la mascota 😿");
                   return;
                 }
 
-                if (!confirm("¿Seguro que quieres eliminar esta mascota? 🐾")) return;
+                const confirmar = await toastConfirm("¿Estás seguro de que deseas eliminar esta mascota?");
+                if (!confirmar) return;
 
                 try {
                   await eliminarMascota(id);
-                  alert("Mascota eliminada correctamente 🗑️");
+                  toast.success("Mascota eliminada correctamente 🗑️");
                   await fetchMascotas();
                 } catch (err: any) {
                   console.error("Error eliminando mascota:", err);
-                  alert(err.message || "No se pudo eliminar la mascota");
+                  toast.error(err.message || "No se pudo eliminar la mascota");
                 }
               },
             }}
@@ -232,10 +234,10 @@ export default function MascotasPage() {
                         prev.filter((m) => m.id !== selectedMascota.id)
                       );
                       setOpenCard(false);
-                      alert("Mascota eliminada correctamente 🗑️");
+                      toast.success("Mascota eliminada correctamente 🗑️");
                     } catch (err: any) {
                       console.error("Error eliminando mascota:", err);
-                      alert(err.message || "Error eliminando mascota");
+                      toast.error(err.message || "Error eliminando mascota");
                     }
                   }}
                 />
