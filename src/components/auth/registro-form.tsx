@@ -188,7 +188,7 @@ export default function RegistroForm() {
           Nombres <span className="text-red-500">*</span>
         </Label>
         <div className="relative">
-          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
           <Input
             id="nombres"
             value={formData.nombres || ""}
