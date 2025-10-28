@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import ReactDOM from "react-dom";
 
 import PageHead from "@/components/layout/PageHead";
 import Filters from "@/components/masc/Filters";
@@ -28,10 +29,7 @@ export default function MascotasPage() {
   const [q, setQ] = useState("");
   const [especie, setEspecie] = useState<string>(() => {
     const val = (especieQS || "").trim();
-    if (
-      val &&
-      (val === "Todas" || (ESPECIES as readonly string[]).includes(val))
-    )
+    if (val && (val === "Todas" || (ESPECIES as readonly string[]).includes(val)))
       return val;
     return "Todas";
   });
@@ -50,9 +48,37 @@ export default function MascotasPage() {
   const [adopcionEnProgreso, setAdopcionEnProgreso] = useState(false);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
-  // --------------------------------------------------------
-  // 📑 Obtener estado de documentos del usuario
-  // --------------------------------------------------------
+  // 🔒 Bloquear scroll del body cuando el visor está abierto
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const body = document.body;
+    const html = document.documentElement;
+
+    if (openCard) {
+      const scrollY = window.scrollY;
+      body.dataset.scrollY = String(scrollY);
+      body.style.position = "fixed";
+      body.style.top = `-${scrollY}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+      body.style.overflow = "hidden";
+      html.style.overscrollBehavior = "none";
+    } else {
+      const prevY = Number(body.dataset.scrollY || 0);
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.width = "";
+      body.style.overflow = "";
+      delete body.dataset.scrollY;
+      html.style.overscrollBehavior = "";
+      if (!isNaN(prevY)) window.scrollTo(0, prevY);
+    }
+  }, [openCard]);
+
+  // 📑 Estado de documentos del usuario
   useEffect(() => {
     async function fetchEstado() {
       const {
@@ -85,9 +111,7 @@ export default function MascotasPage() {
     fetchEstado();
   }, []);
 
-  // --------------------------------------------------------
   // 🐶 Obtener mascotas disponibles
-  // --------------------------------------------------------
   useEffect(() => {
     async function fetchMascotas() {
       try {
@@ -141,9 +165,7 @@ export default function MascotasPage() {
     fetchMascotas();
   }, []);
 
-  // ----------------------------------------------------
-  // 🐕 Adopción
-  // ----------------------------------------------------
+  // 🐕 Adopción (NO SE TOCA — se usa en cards y modal)
   async function handleAdopt(m: Mascota) {
     const {
       data: { user },
@@ -163,7 +185,7 @@ export default function MascotasPage() {
     }
 
     try {
-      // 🔍 Verificar si ya existe una solicitud activa para esta mascota
+      // 🔍 Ya existe solicitud activa para esta mascota
       const { data: existente, error: checkError } = await supabase
         .from("solicitudes_adopcion")
         .select("id, estado")
@@ -192,6 +214,7 @@ export default function MascotasPage() {
         return;
       }
 
+      // 🔍 Otras solicitudes activas del usuario
       const { data: solicitudesActivas, error: solicitudError } = await supabase
         .from("solicitudes_adopcion")
         .select("id, mascota_id, estado")
@@ -200,14 +223,10 @@ export default function MascotasPage() {
 
       if (solicitudError) {
         console.error("Error verificando solicitudes activas:", solicitudError);
-        console.error(
-          "Detalles del error:",
-          JSON.stringify(solicitudError, null, 2)
-        );
         mostrarToast(
           `⚠️ Error al verificar solicitudes activas. ${
             solicitudError.message ||
-            "Revisa tu conexión o revisa el tipo de estado en la base de datos."
+            "Revisa tu conexión o los estados en la base de datos."
           }`,
           "#fff4e7",
           "#7a3e00",
@@ -218,7 +237,7 @@ export default function MascotasPage() {
 
       if (solicitudesActivas && solicitudesActivas.length > 0) {
         mostrarToast(
-          "🐾 Ya tienes una solicitud activa. Termina tu proceso o tu cita pendiente antes de adoptar otra mascota.",
+          "🐾 Ya tienes una solicitud activa. Termina tu proceso o cita pendiente antes de adoptar otra mascota.",
           "#f3fff3",
           "#225b22",
           "#c9e9c9"
@@ -228,7 +247,7 @@ export default function MascotasPage() {
 
       // 🧾 Crear nueva solicitud
       const numero = "SOL-" + Math.floor(100000 + Math.random() * 900000);
-      const { data: solicitud, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from("solicitudes_adopcion")
         .insert([
           {
@@ -238,9 +257,7 @@ export default function MascotasPage() {
             motivo_adopcion: "Pendiente de llenar",
             estado: "pendiente",
           },
-        ])
-        .select()
-        .single();
+        ]);
 
       if (insertError) {
         console.error("Error insertando solicitud:", insertError);
@@ -253,7 +270,7 @@ export default function MascotasPage() {
         return;
       }
 
-      // 🐾 Actualizar estado de la mascota
+      // 🐾 Actualizar mascota
       const { error: updateError } = await supabase
         .from("mascotas")
         .update({
@@ -273,16 +290,13 @@ export default function MascotasPage() {
         return;
       }
 
-      // 🎉 Éxito total → animación y redirección
+      // 🎉 Feedback + redirect
       setAdopcionEnProgreso(true);
       setMensajeExito(
         `Tu solicitud para adoptar a ${m.nombre} ha sido registrada 🐾`
       );
 
-      setTimeout(() => {
-        setMensajeExito("Redirigiéndote al siguiente paso...");
-      }, 1800);
-
+      setTimeout(() => setMensajeExito("Redirigiéndote al siguiente paso..."), 1800);
       setTimeout(() => {
         router.push(
           `/dashboards/usuario/adopcion?paso=2&nombre=${encodeURIComponent(
@@ -301,9 +315,7 @@ export default function MascotasPage() {
     }
   }
 
-  // ----------------------------------------------------
-  // 🌈 Helper para mostrar mensajes visuales tipo Toast
-  // ----------------------------------------------------
+  // 🌈 Toast helper
   function mostrarToast(
     mensaje: string,
     bgColor = "#fff",
@@ -334,9 +346,7 @@ export default function MascotasPage() {
     setTimeout(() => toast.remove(), 5000);
   }
 
-  // --------------------------------------------------------
-  // 🎨 Texto del estado de documentos
-  // --------------------------------------------------------
+  // 🎨 Estado de documentos (texto y estilos)
   const estadoText: Record<
     DocEstado,
     { title: string; desc: string; tone: "info" | "warn" | "ok" | "error" }
@@ -371,49 +381,20 @@ export default function MascotasPage() {
     error: "border-[#f2d6d6] bg-[#fff5f5]",
   } as const;
 
-  // --------------------------------------------------------
   // 🔍 Filtrar las mascotas visibles
-  // --------------------------------------------------------
   const data = useMemo(() => {
     return items.filter((m) => {
       const matchesQ = [m.nombre, m.raza, m.descripcion, m.especie].some((v) =>
         v?.toLowerCase().includes(q.toLowerCase())
       );
-
       const matchesEsp = especie === "Todas" || m.especie === especie;
       const matchesSexo =
         sexo === "Todos" || m.sexo?.toLowerCase() === sexo.toLowerCase();
-
       return matchesQ && matchesEsp && matchesSexo;
     });
   }, [items, q, especie, sexo]);
 
-  // --------------------------------------------------------
-  // Modal
-
-  {
-    adopcionEnProgreso && (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm mx-auto animate-fade-in">
-          <div className="animate-bounce text-4xl mb-3">🐶</div>
-          <h2 className="text-lg font-extrabold text-[#2b1b12] mb-2">
-            {mensajeExito}
-          </h2>
-          <p className="text-sm text-[#7a5c49]">
-            Espera un momento mientras preparamos el siguiente paso...
-          </p>
-          <div className="mt-4 flex justify-center">
-            <div className="w-6 h-6 border-4 border-[#BC5F36] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --------------------------------------------------------
   // 💅 Render principal
-  // --------------------------------------------------------
-
   return (
     <>
       <PageHead
@@ -468,7 +449,7 @@ export default function MascotasPage() {
                 setSelectedMascota(m);
                 setOpenCard(true);
               }}
-              onAdopt={() => handleAdopt(m)}
+              onAdopt={() => handleAdopt(m)} // ✅ botón Adoptar en la card de listado
             />
           ))}
           {data.length === 0 && (
@@ -515,13 +496,54 @@ export default function MascotasPage() {
         </div>
       </Modal>
 
-      {/* Modal info mascota */}
-      <MascotaCardUsuario
-        m={selectedMascota}
-        open={openCard}
-        onClose={() => setOpenCard(false)}
-        onAdopt={() => selectedMascota && handleAdopt(selectedMascota)}
-      />
+      {/* Overlay de adopción en progreso */}
+      {adopcionEnProgreso && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm mx-auto animate-fade-in">
+            <div className="animate-bounce text-4xl mb-3">🐶</div>
+            <h2 className="text-lg font-extrabold text-[#2b1b12] mb-2">
+              {mensajeExito}
+            </h2>
+            <p className="text-sm text-[#7a5c49]">
+              Espera un momento mientras preparamos el siguiente paso...
+            </p>
+            <div className="mt-4 flex justify-center">
+              <div className="w-6 h-6 border-4 border-[#BC5F36] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🧡 Modal info mascota a pantalla completa (portal) */}
+      {openCard &&
+        typeof window !== "undefined" &&
+        ReactDOM.createPortal(
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8">
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+              {/* Botón cerrar */}
+              <button
+                onClick={() => setOpenCard(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-[#BC5F36] transition"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+
+              {/* Contenido con scroll interno */}
+              <div className="flex-1 overflow-y-auto rounded-2xl">
+                <MascotaCardUsuario
+                  m={selectedMascota}
+                  open={true}
+                  onClose={() => setOpenCard(false)}
+                  onAdopt={() => {
+                    if (selectedMascota) handleAdopt(selectedMascota); // ✅ botón Adoptar dentro del modal
+                  }}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 }
