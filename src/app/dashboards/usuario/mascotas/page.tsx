@@ -1,7 +1,8 @@
 "use client";
 
-import React, {useMemo, useState, useEffect} from "react";
-import {useRouter, useSearchParams} from "next/navigation";
+import React, { useMemo, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import ReactDOM from "react-dom";
 
 import PageHead from "@/components/layout/PageHead";
 import Filters from "@/components/masc/Filters";
@@ -23,15 +24,16 @@ export default function MascotasPage() {
     const especieQS = searchParams.get("especie");
     const supabase = createClient();
 
-    const [items, setItems] = useState<Mascota[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [q, setQ] = useState("");
-    const [especie, setEspecie] = useState<string>(() => {
-        const val = (especieQS || "").trim();
-        if (val && (val === "Todas" || (ESPECIES as readonly string[]).includes(val))) return val;
-        return "Todas";
-    });
-    const [sexo, setSexo] = useState<string>("Todos");
+  const [items, setItems] = useState<Mascota[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [especie, setEspecie] = useState<string>(() => {
+    const val = (especieQS || "").trim();
+    if (val && (val === "Todas" || (ESPECIES as readonly string[]).includes(val)))
+      return val;
+    return "Todas";
+  });
+  const [sexo, setSexo] = useState<string>("Todos");
 
     // Estado de documentos del usuario
     const [docEstado, setDocEstado] = useState<DocEstado>("sin_documentos");
@@ -46,15 +48,43 @@ export default function MascotasPage() {
     const [adopcionEnProgreso, setAdopcionEnProgreso] = useState(false);
     const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
-    // --------------------------------------------------------
-    // 📑 Obtener estado de documentos del usuario
-    // --------------------------------------------------------
-    useEffect(() => {
-        async function fetchEstado() {
-            const {
-                data: {user},
-            } = await supabase.auth.getUser();
-            if (!user) return;
+  // 🔒 Bloquear scroll del body cuando el visor está abierto
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const body = document.body;
+    const html = document.documentElement;
+
+    if (openCard) {
+      const scrollY = window.scrollY;
+      body.dataset.scrollY = String(scrollY);
+      body.style.position = "fixed";
+      body.style.top = `-${scrollY}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+      body.style.overflow = "hidden";
+      html.style.overscrollBehavior = "none";
+    } else {
+      const prevY = Number(body.dataset.scrollY || 0);
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.width = "";
+      body.style.overflow = "";
+      delete body.dataset.scrollY;
+      html.style.overscrollBehavior = "";
+      if (!isNaN(prevY)) window.scrollTo(0, prevY);
+    }
+  }, [openCard]);
+
+  // 📑 Estado de documentos del usuario
+  useEffect(() => {
+    async function fetchEstado() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
             const {data: docs, error} = await supabase.from("documentos").select("status").eq("perfil_id", user.id);
 
@@ -295,6 +325,13 @@ export default function MascotasPage() {
     return (
         <>
             <PageHead title="Mascotas" subtitle="Encuentra a tu nuevo mejor amigo 🐾" />
+  // 💅 Render principal
+  return (
+    <>
+      <PageHead
+        title="Mascotas"
+        subtitle="Encuentra a tu nuevo mejor amigo 🐾"
+      />
 
             {/* Banner de estado */}
             <div className={`mb-4 rounded-xl border px-4 py-3 ${toneClasses[estadoText[docEstado].tone]} text-sm`}>
@@ -372,14 +409,54 @@ export default function MascotasPage() {
                 </div>
             </Modal>
 
-            {/* Modal info mascota */}
-            <MascotaCardUsuario
-                m={selectedMascota}
-                open={openCard}
-                onClose={() => setOpenCard(false)}
-                onAdopt={() => selectedMascota && handleAdopt(selectedMascota)}
-                adoptDisabled={adopcionEnProgreso}
-            />
-        </>
-    );
+      {/* Overlay de adopción en progreso */}
+      {adopcionEnProgreso && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm mx-auto animate-fade-in">
+            <div className="animate-bounce text-4xl mb-3">🐶</div>
+            <h2 className="text-lg font-extrabold text-[#2b1b12] mb-2">
+              {mensajeExito}
+            </h2>
+            <p className="text-sm text-[#7a5c49]">
+              Espera un momento mientras preparamos el siguiente paso...
+            </p>
+            <div className="mt-4 flex justify-center">
+              <div className="w-6 h-6 border-4 border-[#BC5F36] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🧡 Modal info mascota a pantalla completa (portal) */}
+      {openCard &&
+        typeof window !== "undefined" &&
+        ReactDOM.createPortal(
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8">
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+              {/* Botón cerrar */}
+              <button
+                onClick={() => setOpenCard(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-[#BC5F36] transition"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+
+              {/* Contenido con scroll interno */}
+              <div className="flex-1 overflow-y-auto rounded-2xl">
+                <MascotaCardUsuario
+                  m={selectedMascota}
+                  open={true}
+                  onClose={() => setOpenCard(false)}
+                  onAdopt={() => {
+                    if (selectedMascota) handleAdopt(selectedMascota); // ✅ botón Adoptar dentro del modal
+                  }}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  );
 }

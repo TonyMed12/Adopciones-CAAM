@@ -8,6 +8,8 @@ import {SelectorColores} from "@/components/masc/SelectorColores";
 import "@/styles/form-mascota.css";
 import {listarRazas} from "@/mascotas/razas/razas-actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { toastConfirm } from "@/components/ui/toastConfirm";
 
 type Opt = {label: string; value: string};
 
@@ -161,11 +163,11 @@ export default function FormMascota({
     function handleFile(file?: File) {
         if (!file) return;
         if (!file.type.startsWith("image/")) {
-            alert("Por favor selecciona una imagen (jpg, png, webp).");
+            toast.warning("Por favor selecciona una imagen (jpg, png, webp).");
             return;
         }
         if (file.size > 5 * 1024 * 1024) {
-            alert("La imagen es muy pesada (máx. 5 MB).");
+            toast.warning("La imagen es muy pesada (máx. 5 MB).");
             return;
         }
 
@@ -216,16 +218,16 @@ export default function FormMascota({
             let result;
             if (mascota?.id) {
                 result = await actualizarMascota(payload, fotoFile || undefined);
-                alert("Mascota actualizada 🐾");
+                toast.success("Mascota actualizada 🐾");
             } else {
                 result = await crearMascota(payload, fotoFile || undefined);
-                alert("Mascota creada 🐾");
+                toast.success("Mascota creada 🐾");
             }
             await onSubmit(result);
             onCancel();
         } catch (err: any) {
             console.error("Error al guardar mascota:", err);
-            alert(err.message || "Error al guardar la mascota");
+            toast.error(err.message || "Error al guardar la mascota");
         }
     }
 

@@ -10,11 +10,12 @@ export default function MarketingLayout({
     <>
       <Navbar />
       {children}
-      <footer className="mt-12 border-amber-600 ]">
-        <div className="container mx-auto px-4 py-8 text-sm bg-amber-50 text-gray-600">
-          © 2025 Centro de Atención Animal Morelia. Todos los derechos reservados. 
-        </div>
-      </footer>
+      <footer className="border-t border-[#e3c8b4] bg-[#BC5F36] text-[#fffaf4] shadow-inner">
+      <div className="container mx-auto px-4 py-6 text-sm text-center">
+        © 2025 <span className="font-semibold">Centro de Atención Animal Morelia</span>.  
+        Todos los derechos reservados.
+      </div>
+    </footer>
     </>
   );
 }

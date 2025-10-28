@@ -10,6 +10,8 @@ import {
   actualizarEstadoCita,
 } from "@/citas/citas-actions";
 import { Search, Clock, CalendarClock, XCircle, Filter } from "lucide-react";
+import { toast } from "sonner";
+import { toastConfirm } from "@/components/ui/toastConfirm";
 
 type Cita = {
   id: string;
@@ -106,7 +108,7 @@ export default function CitasPage() {
   const onSubmitModal = async () => {
     try {
       if (!formFecha || !formHora) {
-        alert("Fecha y hora son obligatorias");
+        toast.warning("Fecha y hora son obligatorias");
         return;
       }
 
@@ -117,13 +119,13 @@ export default function CitasPage() {
 
       // 1️⃣ Validar que sea al menos 3 h después
       if (diferenciaHoras < 3) {
-        alert("Debes programar con al menos 3 horas de anticipación.");
+        toast.error("Debes programar con al menos 3 horas de anticipación.");
         return;
       }
 
       // 1️⃣ Validar que la fecha no sea pasada
       if (citaFecha < ahora) {
-        alert("No puedes programar una cita en una fecha u hora pasada.");
+        toast.warning("No puedes programar una cita en una fecha u hora pasada.");
         return;
       }
 
@@ -135,7 +137,7 @@ export default function CitasPage() {
       const finPermitido = hora < 14 || (hora === 14 && minutos === 0);
 
       if (!inicioPermitido || !finPermitido) {
-        alert("Las citas solo pueden programarse entre 8:30 am y 2:00 pm.");
+        toast.error("Las citas solo pueden programarse entre 8:30 am y 2:00 pm.");
         return;
       }
 
@@ -146,12 +148,13 @@ export default function CitasPage() {
       setModalOpen(false);
     } catch (e) {
       console.error(e);
-      alert("No se pudo reprogramar la cita");
+      toast.error("No se pudo reprogramar la cita");
     }
   };
 
   const cancelarCita = async (id: string) => {
-    if (!confirm("¿Seguro que quieres cancelar esta cita?")) return;
+    const confirmar = await toastConfirm("¿Estás seguro de que deseas cancelar esta cita?");
+    if (!confirmar) return;
     try {
       const actualizada = await actualizarEstadoCita(id, "cancelada");
       setCitas((prev) =>
@@ -159,7 +162,7 @@ export default function CitasPage() {
       );
     } catch (err) {
       console.error(err);
-      alert("No se pudo cancelar la cita");
+      toast.error("No se pudo cancelar la cita");
     }
   };
 
@@ -339,7 +342,7 @@ export default function CitasPage() {
               const ahora = new Date();
 
               if (citaFecha < ahora) {
-                alert("No puedes reprogramar una cita que ya pasó.");
+                toast.error("No puedes reprogramar una cita que ya pasó.");
                 return;
               }
               openEdit(e.resource);
