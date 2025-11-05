@@ -8,7 +8,7 @@ import {
   listarCitas,
   reprogramarCita,
   actualizarEstadoCita,
-  // evaluarCita, // ← cuando tengas endpoint real
+  evaluarCita
 } from "@/citas/citas-actions";
 import { Search, Filter, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -44,7 +44,8 @@ export default function GestionCitasPage() {
         const normalizadas: Cita[] = (data as any[]).map((c) => ({
           ...c,
           asistencia: c.asistencia ?? null,
-          evaluacion: c.evaluacion ?? null,
+          interaccion: c.interaccion ?? null,
+          nota: c.nota ?? null,
         }));
         setCitas(normalizadas);
       } catch (err) {
@@ -142,22 +143,25 @@ export default function GestionCitasPage() {
   };
 
   const applyEvaluation = async (payload: {
-    asistencia: "asistio" | "no_asistio";
-    evaluacion: "aprobada" | "no_apta" | null;
+    asistencia: "asistio" | "no_asistio_no_apto";
+    interaccion: "buena_aprobada" | "no_apta" | null;
     nota?: string;
   }) => {
     if (!evalTarget) return;
 
-    // FRONTEND: actualiza localmente
+    const nuevoEstado = payload.asistencia === "asistio" ? "completada" : "cancelada";
+
+    // Actualización optimista
     setCitas((prev) =>
       prev.map((c) =>
         c.id === evalTarget.id
           ? {
-              ...c,
-              asistencia: payload.asistencia,
-              evaluacion: payload.asistencia === "asistio" ? payload.evaluacion : "no_apta",
-              estado: c.estado === "programada" ? "completada" : c.estado,
-            }
+            ...c,
+            asistencia: payload.asistencia,
+            interaccion: payload.interaccion,
+            nota: payload.nota ?? null,
+            estado: nuevoEstado,
+          }
           : c
       )
     );
@@ -165,16 +169,18 @@ export default function GestionCitasPage() {
     setEvalOpen(false);
     setEvalTarget(null);
 
-    // BACKEND: conecta tu endpoint cuando esté listo
-    // try {
-    //   await evaluarCita(evalTarget.id, payload);
-    //   toast.success("Evaluación guardada");
-    // } catch {
-    //   toast.error("No se pudo guardar la evaluación");
-    //   // opcional: revertir cambios locales
-    // }
-
-    toast.success("Evaluación guardada (mock)");
+    try {
+      const updated = await evaluarCita(evalTarget.id, nuevoEstado, {
+        asistencia: payload.asistencia,
+        interaccion: payload.interaccion,
+        nota: payload.nota ?? null,
+      });
+      setCitas((prev) => prev.map((c) => (c.id === evalTarget.id ? (updated as any) : c)));
+      toast.success("Evaluación guardada");
+    } catch (err) {
+      console.error(err);
+      toast.error("No se pudo guardar la evaluación");
+    }
   };
 
   if (loading) {
@@ -222,17 +228,15 @@ export default function GestionCitasPage() {
           {/* Vista */}
           <div className="rounded-xl border border-[#EADACB] overflow-hidden">
             <button
-              className={`px-3 py-2 text-sm transition-all ${
-                view === "tabla" ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold" : "bg-white text-[#6b4f40]"
-              }`}
+              className={`px-3 py-2 text-sm transition-all ${view === "tabla" ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold" : "bg-white text-[#6b4f40]"
+                }`}
               onClick={() => setView("tabla")}
             >
               Tabla
             </button>
             <button
-              className={`px-3 py-2 text-sm transition-all ${
-                view === "calendario" ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold" : "bg-white text-[#6b4f40]"
-              }`}
+              className={`px-3 py-2 text-sm transition-all ${view === "calendario" ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold" : "bg-white text-[#6b4f40]"
+                }`}
               onClick={() => setView("calendario")}
             >
               Calendario
@@ -253,7 +257,7 @@ export default function GestionCitasPage() {
           Canceladas: {citas.filter((c) => c.estado === "cancelada").length}
         </span>
         <span className="px-2 py-1 text-sm rounded-md border bg-green-50 text-green-700 flex items-center gap-1">
-          <CheckCircle size={14} /> Aprobadas: {citas.filter((c) => c.evaluacion === "aprobada").length}
+          <CheckCircle size={14} /> Aprobadas: {citas.filter((c) => c.interaccion === "buena_aprobada").length}
         </span>
       </div>
 
@@ -307,7 +311,7 @@ export default function GestionCitasPage() {
               };
             }}
             eventPropGetter={(event: any) => {
-              const { estado, evaluacion } = event.resource as Cita;
+              const { estado, interaccion } = event.resource as Cita;
               let backgroundColor = "#FCD34D"; // programada
               let borderColor = "#EAB308";
               if (estado === "completada") {
@@ -317,11 +321,11 @@ export default function GestionCitasPage() {
                 backgroundColor = "#E5E7EB";
                 borderColor = "#9CA3AF";
               }
-              if (evaluacion === "aprobada") {
+              if (interaccion === "buena_aprobada") {
                 backgroundColor = "#BBF7D0";
                 borderColor = "#22C55E";
               }
-              if (evaluacion === "no_apta") {
+              if (interaccion === "no_apta") {
                 backgroundColor = "#FECACA";
                 borderColor = "#EF4444";
               }
@@ -399,8 +403,8 @@ export default function GestionCitasPage() {
                 >
                   <option value="">Selecciona hora</option>
                   {[
-                    "08:30","09:00","09:30","10:00","10:30","11:00",
-                    "11:30","12:00","12:30","13:00","13:30","14:00",
+                    "08:30", "09:00", "09:30", "10:00", "10:30", "11:00",
+                    "11:30", "12:00", "12:30", "13:00", "13:30", "14:00",
                   ].map((hora) => (
                     <option key={hora} value={hora}>{hora}</option>
                   ))}
@@ -440,7 +444,8 @@ export default function GestionCitasPage() {
             : ""
         }
         defaultAsistencia={evalTarget?.asistencia ?? null}
-        defaultEvaluacion={evalTarget?.evaluacion ?? null}
+        defaultInteraccion={evalTarget?.interaccion ?? null}
+        defaultNota={evalTarget?.nota ?? ""}
       />
     </div>
   );

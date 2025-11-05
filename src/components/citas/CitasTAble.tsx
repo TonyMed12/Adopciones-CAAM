@@ -12,8 +12,9 @@ export type Cita = {
   mascotas?: { id: string; nombre: string } | null;
 
   // Evaluación post-cita
-  asistencia?: "asistio" | "no_asistio" | null;
-  evaluacion?: "aprobada" | "no_apta" | null;
+  asistencia?: "asistio" | "no_asistio_no_apto" | null;
+  interaccion?: "buena_aprobada" | "no_apta" | null;
+  nota?: string | null;
 };
 
 type Props = {
@@ -41,15 +42,15 @@ function Th(props: React.HTMLAttributes<HTMLTableCellElement>) {
 const badgeAsistencia = (a: Cita["asistencia"]) => {
   if (a === "asistio")
     return <span className="text-xs font-semibold rounded-full px-2 py-1 bg-green-100 text-green-700">asistió</span>;
-  if (a === "no_asistio")
-    return <span className="text-xs font-semibold rounded-full px-2 py-1 bg-red-100 text-red-700">no asistió</span>;
+  if (a === "no_asistio_no_apto")
+    return <span className="text-xs font-semibold rounded-full px-2 py-1 bg-red-100 text-red-700">no asistió / no apto</span>;
   return <span className="text-xs font-semibold rounded-full px-2 py-1 bg-gray-100 text-gray-600">pendiente</span>;
 };
 
-const badgeEvaluacion = (e: Cita["evaluacion"]) => {
-  if (e === "aprobada")
+const badgeInteraccion = (i: Cita["interaccion"]) => {
+  if (i === "buena_aprobada")
     return <span className="text-xs font-semibold rounded-full px-2 py-1 bg-green-50 text-green-700 border border-green-200">aprobada</span>;
-  if (e === "no_apta")
+  if (i === "no_apta")
     return <span className="text-xs font-semibold rounded-full px-2 py-1 bg-red-50 text-red-700 border border-red-200">no apta</span>;
   return <span className="text-xs font-semibold rounded-full px-2 py-1 bg-gray-50 text-gray-600 border border-gray-200">—</span>;
 };
@@ -163,24 +164,24 @@ export default function CitasTable({
                 </td>
                 <td className="px-3 py-3">
                   <span
-                    className={`text-xs font-semibold rounded-full px-2 py-1 ${
-                      cita.estado === "programada"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : cita.estado === "completada"
+                    className={`text-xs font-semibold rounded-full px-2 py-1 ${cita.estado === "programada"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : cita.estado === "completada"
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-200 text-gray-600"
-                    }`}
+                      }`}
                   >
                     {cita.estado}
                   </span>
                 </td>
 
                 <td className="px-3 py-3">{badgeAsistencia(cita.asistencia ?? null)}</td>
-                <td className="px-3 py-3">{badgeEvaluacion(cita.evaluacion ?? null)}</td>
+                <td className="px-3 py-3">{badgeInteraccion(cita.interaccion ?? null)}</td>
 
                 <td className="px-3 py-3 text-right">
                   <div className="flex flex-wrap gap-2 justify-end">
-                    {cita.estado !== "cancelada" && (
+                    {/* Mostrar acciones solo si la cita sigue programada y no tiene evaluación */}
+                    {cita.estado === "programada" && !cita.asistencia && !cita.interaccion && (
                       <>
                         <button
                           onClick={() => onReprogramar(cita)}
@@ -189,13 +190,7 @@ export default function CitasTable({
                           <CalendarClock size={14} />
                           Reprogramar
                         </button>
-                        <button
-                          onClick={() => onCancelar(cita.id)}
-                          className="flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-red-300"
-                        >
-                          <XCircle size={14} />
-                          Cancelar
-                        </button>
+
                         <button
                           onClick={() => onEvaluar(cita)}
                           className="flex items-center gap-1 rounded-md border border-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-emerald-300"
