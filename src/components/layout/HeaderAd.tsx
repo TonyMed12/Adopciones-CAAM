@@ -40,8 +40,8 @@ const adminNav = [
     icon: Users,
   },
   {
-    href: "/dashboards/administrador/reportes",
-    label: "Reportes",
+    href: "/dashboards/administrador/gestion_adopciones",
+    label: "Adopciones",
     icon: FileText,
     disabled: true, 
   },
