@@ -86,28 +86,45 @@ export default function ProcesoAdopcionPage() {
                 return;
             }
 
-            // 3️⃣ Consultas paralelas 🚀
-            const [solicitudRes, citaRes] = await Promise.all([
-                supabase
-                .from("solicitudes_adopcion")
-                .select(
-                    `
-          id,
-          estado,
-          mascota_id,
-          mascota:mascotas (nombre, imagen_url)
-        `
-                )
-                .eq("usuario_id", perfil.id)
-                .in("estado", ["pendiente", "en_proceso", "aprobada"])
-                .order("created_at", {ascending: false})
-                .limit(1)
-                .maybeSingle(),
+            // 3️⃣ Obtener solicitud activa del usuario
+            const {data: solicitud, error: solError} = await supabase
+            .from("solicitudes_adopcion")
+            .select(
+                `
+    id,
+    estado,
+    mascota_id,
+    mascota:mascotas (nombre, imagen_url)
+  `
+            )
+            .eq("usuario_id", perfil.id)
+            .in("estado", ["pendiente", "en_proceso"])
+            .order("created_at", {ascending: false})
+            .limit(1)
+            .maybeSingle();
 
-                supabase
-                .from("citas_adopcion")
-                .select(
-                    `
+            if (solError && !solError.message?.includes("Multiple") && !solError.message?.includes("no rows")) {
+                console.error("❌ Error buscando solicitud activa:", solError);
+            }
+
+            // 4️⃣ Validar si el usuario ya completó o no una adopción
+            if (!solicitud || ["aprobada", "rechazada"].includes(solicitud?.estado)) {
+                // 🧹 No hay solicitud activa o ya finalizó ⇒ limpiar proceso
+                setSolicitudActiva(null);
+                setCitaActiva(null);
+                console.log("🧩 Sin solicitud activa o adopción terminada. Usuario puede iniciar nueva adopción.");
+                return; // 🚫 No seguimos buscando citas
+            }
+
+            // ✅ Hay solicitud activa
+            setSolicitudActiva(solicitud);
+            log("📋 Solicitud activa:", solicitud);
+
+            // 5️⃣ Buscar CITA asociada a esa solicitud activa
+            const {data: cita, error: citaError} = await supabase
+            .from("citas_adopcion")
+            .select(
+                `
     id,
     solicitud_id,
     usuario_id,
@@ -118,42 +135,21 @@ export default function ProcesoAdopcionPage() {
     asistencia,
     interaccion,
     mascota:mascotas (nombre, imagen_url)
-    `
-                )
+  `
+            )
+            .eq("solicitud_id", solicitud.id) // 👈 vinculada a la solicitud activa
+            .in("estado", ["pendiente", "programada", "confirmada", "completada"])
+            .order("creada_en", {ascending: false})
+            .limit(1)
+            .maybeSingle();
 
-                .eq("usuario_id", perfil.id)
-                .in("estado", ["pendiente", "programada", "confirmada", "completada"])
-                .order("creada_en", {ascending: false})
-                .limit(1)
-                .maybeSingle(),
-            ]);
-
-            // 4️⃣ Solicitud activa
-            const {data: solicitud, error: solError} = solicitudRes;
-            if (solError && solError.message !== "Multiple (or no) rows returned by a single select") {
-                console.error("❌ Error buscando solicitud activa:", solError);
-            } else if (solicitud) {
-                setSolicitudActiva(solicitud);
-                log("📋 Solicitud activa:", solicitud);
-            } else {
-                setSolicitudActiva(null);
-                log("ℹ️ Sin solicitud activa");
+            if (citaError && !citaError.message?.includes("Multiple") && !citaError.message?.includes("no rows")) {
+                console.error("❌ Error buscando cita:", citaError);
             }
 
-            // 5️⃣ Cita activa
-            const {data: cita, error: citaError} = citaRes;
-
-            // ⚙️ Si no hay error grave, simplemente continúa sin loguear
-            if (!citaError || Object.keys(citaError).length === 0) {
-                // ✅ No hay error real o el error está vacío
-                setCitaActiva(cita || null);
-                log(cita ? "📅 Cita activa:" : "ℹ️ Sin cita activa", cita);
-            } else if (citaError.message?.includes("Multiple") || citaError.message?.includes("no rows")) {
-                // ⚙️ Ignorar los errores normales de maybeSingle
-                setCitaActiva(cita || null);
-                log("ℹ️ Sin cita activa (sin registros únicos)");
-            } else {
-            }
+            // ✅ Asignar cita (si existe)
+            setCitaActiva(cita || null);
+            log(cita ? "📅 Cita activa:" : "ℹ️ Sin cita activa", cita);
         }
 
         cargarDatos();
@@ -381,6 +377,15 @@ export default function ProcesoAdopcionPage() {
             {/* -------- Vista Aprobado -------- */}
             {estado === "aprobado" && (
                 <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
+                    {!solicitudActiva && !citaActiva && (
+                        <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-5 mt-4 text-center">
+                            <h3 className="font-bold text-[#2b1b12]">¡Has completado un proceso de adopción! 🎉</h3>
+                            <p className="text-sm text-[#7a5c49] mt-1">
+                                Si deseas adoptar otra mascota, puedes iniciar un nuevo proceso.
+                            </p>
+                        </div>
+                    )}
+
                     {/* 🟢 Panel principal */}
                     <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
                         <div className="flex items-center gap-2">

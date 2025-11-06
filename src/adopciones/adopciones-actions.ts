@@ -182,22 +182,49 @@ export async function cambiarEstadoAdopcion(params: {
         fecha_revision: new Date().toISOString(),
     })
     .eq("id", parsed.id)
-    .select("id, solicitud_id, estado") // 👈 añadimos solicitud_id
+    .select("id, solicitud_id, estado")
     .single();
 
     if (error) throw new Error(error.message);
 
     // 2️⃣ Si tiene solicitud asociada → actualizar su estado también
     if (data?.solicitud_id) {
-        const {error: errSolicitud} = await supabase
+        const {data: solicitud, error: errSolicitud} = await supabase
         .from("solicitudes_adopcion")
         .update({
-            estado: parsed.estado, // 👈 mismo valor: "aprobada" o "rechazada"
+            estado: parsed.estado, // "aprobada" o "rechazada"
         })
-        .eq("id", data.solicitud_id);
+        .eq("id", data.solicitud_id)
+        .select("mascota_id")
+        .single();
 
         if (errSolicitud) {
             console.error("⚠️ Error actualizando solicitud:", errSolicitud.message);
+        } else if (solicitud?.mascota_id) {
+            // 3️⃣ Actualizar mascota según resultado
+            if (parsed.estado === "aprobada") {
+                const {error: errMascota} = await supabase
+                .from("mascotas")
+                .update({
+                    estado: "adoptada",
+                    disponible_adopcion: false,
+                })
+                .eq("id", solicitud.mascota_id);
+
+                if (errMascota) console.error("⚠️ Error marcando mascota como adoptada:", errMascota.message);
+                else console.log("✅ Mascota marcada como adoptada y no disponible");
+            } else if (parsed.estado === "rechazada") {
+                const {error: errMascota} = await supabase
+                .from("mascotas")
+                .update({
+                    estado: "disponible",
+                    disponible_adopcion: true,
+                })
+                .eq("id", solicitud.mascota_id);
+
+                if (errMascota) console.error("⚠️ Error liberando mascota:", errMascota.message);
+                else console.log("✅ Mascota liberada para adopción nuevamente");
+            }
         }
     }
 
