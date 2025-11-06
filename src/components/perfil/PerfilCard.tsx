@@ -17,19 +17,110 @@ import type {
     Documento,
     SolicitudAdopcionMin as SolicitudAdopcion,
 } from "@/perfil/perfil";
+import type { Mascota } from "@/mascotas/mascotas";
 
 interface Props {
     perfil: Perfil | null;
     direccion: Direccion | null;
     solicitudes: SolicitudAdopcion[];
     documentos: Documento[];
+    mascotasAdoptadas?: {
+    id: string;
+    nombre: string;
+    imagen_url: string | null;
+    sexo?: string;
+    tamano?: string;
+    edad?: string | null;
+    personalidad?: string | null;
+    raza?: { nombre: string; especie: string };
+  }[];
 }
 
+/* ======================= CARD DE MASCOTA ADOPTADA ======================= */
+type MascotaAdoptadaMin = {
+  id: string;
+  nombre: string;
+  imagen_url: string | null;
+  sexo?: string;
+  tamano?: string;
+  edad?: string | null;
+  personalidad?: string | null;
+  raza?: { nombre: string; especie: string } | null;
+};
+
+function MascotaCardAdoptada({ mascota }: { mascota: MascotaAdoptadaMin }) {
+    return (
+        <Card className="overflow-hidden bg-[#fffaf3] border border-[#e2cbb3] rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
+            {/* Imagen */}
+            <div className="relative w-full h-48">
+                <img
+                    src={mascota.imagen_url || "/placeholder.jpg"}
+                    alt={mascota.nombre}
+                    className="w-full h-full object-cover"
+                />
+
+                {/* Etiqueta de sexo */}
+                {mascota.sexo && (
+                    <span
+                        className={`absolute top-3 left-3 text-xs font-semibold text-white px-3 py-1 rounded-full ${mascota.sexo === "macho" ? "bg-[#3b82f6]" : "bg-[#f472b6]"
+                            }`}
+                    >
+                        {mascota.sexo === "macho" ? "Macho" : "Hembra"}
+                    </span>
+                )}
+            </div>
+
+            {/* Contenido */}
+            <div className="p-4 text-[#5b3e26]">
+                <div className="flex justify-between items-center mb-1">
+                    <h3 className="text-lg font-semibold text-[#8b4513]">
+                        {mascota.nombre}
+                    </h3>
+
+                    {mascota.raza?.especie && (
+                        <span className="text-xs bg-[#f7e8d0] text-[#8b4513] font-semibold px-2 py-1 rounded-full">
+                            {mascota.raza.especie}
+                        </span>
+                    )}
+                </div>
+
+                <div className="text-sm space-y-0.5 mb-1">
+                    {mascota.raza?.nombre && (
+                        <p>
+                            <span className="font-semibold">Raza:</span>{" "}
+                            {mascota.raza.nombre}
+                        </p>
+                    )}
+                    {mascota.tamano && (
+                        <p>
+                            <span className="font-semibold">Tamaño:</span>{" "}
+                            {mascota.tamano}
+                        </p>
+                    )}
+                    {mascota.edad && (
+                        <p>
+                            <span className="font-semibold">Edad:</span> {mascota.edad}
+                        </p>
+                    )}
+                </div>
+
+                {mascota.personalidad && (
+                    <p className="text-sm text-[#7a5c49] italic mt-2">
+                        {mascota.personalidad}
+                    </p>
+                )}
+            </div>
+        </Card>
+    );
+}
+
+/* ======================= PERFIL CARD ======================= */
 export default function PerfilCard({
     perfil,
     direccion,
     solicitudes,
     documentos,
+    mascotasAdoptadas = [],
 }: Props) {
     const [editPerfil, setEditPerfil] = useState(false);
     const [editDir, setEditDir] = useState(false);
@@ -62,7 +153,11 @@ export default function PerfilCard({
 
     const handleSaveDir = async () => {
         if (!perfil?.id) return;
-        const data = { ...formDir, usuario_id: perfil.id, direccion_principal: true };
+        const data = {
+            ...formDir,
+            usuario_id: perfil.id,
+            direccion_principal: true,
+        };
         const res = await guardarDireccion(data);
         if (res.success) setEditDir(false);
     };
@@ -72,8 +167,13 @@ export default function PerfilCard({
             {/* --- Datos personales --- */}
             <Card className="p-6 bg-[#fffdf9] border border-[#e2cbb3] shadow-md">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-[#8b4513]">Datos personales</h2>
-                    <Button onClick={() => setEditPerfil(true)} className="bg-[#8b4513] hover:bg-[#7a3f11]">
+                    <h2 className="text-xl font-semibold text-[#8b4513]">
+                        Datos personales
+                    </h2>
+                    <Button
+                        onClick={() => setEditPerfil(true)}
+                        className="bg-[#8b4513] hover:bg-[#7a3f11]"
+                    >
                         Editar
                     </Button>
                 </div>
@@ -100,8 +200,7 @@ export default function PerfilCard({
                     </div>
                     <div>
                         <p className="text-sm text-[#9b7b59]">CURP</p>
-                        <p className="font-medium">{perfil?.curp ?? "—"}
-                        </p>
+                        <p className="font-medium">{perfil?.curp ?? "—"}</p>
                     </div>
                     <div>
                         <p className="text-sm text-[#9b7b59]">Ocupación</p>
@@ -113,8 +212,13 @@ export default function PerfilCard({
             {/* --- Dirección principal --- */}
             <Card className="p-6 bg-[#fffdf9] border border-[#e2cbb3] shadow-md">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-[#8b4513]">Dirección principal</h2>
-                    <Button onClick={() => setEditDir(true)} className="bg-[#8b4513] hover:bg-[#7a3f11]">
+                    <h2 className="text-xl font-semibold text-[#8b4513]">
+                        Dirección principal
+                    </h2>
+                    <Button
+                        onClick={() => setEditDir(true)}
+                        className="bg-[#8b4513] hover:bg-[#7a3f11]"
+                    >
                         {direccion ? "Editar" : "Agregar"}
                     </Button>
                 </div>
@@ -122,15 +226,19 @@ export default function PerfilCard({
                 {direccion ? (
                     <div className="text-[#5b3e26] space-y-1">
                         <p>
-                            {direccion.calle} {direccion.numero_exterior}, {direccion.colonia}
+                            {direccion.calle} {direccion.numero_exterior},{" "}
+                            {direccion.colonia}
                         </p>
                         <p>
-                            {direccion.municipio}, {direccion.estado}, CP {direccion.codigo_postal}
+                            {direccion.municipio}, {direccion.estado}, CP{" "}
+                            {direccion.codigo_postal}
                         </p>
                         <p>{direccion.pais}</p>
                     </div>
                 ) : (
-                    <p className="text-[#5b3e26]">No tienes dirección principal registrada.</p>
+                    <p className="text-[#5b3e26]">
+                        No tienes dirección principal registrada.
+                    </p>
                 )}
             </Card>
 
@@ -164,7 +272,8 @@ export default function PerfilCard({
                                         {sol.mascota?.nombre ?? "Mascota"}
                                     </p>
                                     <p className="text-sm text-[#9b7b59]">
-                                        <span className="font-medium">Solicitud:</span> #{sol.numero_solicitud}
+                                        <span className="font-medium">Solicitud:</span> #
+                                        {sol.numero_solicitud}
                                     </p>
 
                                     <div className="mt-2 inline-block bg-[#f7e8d0] text-[#8b4513] text-xs font-semibold px-3 py-1 rounded-full capitalize shadow-sm">
@@ -177,9 +286,28 @@ export default function PerfilCard({
                 )}
             </Card>
 
+            {/* --- Mascotas adoptadas --- */}
+            <Card className="p-6 bg-[#fffdf9] border border-[#e2cbb3] shadow-md">
+                <h2 className="text-xl font-semibold text-[#8b4513] mb-4">
+                    Mascotas adoptadas
+                </h2>
+
+                {mascotasAdoptadas.length === 0 ? (
+                    <p className="text-[#5b3e26]">Aún no tienes mascotas adoptadas.</p>
+                ) : (
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {mascotasAdoptadas.map((m) => (
+                            <MascotaCardAdoptada key={m.id} mascota={m} />
+                        ))}
+                    </div>
+                )}
+            </Card>
+
             {/* --- Documentos aprobados --- */}
             <Card className="p-6 bg-[#fffdf9] border border-[#e2cbb3] shadow-md">
-                <h2 className="text-xl font-semibold text-[#8b4513] mb-4">Documentos aprobados</h2>
+                <h2 className="text-xl font-semibold text-[#8b4513] mb-4">
+                    Documentos aprobados
+                </h2>
 
                 {documentos.length === 0 ? (
                     <p className="text-[#5b3e26]">No hay documentos aprobados.</p>
@@ -194,7 +322,9 @@ export default function PerfilCard({
                                     <div className="w-12 h-12 rounded-full bg-[#f7e8d0] flex items-center justify-center mb-2">
                                         <FileCheck className="h-6 w-6 text-[#8b4513]" />
                                     </div>
-                                    <p className="font-medium text-[#8b4513] capitalize">{d.tipo}</p>
+                                    <p className="font-medium text-[#8b4513] capitalize">
+                                        {d.tipo}
+                                    </p>
                                     <p className="text-xs text-[#9b7b59] mt-1">{d.status}</p>
                                 </div>
 
@@ -210,18 +340,6 @@ export default function PerfilCard({
                         ))}
                     </div>
                 )}
-            </Card>
-
-            {/* --- Cambiar contraseña --- */}
-            <Card className="p-6 bg-[#fffdf9] border border-[#e2cbb3] shadow-md">
-                <h2 className="text-xl font-semibold text-[#8b4513] mb-4">Cambiar contraseña</h2>
-                <div className="flex gap-2 max-w-md">
-                    <Input type="password" placeholder="Nueva contraseña" />
-                    <Button className="bg-[#8b4513] hover:bg-[#7a3f11]">Actualizar</Button>
-                </div>
-                <p className="text-xs text-[#9b7b59] mt-2">
-                    * Implementación de backend pendiente. Solo interfaz por ahora.
-                </p>
             </Card>
 
             {/* --- Modal: editar perfil --- */}
