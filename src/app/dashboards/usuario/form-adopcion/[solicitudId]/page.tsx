@@ -1,13 +1,15 @@
 "use client";
-import {useEffect, useState} from "react";
-import {useRouter, useParams} from "next/navigation";
-import AdoptionForm, {type AdoptionPayload} from "@/components/adopciones/AdoptionForm";
-import {obtenerSolicitudParaAdopcion} from "@/solicitudes/solicitudes-actions";
-import {crearAdopcion} from "@/adopciones/adopciones-actions";
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import AdoptionForm, { type AdoptionPayload } from "@/components/adopciones/AdoptionForm";
+import { obtenerSolicitudParaAdopcion } from "@/solicitudes/solicitudes-actions";
+import { crearAdopcion } from "@/adopciones/adopciones-actions";
+import PageHead from "@/components/layout/PageHead";
+import { toast } from "sonner";
 
 export default function FormularioAdopcionPage() {
     const router = useRouter();
-    const {solicitudId} = useParams<{solicitudId: string}>();
+    const { solicitudId } = useParams<{ solicitudId: string }>();
 
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function FormularioAdopcionPage() {
 
     const handleSubmit = async (payload: AdoptionPayload) => {
         if (!solicitud) {
-            alert("No se encontró la solicitud para continuar.");
+            toast.error("No se encontró la solicitud para continuar.");
             return;
         }
 
@@ -55,11 +57,11 @@ export default function FormularioAdopcionPage() {
                 observaciones_usuario: payload.observaciones || null,
             });
 
-            alert("Formulario enviado. Estado: En revisión.");
+            toast.success("Formulario de adopción enviado con éxito.");
             router.push("/dashboards/usuario");
         } catch (err: any) {
             console.error(err);
-            alert(err?.message || "No se pudo enviar la solicitud.");
+            toast.error("No se pudo enviar el formulario de adopción.");
         }
     };
 
@@ -69,8 +71,10 @@ export default function FormularioAdopcionPage() {
     return (
         <div className="p-6 space-y-4">
             <div>
-                <h1 className="text-2xl font-bold">Formulario de adopción</h1>
-                <p className="text-sm text-gray-600">Completa la información para continuar con tu adopción.</p>
+                <PageHead
+                    title="Formulario de adopción"
+                    subtitle="Completa la información para continuar con tu adopción."
+                />
             </div>
 
             {/* Puedes pasar defaults si quieres precargar usuario/mascota */}

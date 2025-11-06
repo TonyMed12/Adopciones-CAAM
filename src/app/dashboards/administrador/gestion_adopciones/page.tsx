@@ -5,6 +5,8 @@ import AdopcionesTable from "@/components/adopciones/AdopcionesTable";
 import {listarAdopcionesAdmin, cambiarEstadoAdopcion} from "@/adopciones/adopciones-actions";
 import type {AdopcionAdminRow} from "@/adopciones/adopciones";
 import {createClient} from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { toastConfirm } from "@/components/ui/toastConfirm";
 
 export default function GestionAdopcionesPage() {
     const [rows, setRows] = useState<AdopcionAdminRow[]>([]);
@@ -19,7 +21,7 @@ export default function GestionAdopcionesPage() {
                 setRows(data);
             } catch (error) {
                 console.error("Error cargando adopciones:", error);
-                alert("Error al cargar las adopciones.");
+                toast.error("Error al cargar las adopciones.");
             } finally {
                 setLoading(false);
             }
@@ -29,7 +31,8 @@ export default function GestionAdopcionesPage() {
     }, []);
 
     const aprobar = async (id: string) => {
-        if (!confirm("¿Aprobar esta adopción?")) return;
+        const confirmed = await toastConfirm("¿Estás seguro de aprobar esta adopción?");
+        if (!confirmed) return;
 
         try {
             const supabase = createClient();
@@ -47,10 +50,10 @@ export default function GestionAdopcionesPage() {
             });
 
             setRows((prev) => prev.map((r) => (r.id === id ? {...r, estado: "aprobada"} : r)));
-            alert("✅ Adopción aprobada correctamente.");
+            toast.success("Adopción aprobada correctamente.");
         } catch (err) {
             console.error(err);
-            alert("❌ Error al aprobar adopción.");
+            toast.error("Error al aprobar la adopción.");
         }
     };
 
@@ -74,10 +77,10 @@ export default function GestionAdopcionesPage() {
             });
 
             setRows((prev) => prev.map((r) => (r.id === id ? {...r, estado: "rechazada"} : r)));
-            alert("⚠️ Adopción rechazada.");
+            toast.success("Adopción rechazada correctamente.");
         } catch (err) {
             console.error(err);
-            alert("❌ Error al rechazar adopción.");
+            toast.error("Error al rechazar la adopción.");
         }
     };
 
