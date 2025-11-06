@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, {useMemo, useState, useEffect, useCallback} from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import {
     CheckCircle2,
     Clock,
@@ -15,13 +15,13 @@ import {
     PawPrint,
     ArrowLeft,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import {createClient} from "@/lib/supabase/client";
 import PageHead from "@/components/layout/PageHead";
-import { Button } from "@/components/ui/Button";
-import { motion } from "framer-motion";
+import {Button} from "@/components/ui/Button";
+import {motion} from "framer-motion";
 import dynamic from "next/dynamic";
-const StepperAdopcion = dynamic(() => import("./StepperAdopcion"), { ssr: false });
-const PanelEstado = dynamic(() => import("./PanelEstado"), { ssr: false });
+const StepperAdopcion = dynamic(() => import("./StepperAdopcion"), {ssr: false});
+const PanelEstado = dynamic(() => import("./PanelEstado"), {ssr: false});
 const SeccionCarga = dynamic(() => import("./SeccionCarga"), {
     ssr: false,
     loading: () => <p className="text-sm text-[#7a5c49]">Cargando sección...</p>,
@@ -58,7 +58,7 @@ export default function ProcesoAdopcionPage() {
         async function cargarDatos() {
             // 1️⃣ Obtener usuario
             const {
-                data: { user },
+                data: {user},
                 error: userError,
             } = await supabase.auth.getUser();
             if (userError) {
@@ -71,11 +71,11 @@ export default function ProcesoAdopcionPage() {
             }
 
             // 2️⃣ Obtener perfil
-            const { data: perfil, error: perfilError } = await supabase
-                .from("perfiles")
-                .select("id, email, nombres")
-                .eq("email", user.email)
-                .maybeSingle();
+            const {data: perfil, error: perfilError} = await supabase
+            .from("perfiles")
+            .select("id, email, nombres")
+            .eq("email", user.email)
+            .maybeSingle();
 
             if (perfilError) {
                 console.error("❌ Error obteniendo perfil:", perfilError);
@@ -89,43 +89,47 @@ export default function ProcesoAdopcionPage() {
             // 3️⃣ Consultas paralelas 🚀
             const [solicitudRes, citaRes] = await Promise.all([
                 supabase
-                    .from("solicitudes_adopcion")
-                    .select(
-                        `
+                .from("solicitudes_adopcion")
+                .select(
+                    `
           id,
           estado,
           mascota_id,
           mascota:mascotas (nombre, imagen_url)
         `
-                    )
-                    .eq("usuario_id", perfil.id)
-                    .in("estado", ["pendiente", "en_proceso", "aprobada"])
-                    .order("created_at", { ascending: false })
-                    .limit(1)
-                    .maybeSingle(),
+                )
+                .eq("usuario_id", perfil.id)
+                .in("estado", ["pendiente", "en_proceso", "aprobada"])
+                .order("created_at", {ascending: false})
+                .limit(1)
+                .maybeSingle(),
 
                 supabase
-                    .from("citas_adopcion")
-                    .select(
-                        `
-                    id,
-                    fecha_cita,
-                    hora_cita,
-                    estado,
-                    asistencia,
-                    interaccion,
-                    mascota:mascotas (nombre, imagen_url)          
+                .from("citas_adopcion")
+                .select(
                     `
-                    )
-                    .eq("usuario_id", perfil.id)
-                    .in("estado", ["pendiente", "programada", "confirmada", "completada"])
-                    .order("creada_en", { ascending: false })
-                    .limit(1)
-                    .maybeSingle(),
+    id,
+    solicitud_id,
+    usuario_id,
+    mascota_id,
+    fecha_cita,
+    hora_cita,
+    estado,
+    asistencia,
+    interaccion,
+    mascota:mascotas (nombre, imagen_url)
+    `
+                )
+
+                .eq("usuario_id", perfil.id)
+                .in("estado", ["pendiente", "programada", "confirmada", "completada"])
+                .order("creada_en", {ascending: false})
+                .limit(1)
+                .maybeSingle(),
             ]);
 
             // 4️⃣ Solicitud activa
-            const { data: solicitud, error: solError } = solicitudRes;
+            const {data: solicitud, error: solError} = solicitudRes;
             if (solError && solError.message !== "Multiple (or no) rows returned by a single select") {
                 console.error("❌ Error buscando solicitud activa:", solError);
             } else if (solicitud) {
@@ -137,7 +141,7 @@ export default function ProcesoAdopcionPage() {
             }
 
             // 5️⃣ Cita activa
-            const { data: cita, error: citaError } = citaRes;
+            const {data: cita, error: citaError} = citaRes;
 
             // ⚙️ Si no hay error grave, simplemente continúa sin loguear
             if (!citaError || Object.keys(citaError).length === 0) {
@@ -157,7 +161,7 @@ export default function ProcesoAdopcionPage() {
 
     const [mostrarAgendar, setMostrarAgendar] = useState(false);
     const nombreMascota = qs.get("nombre");
-    function BotonesProceso({ paso }: { paso: string | null }) {
+    function BotonesProceso({paso}: {paso: string | null}) {
         const router = useRouter();
 
         // Si viene del flujo automático (paso=2), mostramos solo el botón de agendar cita
@@ -196,15 +200,15 @@ export default function ProcesoAdopcionPage() {
             setLoadingDocs(true); // 👈 empieza el loading
             try {
                 const {
-                    data: { user },
+                    data: {user},
                     error: userError,
                 } = await supabase.auth.getUser();
                 if (userError || !user) return;
 
-                const { data: docs, error } = await supabase
-                    .from("documentos")
-                    .select("id, tipo, status, observacion_admin, url")
-                    .eq("perfil_id", user.id);
+                const {data: docs, error} = await supabase
+                .from("documentos")
+                .select("id, tipo, status, observacion_admin, url")
+                .eq("perfil_id", user.id);
 
                 if (error) throw error;
 
@@ -253,7 +257,7 @@ export default function ProcesoAdopcionPage() {
     const uploadDocumento = useCallback(async (file: File, tipo: string) => {
         const supabase = createClient();
         const {
-            data: { user },
+            data: {user},
             error: userError,
         } = await supabase.auth.getUser();
 
@@ -262,19 +266,19 @@ export default function ProcesoAdopcionPage() {
         const safe = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
         const path = `${user.id}/${tipo}-${Date.now()}-${safe}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-            .from("documentos_adopcion")
-            .upload(path, file, { upsert: true });
+        const {data: uploadData, error: uploadError} = await supabase.storage
+        .from("documentos_adopcion")
+        .upload(path, file, {upsert: true});
 
         if (uploadError) throw uploadError;
 
-        const { data: publicUrlData } = await supabase.storage.from("documentos_adopcion").getPublicUrl(path);
+        const {data: publicUrlData} = await supabase.storage.from("documentos_adopcion").getPublicUrl(path);
 
         const publicUrl =
             publicUrlData?.publicUrl ||
             `https://${process.env.NEXT_PUBLIC_SUPABASE_PROJECT_REF}.supabase.co/storage/v1/object/public/documentos_adopcion/${path}`;
 
-        const { error: dbError } = await supabase.from("documentos").upsert(
+        const {error: dbError} = await supabase.from("documentos").upsert(
             {
                 perfil_id: user.id,
                 tipo,
@@ -282,7 +286,7 @@ export default function ProcesoAdopcionPage() {
                 status: "pendiente",
                 created_at: new Date().toISOString(),
             },
-            { onConflict: "perfil_id,tipo" }
+            {onConflict: "perfil_id,tipo"}
         );
 
         if (dbError) throw dbError;
@@ -340,7 +344,7 @@ export default function ProcesoAdopcionPage() {
                 <SeccionCarga
                     archivos={archivos}
                     docs={docs}
-                    onPick={(id, file) => setArchivos({ ...archivos, [id]: file ?? null })}
+                    onPick={(id, file) => setArchivos({...archivos, [id]: file ?? null})}
                     onEnviar={enviar}
                     deshabilitarEnviar={
                         estado === "sin_documentos"
@@ -355,8 +359,8 @@ export default function ProcesoAdopcionPage() {
                     <div className="flex flex-col items-center justify-center gap-4">
                         <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[#BC5F36]/10">
                             <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+                                animate={{rotate: 360}}
+                                transition={{repeat: Infinity, duration: 3, ease: "linear"}}
                                 className="flex items-center justify-center w-16 h-16 rounded-full bg-[#BC5F36]/10"
                             >
                                 <Clock className="h-10 w-10 text-[#BC5F36]" />
@@ -412,10 +416,12 @@ export default function ProcesoAdopcionPage() {
                             {/* 🔽 Condición para mostrar el botón de formulario */}
                             <div className="mt-4 text-right">
                                 {citaActiva.estado === "completada" &&
-                                    citaActiva.asistencia === "asistio" &&
-                                    citaActiva.interaccion === "buena_aprobada" ? (
+                                citaActiva.asistencia === "asistio" &&
+                                citaActiva.interaccion === "buena_aprobada" ? (
                                     <Button
-                                        onClick={() => router.push("/dashboards/usuario/form-adopcion")}
+                                        onClick={() =>
+                                            router.push(`/dashboards/usuario/form-adopcion/${citaActiva.solicitud_id}`)
+                                        }
                                         className="bg-[#16A34A] hover:bg-[#15803D]"
                                     >
                                         <FileText className="h-4 w-4 mr-1" /> Llenar formulario de adopción
@@ -466,10 +472,10 @@ export default function ProcesoAdopcionPage() {
                                                         const supabase = createClient();
 
                                                         // 1️⃣ Eliminar la solicitud
-                                                        const { error: deleteError } = await supabase
-                                                            .from("solicitudes_adopcion")
-                                                            .delete()
-                                                            .eq("id", solicitudActiva.id);
+                                                        const {error: deleteError} = await supabase
+                                                        .from("solicitudes_adopcion")
+                                                        .delete()
+                                                        .eq("id", solicitudActiva.id);
 
                                                         if (deleteError) {
                                                             console.error(
@@ -482,13 +488,13 @@ export default function ProcesoAdopcionPage() {
 
                                                         // 2️⃣ Volver a poner la mascota como disponible
                                                         if (solicitudActiva.mascota_id) {
-                                                            const { error: updateError } = await supabase
-                                                                .from("mascotas")
-                                                                .update({
-                                                                    estado: "disponible",
-                                                                    disponible_adopcion: true,
-                                                                })
-                                                                .eq("id", solicitudActiva.mascota_id);
+                                                            const {error: updateError} = await supabase
+                                                            .from("mascotas")
+                                                            .update({
+                                                                estado: "disponible",
+                                                                disponible_adopcion: true,
+                                                            })
+                                                            .eq("id", solicitudActiva.mascota_id);
 
                                                             if (updateError) {
                                                                 console.error(
@@ -631,15 +637,15 @@ function BotonesProceso() {
         async function fetchSolicitudes() {
             const supabase = createClient();
             const {
-                data: { user },
+                data: {user},
             } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data } = await supabase
-                .from("solicitudes_adopcion")
-                .select("id, estado")
-                .eq("perfil_id", user.id)
-                .in("estado", ["pendiente", "aprobada"]);
+            const {data} = await supabase
+            .from("solicitudes_adopcion")
+            .select("id, estado")
+            .eq("perfil_id", user.id)
+            .in("estado", ["pendiente", "aprobada"]);
 
             setTieneSolicitudes(!!data?.length);
         }
@@ -662,7 +668,7 @@ function BotonesProceso() {
     );
 }
 
-function CardAgendar({ onBack }: { onBack: () => void }) {
+function CardAgendar({onBack}: {onBack: () => void}) {
     const router = useRouter();
 
     return (
@@ -723,11 +729,11 @@ function StepCard({
     );
 }
 
-function Stepper({ estado }: { estado: Estado }) {
+function Stepper({estado}: {estado: Estado}) {
     const steps = [
-        { key: "sin_documentos", label: "1. Sube tus documentos" },
-        { key: "en_revision", label: "2. Revisión del administrador" },
-        { key: "aprobado", label: "3. Aprobado" },
+        {key: "sin_documentos", label: "1. Sube tus documentos"},
+        {key: "en_revision", label: "2. Revisión del administrador"},
+        {key: "aprobado", label: "3. Aprobado"},
     ] as const;
     const current = estado === "sin_documentos" ? 0 : estado === "en_revision" ? 1 : 2;
     return (
@@ -735,17 +741,19 @@ function Stepper({ estado }: { estado: Estado }) {
             {steps.map((s, i) => (
                 <li
                     key={s.key}
-                    className={`rounded-xl border p-4 shadow-sm ${i === current ? "border-[#BC5F36] bg-[#fff4e7]" : "border-[#eadacb] bg-white"
-                        }`}
+                    className={`rounded-xl border p-4 shadow-sm ${
+                        i === current ? "border-[#BC5F36] bg-[#fff4e7]" : "border-[#eadacb] bg-white"
+                    }`}
                 >
                     <div className="flex items-center gap-2">
                         <span
-                            className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${i < current
-                                ? "bg-[#BC5F36] text-white"
-                                : i === current
+                            className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${
+                                i < current
+                                    ? "bg-[#BC5F36] text-white"
+                                    : i === current
                                     ? "bg-[#BC5F36]/15 text-[#BC5F36]"
                                     : "bg-[#f5ebe1] text-[#7a5c49]"
-                                }`}
+                            }`}
                         >
                             {i < current ? "✓" : i + 1}
                         </span>
