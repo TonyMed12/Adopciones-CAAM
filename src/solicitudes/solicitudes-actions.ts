@@ -15,10 +15,6 @@ export async function obtenerSolicitudParaAdopcion(solicitudId: string) {
     if (error) throw new Error(error.message);
     if (!data) throw new Error("Solicitud no encontrada.");
 
-    if (data.estado !== "pendiente") {
-        throw new Error("La solicitud ya no está disponible para continuar con la adopción.");
-    }
-
     return data as {
         id: string;
         numero_solicitud: string;

@@ -37,7 +37,7 @@ export default function ProcesoAdopcionPage() {
   const qs = useSearchParams();
   const from = qs.get("from");
   const [solicitudActiva, setSolicitudActiva] = useState<any | null>(null);
-
+  const [yaTieneAdopcion, setYaTieneAdopcion] = useState(false);
   const [estado, setEstado] = useState<Estado>("sin_documentos");
   const [docs, setDocs] = useState<
     {
@@ -93,7 +93,7 @@ export default function ProcesoAdopcionPage() {
                 `
           )
           .eq("usuario_id", perfil.id)
-          .in("estado", ["pendiente", "en_proceso", "aprobada"])
+          .in("estado", ["pendiente", "en_proceso"])
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
@@ -124,6 +124,20 @@ export default function ProcesoAdopcionPage() {
         console.error("❌ Error buscando solicitud activa:", solError);
       }
       setSolicitudActiva(solicitud || null);
+
+      // 🔍 Verificar si ya existe una adopción enviada por el usuario
+      if (solicitud?.id) {
+        const { data: adopcionExistente, error: adopError } = await supabase
+          .from("adopciones")
+          .select("id")
+          .eq("solicitud_id", solicitud.id)
+          .maybeSingle();
+
+        if (!adopError && adopcionExistente) {
+          setYaTieneAdopcion(true);
+          console.log("✅ Ya existe un formulario de adopción enviado.");
+        }
+      }
 
       // 5️⃣ Filtrar citas
       const { data: citas, error: citaError } = citasRes;
@@ -253,6 +267,30 @@ export default function ProcesoAdopcionPage() {
     fetchEstado();
   }, []);
 
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function verificarAdopcion() {
+      // Solo ejecuta si hay cita activa y tiene solicitud asociada
+      if (!citaActiva?.solicitud_id) return;
+
+      const { data: adopcionExistente, error } = await supabase
+        .from("adopciones")
+        .select("id, estado")
+        .eq("solicitud_id", citaActiva.solicitud_id)
+        .maybeSingle();
+
+      if (!error && adopcionExistente) {
+        console.log("✅ Ya existe una adopción registrada:", adopcionExistente);
+        setYaTieneAdopcion(true);
+      } else {
+        setYaTieneAdopcion(false);
+      }
+    }
+
+    verificarAdopcion();
+  }, [citaActiva]);
+
   // --------------------------------------------------------
   // 📂 Estado de archivos cargados
   // --------------------------------------------------------
@@ -374,8 +412,8 @@ export default function ProcesoAdopcionPage() {
             estado === "sin_documentos"
               ? !completos
               : docs
-                  .filter((d) => d.estado === "rechazado")
-                  .some((d) => !archivos[d.tipo])
+                .filter((d) => d.estado === "rechazado")
+                .some((d) => !archivos[d.tipo])
           }
         />
       )}
@@ -430,12 +468,11 @@ export default function ProcesoAdopcionPage() {
           />
 
           {/* 🔸 Bloque según estado */}
-          {citaActiva ? (
+          {citaActiva && !yaTieneAdopcion ? (
             /* ✅ CASO 3: Ya tiene cita activa */
-            <div className="rounded-xl border border-[#cdeccd] bg-[#f6fff6] p-5 mb-4 mt-5">
+            <div className="rounded-xl bg-white p-5 mb-4 mt-5">
               <h3 className="text-sm font-extrabold text-green-700 flex items-center gap-2">
-                <CalendarCheck className="h-4 w-4" /> ¡Tienes una cita
-                programada!
+                <CalendarCheck className="h-4 w-4" /> ¡Tienes una cita programada!
               </h3>
               <div className="mt-2 text-sm text-[#497a49]">
                 <p>
@@ -451,11 +488,9 @@ export default function ProcesoAdopcionPage() {
                 </p>
               </div>
 
-              {/* 🔽 Condición para mostrar el botón de formulario */}
-              <div className="mt-4 text-right">
-                {citaActiva.estado === "completada" &&
-                citaActiva.asistencia === "asistio" &&
-                citaActiva.interaccion === "buena_aprobada" ? (
+              {/* 🔽 Botón solo si aún no envió el formulario */}
+              {!yaTieneAdopcion && (
+                <div className="mt-4 text-right">
                   <Button
                     onClick={() =>
                       router.push(
@@ -464,41 +499,10 @@ export default function ProcesoAdopcionPage() {
                     }
                     className="bg-[#16A34A] hover:bg-[#15803D]"
                   >
-                    <FileText className="h-4 w-4 mr-1" /> Llenar formulario de
-                    adopción
+                    <FileText className="h-4 w-4 mr-1" /> Llenar formulario de adopción
                   </Button>
-                ) : (
-                  <Button
-                    className="bg-[#BC5F36] hover:bg-[#a64d2e]"
-                    onClick={async () => {
-                      const supabase = createClient();
-
-                      // 🔍 Revalidar estado actual antes de avanzar
-                      const { data: solicitudActual } = await supabase
-                        .from("solicitudes_adopcion")
-                        .select("estado")
-                        .eq("id", solicitudActiva.id)
-                        .maybeSingle();
-
-                      if (
-                        solicitudActual?.estado === "aprobada" ||
-                        solicitudActual?.estado === "completada" ||
-                        solicitudActual?.estado === "rechazada"
-                      ) {
-                        alert(
-                          "Esta solicitud ya fue finalizada o aprobada. No puedes agendar nuevas citas para ella."
-                        );
-                        return;
-                      }
-
-                      // ✅ Si sigue activa, continúa al flujo de citas
-                      router.push("/dashboards/usuario/citas");
-                    }}
-                  >
-                    <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
-                  </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           ) : solicitudActiva ? (
             /* 🟠 CASO 2: Tiene solicitud activa pero sin cita */
@@ -839,21 +843,19 @@ function Stepper({ estado }: { estado: Estado }) {
       {steps.map((s, i) => (
         <li
           key={s.key}
-          className={`rounded-xl border p-4 shadow-sm ${
-            i === current
-              ? "border-[#BC5F36] bg-[#fff4e7]"
-              : "border-[#eadacb] bg-white"
-          }`}
+          className={`rounded-xl border p-4 shadow-sm ${i === current
+            ? "border-[#BC5F36] bg-[#fff4e7]"
+            : "border-[#eadacb] bg-white"
+            }`}
         >
           <div className="flex items-center gap-2">
             <span
-              className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${
-                i < current
-                  ? "bg-[#BC5F36] text-white"
-                  : i === current
+              className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${i < current
+                ? "bg-[#BC5F36] text-white"
+                : i === current
                   ? "bg-[#BC5F36]/15 text-[#BC5F36]"
                   : "bg-[#f5ebe1] text-[#7a5c49]"
-              }`}
+                }`}
             >
               {i < current ? "✓" : i + 1}
             </span>
