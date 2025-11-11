@@ -134,6 +134,22 @@ export default function ProcesoAdopcionPage() {
       }
 
       // ✅ Solo consideramos citas NO completadas
+      // ✅ Primero, buscar la cita más reciente que esté completada con asistencia positiva
+      const citaCompletada = (citas || []).find(
+        (c) =>
+          c.estado === "completada" &&
+          c.asistencia === "asistio" &&
+          c.interaccion === "buena_aprobada"
+      );
+
+      // 🟢 Si hay una cita completada y válida → se mostrará el botón de “formulario”
+      if (citaCompletada) {
+        setCitaActiva(citaCompletada);
+        log("📋 Cita completada válida encontrada:", citaCompletada);
+        return; // ✅ No seguimos buscando otras citas activas
+      }
+
+      // 🟠 Si no hay completada válida, buscamos una cita activa normal
       const citaValida = (citas || []).find(
         (c) =>
           c.estado &&
