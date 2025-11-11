@@ -33,7 +33,7 @@ export default function AdminHeader() {
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  // Obtener nombre de administrador
+  // Obtener nombre del administrador logueado
   useEffect(() => {
     const fetchAdmin = async () => {
       const { data } = await supabase.auth.getUser();
@@ -100,11 +100,6 @@ export default function AdminHeader() {
               label: "Usuarios",
               icon: Users,
             },
-            {
-              href: "/dashboards/administrador/gestion_adopciones",
-              label: "Adopciones",
-              icon: CalendarDays,
-            },
           ].map(({ href, label, icon: Icon }) => {
             const active = isActive(href);
             return (
@@ -146,6 +141,22 @@ export default function AdminHeader() {
             {gestionOpen && (
               <div className="absolute left-0 mt-3 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
                 <Link
+                  href="/dashboards/administrador/gestion_adopciones"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
+                  onClick={() => setGestionOpen(false)}
+                >
+                  <FileText size={16} />
+                  <span>Adopciones</span>
+                </Link>
+                <Link
+                  href="/dashboards/administrador/documentos"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
+                  onClick={() => setGestionOpen(false)}
+                >
+                  <FileText size={16} />
+                  <span>Documentos</span>
+                </Link>
+                <Link
                   href="/dashboards/administrador/gestion_citas"
                   className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
                   onClick={() => setGestionOpen(false)}
@@ -160,14 +171,6 @@ export default function AdminHeader() {
                 >
                   <CalendarHeart size={16} />
                   <span>Citas veterinarias</span>
-                </Link>
-                <Link
-                  href="/dashboards/administrador/documentos"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
-                  onClick={() => setGestionOpen(false)}
-                >
-                  <FileText size={16} />
-                  <span>Documentos</span>
                 </Link>
               </div>
             )}

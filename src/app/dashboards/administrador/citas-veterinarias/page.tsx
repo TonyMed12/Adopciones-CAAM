@@ -1,45 +1,44 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   listarCitasVeterinariasAdmin,
   cambiarEstadoCitaVeterinaria,
 } from "@/citas/citas-veterinarias-actions";
-import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
-import { toastConfirm } from "@/components/ui/toastConfirm";
 import { Button } from "@/components/ui/Button";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import CalendarioVeterinarias from "@/components/citas/CalendarioVeterinarias";
 
 export default function GestionCitasVeterinariasPage() {
-  const [rows, setRows] = useState<any[]>([]);
+  const [citas, setCitas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtro, setFiltro] = useState<
+    "todas" | "pendiente" | "aprobada" | "cancelada"
+  >("todas");
   const [query, setQuery] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState("todas");
 
   useEffect(() => {
     async function fetchCitas() {
       try {
         const data = await listarCitasVeterinariasAdmin();
-        setRows(data);
-      } catch (error) {
-        console.error("Error cargando citas veterinarias:", error);
+        setCitas(data);
+      } catch (err) {
+        console.error("Error cargando citas veterinarias:", err);
         toast.error("Error al cargar las citas veterinarias.");
       } finally {
         setLoading(false);
       }
     }
-
     fetchCitas();
   }, []);
 
-  const aprobar = async (id: string) => {
-    const confirmed = await toastConfirm("¿Aprobar esta cita veterinaria?");
-    if (!confirmed) return;
-
+  const aprobarCita = async (id: string) => {
     try {
       await cambiarEstadoCitaVeterinaria(id, "aprobada");
-      setRows((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, estado: "aprobada" } : r))
+      setCitas((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, estado: "aprobada" } : c))
       );
       toast.success("Cita aprobada correctamente.");
     } catch (err) {
@@ -48,14 +47,11 @@ export default function GestionCitasVeterinariasPage() {
     }
   };
 
-  const cancelar = async (id: string) => {
-    const confirmed = await toastConfirm("¿Cancelar esta cita veterinaria?");
-    if (!confirmed) return;
-
+  const cancelarCita = async (id: string) => {
     try {
       await cambiarEstadoCitaVeterinaria(id, "cancelada");
-      setRows((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, estado: "cancelada" } : r))
+      setCitas((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, estado: "cancelada" } : c))
       );
       toast.success("Cita cancelada correctamente.");
     } catch (err) {
@@ -64,43 +60,53 @@ export default function GestionCitasVeterinariasPage() {
     }
   };
 
-  const totales = useMemo(
-    () => ({
-      pendientes: rows.filter((r) => r.estado === "pendiente").length,
-      aprobadas: rows.filter((r) => r.estado === "aprobada").length,
-      canceladas: rows.filter((r) => r.estado === "cancelada").length,
-    }),
-    [rows]
-  );
+  const citasOrdenadas = useMemo(() => {
+    const filtradas =
+      filtro === "todas" ? citas : citas.filter((c) => c.estado === filtro);
 
-  const rowsFiltradas =
-    filtroEstado === "todas"
-      ? rows
-      : rows.filter((r) => r.estado === filtroEstado);
+    const buscadas = query
+      ? filtradas.filter(
+          (c) =>
+            c.mascota_nombre.toLowerCase().includes(query.toLowerCase()) ||
+            c.adoptante_nombre.toLowerCase().includes(query.toLowerCase())
+        )
+      : filtradas;
 
-  const rowsBuscadas = rowsFiltradas.filter(
-    (r) =>
-      r.mascota_nombre.toLowerCase().includes(query.toLowerCase()) ||
-      r.adoptante_nombre.toLowerCase().includes(query.toLowerCase())
-  );
+    return [...buscadas].sort(
+      (a, b) =>
+        new Date(a.fecha_cita).getTime() - new Date(b.fecha_cita).getTime()
+    );
+  }, [citas, filtro, query]);
 
   if (loading)
     return (
-      <div className="p-6 text-center text-sm text-[#7a5c49] animate-pulse">
-        Cargando citas...
+      <div className="p-6 text-center text-[#8B4513] animate-pulse">
+        Cargando citas veterinarias...
       </div>
     );
 
+  const totales = {
+    pendientes: citas.filter((c) => c.estado === "pendiente").length,
+    aprobadas: citas.filter((c) => c.estado === "aprobada").length,
+    canceladas: citas.filter((c) => c.estado === "cancelada").length,
+  };
+
+  const proximasCitas = citasOrdenadas
+    .filter((c) => new Date(c.fecha_cita) > new Date())
+    .slice(0, 4);
+
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Gestión de citas veterinarias</h1>
+        <h1 className="text-2xl font-bold text-[#8B4513]">
+          Gestión de citas veterinarias
+        </h1>
         <p className="text-sm text-gray-600">
           Revisa y aprueba las citas veterinarias agendadas por adoptantes.
         </p>
       </div>
 
-      {/* Contadores */}
+      {/* KPIs */}
       <div className="flex flex-wrap gap-2">
         <span className="px-2 py-1 text-sm rounded-md border bg-yellow-50 text-yellow-700">
           Pendientes: {totales.pendientes}
@@ -113,113 +119,143 @@ export default function GestionCitasVeterinariasPage() {
         </span>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <input
-          type="text"
-          placeholder="Buscar por adoptante o mascota..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm w-full sm:w-64"
-        />
-        <select
-          value={filtroEstado}
-          onChange={(e) => setFiltroEstado(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="todas">Todas</option>
-          <option value="pendiente">Pendientes</option>
-          <option value="aprobada">Aprobadas</option>
-          <option value="cancelada">Canceladas</option>
-        </select>
-      </div>
-
-      {/* Tabla */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 rounded-lg">
-          <thead className="bg-[#fff7ef] text-[#8B4513] text-sm uppercase">
-            <tr>
-              <th className="p-3 text-left">Adoptante</th>
-              <th className="p-3 text-left">Mascota</th>
-              <th className="p-3 text-left">Fecha</th>
-              <th className="p-3 text-left">Motivo</th>
-              <th className="p-3 text-left">Estado</th>
-              <th className="p-3 text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rowsBuscadas.length === 0 ? (
+      {/* Layout principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 items-start">
+        {/* 🧾 Tabla */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <table className="min-w-full text-sm text-left text-gray-700 align-top">
+            <thead className="bg-[#FFF6E5] text-[#8B4513]">
               <tr>
-                <td colSpan={6} className="text-center py-6 text-gray-500">
-                  No se encontraron citas.
-                </td>
+                <th className="px-4 py-3 font-semibold">Adoptante</th>
+                <th className="px-4 py-3 font-semibold">Mascota</th>
+                <th className="px-4 py-3 font-semibold">Fecha</th>
+                <th className="px-4 py-3 font-semibold">Motivo</th>
+                <th className="px-4 py-3 font-semibold">Estado</th>
+                <th className="px-4 py-3 font-semibold text-center">
+                  Acciones
+                </th>
               </tr>
-            ) : (
-              rowsBuscadas.map((r) => (
+            </thead>
+
+            <tbody className="divide-y divide-[#f5e6d3]">
+              {citasOrdenadas.map((item) => (
                 <tr
-                  key={r.id}
-                  className="border-t hover:bg-orange-50 transition text-sm"
+                  key={item.id}
+                  className="hover:bg-[#FFF8F0] transition-colors"
                 >
-                  <td className="p-3">{r.adoptante_nombre}</td>
-                  <td className="p-3 flex items-center gap-2">
-                    {r.mascota_imagen && (
+                  <td className="px-4 py-3">{item.adoptante_nombre}</td>
+                  <td className="px-4 py-3 flex items-center gap-2">
+                    {item.mascota_imagen && (
                       <img
-                        src={r.mascota_imagen}
-                        alt={r.mascota_nombre}
+                        src={item.mascota_imagen}
+                        alt={item.mascota_nombre}
                         className="w-8 h-8 rounded-md object-cover"
                       />
                     )}
-                    {r.mascota_nombre}
+                    <span>{item.mascota_nombre}</span>
                   </td>
-                  <td className="p-3">
-                    {new Date(r.fecha_cita).toLocaleString("es-MX", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                  <td className="px-4 py-3 text-gray-700">
+                    {format(
+                      new Date(item.fecha_cita),
+                      "EEEE d 'de' MMMM, h:mm a",
+                      { locale: es }
+                    )}
                   </td>
-                  <td className="p-3">{r.motivo}</td>
-                  <td className="p-3 capitalize">
+                  <td className="px-4 py-3 text-gray-700">{item.motivo}</td>
+                  <td className="px-4 py-3">
                     <span
-                      className={`px-2 py-1 rounded-md text-xs font-medium ${
-                        r.estado === "pendiente"
+                      className={`px-2 py-1 rounded-md text-xs font-semibold ${
+                        item.estado === "pendiente"
                           ? "bg-yellow-100 text-yellow-700"
-                          : r.estado === "aprobada"
+                          : item.estado === "aprobada"
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"
                       }`}
                     >
-                      {r.estado}
+                      {item.estado.charAt(0).toUpperCase() +
+                        item.estado.slice(1)}
                     </span>
                   </td>
-                  <td className="p-3 text-center">
-                    {r.estado === "pendiente" ? (
+                  <td className="px-4 py-3 text-center">
+                    {item.estado === "pendiente" ? (
                       <div className="flex justify-center gap-2">
                         <Button
-                          size="sm"
                           variant="primary"
-                          onClick={() => aprobar(r.id)}
+                          size="sm"
+                          onClick={() => aprobarCita(item.id)}
                         >
                           Aprobar
                         </Button>
                         <Button
-                          size="sm"
                           variant="ghost"
-                          onClick={() => cancelar(r.id)}
+                          size="sm"
+                          onClick={() => cancelarCita(item.id)}
                         >
                           Cancelar
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-gray-500 italic text-xs">
-                        {r.estado === "aprobada" ? "Aprobada" : "Cancelada"}
-                      </span>
+                      <span className="text-gray-400 italic">Aprobada</span>
                     )}
                   </td>
                 </tr>
-              ))
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 📆 Panel lateral */}
+        <div className="flex flex-col gap-4 self-start">
+          <div className="bg-white rounded-xl shadow-md p-4">
+            <h2 className="text-lg font-semibold text-[#8B4513] mb-3">
+              Calendario de citas
+            </h2>
+            <CalendarioVeterinarias citas={citasOrdenadas} vistaCompacta />
+          </div>
+
+          {/* 🐾 Próximas citas */}
+          <div className="bg-white rounded-xl shadow-md p-4">
+            <h2 className="text-lg font-semibold text-[#8B4513] mb-3">
+              Próximas citas
+            </h2>
+            {proximasCitas.length === 0 ? (
+              <p className="text-sm text-gray-500">No hay citas próximas.</p>
+            ) : (
+              <ul className="divide-y divide-[#FDE68A]">
+                {proximasCitas.map((c) => (
+                  <li
+                    key={c.id}
+                    className="py-3 flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-medium text-[#8B4513]">
+                        {c.mascota_nombre}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {format(
+                          new Date(c.fecha_cita),
+                          "EEEE d 'de' MMMM, h:mm a",
+                          { locale: es }
+                        )}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs font-semibold ${
+                        c.estado === "aprobada"
+                          ? "text-green-700"
+                          : c.estado === "pendiente"
+                          ? "text-yellow-700"
+                          : "text-red-700"
+                      }`}
+                    >
+                      {c.estado.charAt(0).toUpperCase() + c.estado.slice(1)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     </div>
   );
