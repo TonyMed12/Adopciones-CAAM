@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --no-lint",
+    "dev": "next dev",
+    "build": "set SKIP_ENV_VALIDATION=1 && next build --no-lint",
     "start": "next start",
     "lint": "eslint",
     "storybook": "storybook dev -p 6006",
@@ -24,6 +24,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
+    "emailjs-com": "^3.2.0",
     "framer-motion": "^12.23.22",
     "lucide-react": "^0.544.0",
     "next": "15.5.2",
@@ -60,6 +61,7 @@
     "eslint-plugin-storybook": "^9.1.8",
     "playwright": "^1.55.1",
     "storybook": "^9.1.8",
+    "supabase": "^2.58.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"

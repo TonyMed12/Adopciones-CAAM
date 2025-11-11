@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
@@ -28,12 +28,34 @@ export default function AdminHeader() {
   const [adminName, setAdminName] = useState<string>("Cargando...");
   const supabase = createClient();
 
+  // 🔹 Referencias para detectar clic fuera
+  const gestionRef = useRef<HTMLLIElement>(null);
+  const menuRef = useRef<HTMLLIElement>(null);
+
+  // 🔹 Cierra los menús si se hace clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        gestionRef.current &&
+        !gestionRef.current.contains(e.target as Node)
+      ) {
+        setGestionOpen(false);
+      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const isActive = (href: string) =>
     href === "/dashboards/administrador"
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  // Obtener nombre del administrador logueado
+  // 🔹 Obtener nombre de administrador
   useEffect(() => {
     const fetchAdmin = async () => {
       const { data } = await supabase.auth.getUser();
@@ -127,8 +149,8 @@ export default function AdminHeader() {
             );
           })}
 
-          {/* MENÚ GESTIÓN */}
-          <li className="relative">
+          {/* 🔹 MENÚ GESTIÓN */}
+          <li className="relative" ref={gestionRef}>
             <button
               onClick={() => setGestionOpen((v) => !v)}
               className="flex items-center gap-2 text-[#FFF8F0] hover:text-[#FDE68A] transition text-lg font-medium cursor-pointer"
@@ -139,7 +161,7 @@ export default function AdminHeader() {
             </button>
 
             {gestionOpen && (
-              <div className="absolute left-0 mt-3 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
+              <div className="absolute left-0 mt-3 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513] animate-fadeIn">
                 <Link
                   href="/dashboards/administrador/gestion_adopciones"
                   className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
@@ -176,8 +198,8 @@ export default function AdminHeader() {
             )}
           </li>
 
-          {/* Menú Admin */}
-          <li className="relative">
+          {/* 🔹 MENÚ ADMIN */}
+          <li className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               className="flex items-center gap-2 text-[#FFF8F0] hover:text-[#FDE68A] transition text-lg font-medium cursor-pointer"
@@ -188,7 +210,7 @@ export default function AdminHeader() {
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
+              <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513] animate-fadeIn">
                 <Link
                   href="/dashboards/perfil"
                   className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
