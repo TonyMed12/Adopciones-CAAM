@@ -30,7 +30,7 @@ export async function obtenerMascotasAdoptadas() {
 
   console.table(
     mias.map((x) => ({
-      mascota: x.mascota_nombre,
+      mascota: x.mascota_nombre, 
       adopcion_id: x.adopcion_id,
       fecha: x.fecha_adopcion,
     }))

@@ -1,4 +1,3 @@
-// adopciones.ts
 export type EstadoAdopcion = "pendiente" | "aprobada" | "rechazada";
 
 export interface Adopcion {
