@@ -189,9 +189,9 @@ export default function MascotasPage() {
       // 🔁 Redirigir rápido al paso siguiente (sin esperar Supabase)
       setTimeout(() => {
         router.push(
-          `/dashboards/usuario/adopcion?paso=2&nombre=${encodeURIComponent(
-            m.nombre
-          )}`
+          `/dashboards/usuario/adopcion?paso=2&from=${
+            m.id
+          }&nombre=${encodeURIComponent(m.nombre)}`
         );
       }, 1200);
 

@@ -66,12 +66,14 @@ export default function MisCitasPage() {
         return;
       }
 
-      const { data: perfilData } = await supabase
+      // 🔹 Obtener perfil del usuario
+      const { data: perfilData, error: perfilError } = await supabase
         .from("perfiles")
         .select("id, nombres, email")
         .eq("email", user.email)
         .maybeSingle();
 
+      if (perfilError) console.error("❌ Error perfil:", perfilError);
       if (!perfilData) {
         setLoading(false);
         return;
@@ -79,37 +81,50 @@ export default function MisCitasPage() {
 
       setPerfil(perfilData);
 
-      // 🔹 Solicitud activa
-      const { data: solicitud } = await supabase
+      // 🔹 Buscar la solicitud más reciente
+      const { data: solicitud, error: solicitudError } = await supabase
         .from("solicitudes_adopcion")
         .select(
-          "id, estado, created_at, mascota:mascotas(id, nombre, imagen_url, estado)"
+          `
+        id,
+        estado,
+        created_at,
+        mascota:mascotas(id, nombre, imagen_url, estado)
+      `
         )
         .eq("usuario_id", perfilData.id)
-        .in("estado", ["pendiente", "en_proceso", "aprobada"])
+        .in("estado", ["pendiente", "en_proceso", "aprobada"]) // 👈 solo relevantes
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (solicitud) {
-        const mascotaObj = Array.isArray(solicitud.mascota)
-          ? solicitud.mascota[0]
-          : solicitud.mascota;
+      if (solicitudError) console.error("❌ Error solicitud:", solicitudError);
 
-        setSolicitudActiva({
-          id: solicitud.id,
-          estado: solicitud.estado,
-          created_at: solicitud.created_at, // ✅ importante
-          mascota: mascotaObj ?? null,
-        });
-      } else {
+      if (!solicitud) {
         setSolicitudActiva(null);
+        setCitas([]);
+        setLoading(false);
+        return;
       }
 
-      // 🔹 Citas activas
-      const { data: citasData } = await supabase
+      const solicitudObj = {
+        id: solicitud.id,
+        estado: solicitud.estado,
+        created_at: solicitud.created_at,
+        mascota: Array.isArray(solicitud.mascota)
+          ? solicitud.mascota[0]
+          : solicitud.mascota ?? null,
+      };
+
+      setSolicitudActiva(solicitudObj);
+
+      // 🔹 Buscar citas vinculadas a esta solicitud
+      const { data: citasData, error: citasError } = await supabase
         .from("citas_adopcion")
         .select(
           `
         id,
+        solicitud_id,
         fecha_cita,
         hora_cita,
         estado,
@@ -117,21 +132,43 @@ export default function MisCitasPage() {
       `
         )
         .eq("usuario_id", perfilData.id)
-        .neq("estado", "cancelada")
+        .eq("solicitud_id", solicitudObj.id)
         .order("fecha_cita", { ascending: false });
 
-      if (citasData) {
-        const citasFormateadas = citasData.map((c: any) => ({
-          id: c.id,
-          fecha_cita: c.fecha_cita,
-          hora_cita: c.hora_cita,
-          estado: c.estado,
-          mascota: Array.isArray(c.mascota) ? c.mascota[0] : c.mascota ?? null,
-        }));
-        setCitas(citasFormateadas);
+      if (citasError) console.error("❌ Error citas:", citasError);
+
+      // 🔍 Mostrar solo cita programada
+      const citaProgramada =
+        citasData?.find((c) => c.estado === "programada") ?? null;
+
+      if (
+        solicitudObj.estado === "aprobada" &&
+        !citaProgramada // si está aprobada pero no hay cita programada
+      ) {
+        // no mostrar nada
+        setSolicitudActiva(null);
+        setCitas([]);
+        return;
       }
+
+      // 🔹 Formatear la cita si existe
+      const citasFormateadas = citaProgramada
+        ? [
+            {
+              id: citaProgramada.id,
+              fecha_cita: citaProgramada.fecha_cita,
+              hora_cita: citaProgramada.hora_cita,
+              estado: citaProgramada.estado,
+              mascota: Array.isArray(citaProgramada.mascota)
+                ? citaProgramada.mascota[0]
+                : citaProgramada.mascota ?? null,
+            },
+          ]
+        : [];
+
+      setCitas(citasFormateadas);
     } catch (err) {
-      console.error("Error al cargar datos:", err);
+      console.error("💥 Error general en fetchData:", err);
     } finally {
       setLoading(false);
     }
@@ -150,6 +187,7 @@ export default function MisCitasPage() {
       return;
     }
 
+    // 🔹 1. Insertar la nueva cita
     const nueva = {
       usuario_id: perfil.id,
       solicitud_id: solicitudActiva.id,
@@ -162,9 +200,9 @@ export default function MisCitasPage() {
     const { data, error } = await supabase
       .from("citas_adopcion")
       .insert([nueva]).select(`
-        id, fecha_cita, hora_cita, estado,
-        mascota:mascotas(id, nombre, imagen_url, estado)
-      `);
+      id, fecha_cita, hora_cita, estado,
+      mascota:mascotas(id, nombre, imagen_url, estado)
+    `);
 
     if (error) {
       console.error("Error al agendar cita:", error);
@@ -172,6 +210,19 @@ export default function MisCitasPage() {
       return;
     }
 
+    // 🔹 2. Actualizar el estado de la solicitud a "aprobada"
+    const { error: updateError } = await supabase
+      .from("solicitudes_adopcion")
+      .update({ estado: "aprobada" })
+      .eq("id", solicitudActiva.id);
+
+    if (updateError) {
+      console.error("Error actualizando estado de solicitud:", updateError);
+    } else {
+      console.log("✅ Estado de solicitud cambiado a 'aprobada'");
+    }
+
+    // 🔹 3. Actualizar el estado local y mostrar confirmación
     const citaCreada = data
       ? {
           id: data[0].id,
@@ -192,8 +243,10 @@ export default function MisCitasPage() {
 
     setNuevaCita(citaCreada);
     setCitas((prev) => [...prev, citaCreada]);
+    setSolicitudActiva({ ...solicitudActiva, estado: "aprobada" }); // ✅ actualiza localmente
     setPaso("confirmacion");
   }
+
   async function cancelarSolicitud(id: string) {
     const confirmar = window.confirm(
       "¿Seguro que deseas cancelar tu solicitud de adopción? 🐾"
