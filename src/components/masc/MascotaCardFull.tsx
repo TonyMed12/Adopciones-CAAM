@@ -5,6 +5,12 @@ import {X, Edit3, Trash2} from "lucide-react";
 import {Button} from "@/components/ui/Button";
 import {motion, AnimatePresence} from "framer-motion";
 
+// 🔤 Helper para capitalizar la primera letra
+function capitalize(text?: string | null): string {
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+
 function getFotoSrc(m: Partial<Mascota>) {
     return (
         (m as any).foto ||
@@ -31,6 +37,25 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
 
     const fotoSrc = getFotoSrc(m);
 
+    // 🟢 Estado visual y etiqueta
+    const estadoEtiqueta =
+        m.estado === "en_proceso"
+            ? "En proceso"
+            : m.estado === "disponible"
+            ? "Disponible"
+            : m.estado === "adoptada"
+            ? "Adoptada"
+            : capitalize(m.estado || "Desconocido");
+
+    const estadoClase =
+        m.estado === "en_proceso"
+            ? "bg-yellow-100 text-yellow-700"
+            : m.estado === "disponible"
+            ? "bg-green-100 text-green-700"
+            : m.estado === "adoptada"
+            ? "bg-blue-100 text-blue-700"
+            : "bg-gray-100 text-gray-700";
+
     return (
         <AnimatePresence>
             {open && (
@@ -51,6 +76,7 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                         className="relative z-10 w-[min(1100px,92vw)] max-h-[90vh] bg-white rounded-3xl shadow-2xl grid md:grid-cols-2 overflow-hidden border-[4px] border-[#FF8414]"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* 🐾 Imagen */}
                         <div className="relative h-full bg-gray-100">
                             <img src={fotoSrc} alt={m.nombre} className="w-full h-full object-cover" />
                             <button
@@ -65,44 +91,29 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                     m.sexo === "Hembra" ? "bg-pink-500" : "bg-blue-500"
                                 }`}
                             >
-                                {m.sexo}
+                                {capitalize(m.sexo || "Desconocido")}
                             </span>
                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white px-6 py-4">
-                                <h2 className="text-3xl font-bold">{m.nombre}</h2>
+                                <h2 className="text-3xl font-bold">{capitalize(m.nombre)}</h2>
                                 <p className="text-sm text-gray-200">
-                                    {m.raza?.nombre || "Mestizo"} • {m.raza?.especie || "Desconocido"}
+                                    {capitalize(m.raza?.nombre || "Mestizo")} •{" "}
+                                    {capitalize(m.raza?.especie || "Desconocido")}
                                 </p>
                             </div>
                         </div>
 
+                        {/* 🧾 Información */}
                         <div className="flex flex-col p-6 md:p-8 overflow-y-auto max-h-[90vh] text-[#2b1b12]">
                             <section className="space-y-3">
+                                {/* Estado */}
                                 <div className="flex flex-wrap gap-2">
-                                    {m.disponible_adopcion === false && (
+                                    <span className={`rounded-full px-3 py-1 text-sm font-semibold ${estadoClase}`}>
+                                        {estadoEtiqueta}
+                                    </span>
+
+                                    {m.disponible_adopcion === false && m.estado !== "adoptada" && (
                                         <span className="rounded-full bg-red-100 text-red-700 px-3 py-1 text-sm font-semibold">
                                             No disponible
-                                        </span>
-                                    )}
-                                    {m.estado && (
-                                        <span
-                                            className={`rounded-full px-3 py-1 text-sm font-semibold
-      ${
-          m.estado === "en_proceso"
-              ? "bg-yellow-100 text-yellow-700"
-              : m.estado === "disponible"
-              ? "bg-green-100 text-green-700"
-              : m.estado === "adoptado"
-              ? "bg-blue-100 text-blue-700"
-              : "bg-gray-100 text-gray-700"
-      }`}
-                                        >
-                                            {m.estado === "en_proceso"
-                                                ? "En proceso"
-                                                : m.estado === "disponible"
-                                                ? "Disponible"
-                                                : m.estado === "adoptado"
-                                                ? "Adoptado"
-                                                : m.estado}
                                         </span>
                                     )}
                                 </div>
@@ -110,7 +121,7 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                                     <div>
                                         <dt className="font-semibold text-slate-700">Tamaño</dt>
-                                        <dd>{m.tamano || "—"}</dd>
+                                        <dd>{capitalize(m.tamano) || "—"}</dd>
                                     </div>
                                     <div>
                                         <dt className="font-semibold text-slate-700">Edad</dt>
@@ -133,21 +144,21 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                 {m.colores?.length > 0 && (
                                     <div>
                                         <h3 className="font-semibold mt-2 text-slate-800">Colores</h3>
-                                        <p>{m.colores.join(", ")}</p>
+                                        <p>{m.colores.map(capitalize).join(", ")}</p>
                                     </div>
                                 )}
 
                                 {m.personalidad && (
                                     <div>
                                         <h3 className="font-semibold mt-2 text-slate-800">Personalidad</h3>
-                                        <p className="capitalize">{m.personalidad}</p>
+                                        <p>{capitalize(m.personalidad)}</p>
                                     </div>
                                 )}
 
                                 {m.descripcion_fisica && (
                                     <div>
                                         <h3 className="font-semibold mt-2 text-slate-800">Descripción Física</h3>
-                                        <p>{m.descripcion_fisica}</p>
+                                        <p>{capitalize(m.descripcion_fisica)}</p>
                                     </div>
                                 )}
 
@@ -160,7 +171,7 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                             {m.lugar_rescate && (
                                                 <div>
                                                     <dt className="font-semibold text-slate-700">Lugar de rescate</dt>
-                                                    <dd>{m.lugar_rescate}</dd>
+                                                    <dd>{capitalize(m.lugar_rescate)}</dd>
                                                 </div>
                                             )}
                                             {m.condicion_ingreso && (
@@ -168,13 +179,13 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                                     <dt className="font-semibold text-slate-700">
                                                         Condición al ingreso
                                                     </dt>
-                                                    <dd>{m.condicion_ingreso}</dd>
+                                                    <dd>{capitalize(m.condicion_ingreso)}</dd>
                                                 </div>
                                             )}
                                         </dl>
                                         {m.observaciones_medicas && (
                                             <p className="mt-2 text-slate-700 text-sm">
-                                                <strong>Observaciones:</strong> {m.observaciones_medicas}
+                                                <strong>Observaciones:</strong> {capitalize(m.observaciones_medicas)}
                                             </p>
                                         )}
                                     </div>
@@ -186,7 +197,7 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                     </p>
                                 )}
 
-                                {/* ✅ Mostrar código QR si existe */}
+                                {/* ✅ Código QR */}
                                 {m.qr_code && (
                                     <div className="mt-6 border-t border-slate-200 pt-4">
                                         <h3 className="font-semibold text-slate-800 mb-2">Código QR</h3>
@@ -208,6 +219,8 @@ export default function MascotaCardFull({m, open, onClose, onEdit, onDelete, del
                                     </div>
                                 )}
                             </section>
+
+                            {/* Botones */}
                             <div className="mt-6 flex justify-end gap-3 border-t border-slate-200 pt-4">
                                 <Button variant="ghost" size="sm" onClick={onEdit}>
                                     <Edit3 className="w-4 h-4 mr-1" /> Editar

@@ -1,5 +1,5 @@
 // Server Component (no "use client")
-import Header from "@/components/layout/HeaderUsr";
+import Header from "@/components/layout/Header";
 import PageShell from "@/components/layout/PageShell";
 
 export default function MascotasLayout({ children }: { children: React.ReactNode }) {

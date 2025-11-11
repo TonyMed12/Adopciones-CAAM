@@ -10,6 +10,15 @@ type NuevaCita = {
   estado?: "programada" | "completada" | "cancelada";
 };
 
+type Asistencia = "asistio" | "no_asistio_no_apto";
+type Interaccion = "buena_aprobada" | "no_apta";
+
+type EvaluacionCita = {
+  asistencia?: Asistencia | null;
+  interaccion?: Interaccion | null;
+  nota?: string | null;
+};
+
 export async function listarCitas() {
   const supabase = await createClient();
 
@@ -23,7 +32,10 @@ export async function listarCitas() {
       creada_en,
       usuario_id,
       mascota_id,
-      mascotas (id, nombre)
+      mascotas (id, nombre),
+      asistencia,
+      interaccion,
+      nota
     `)
     .order("fecha_cita", { ascending: true });
 
@@ -191,3 +203,50 @@ export async function actualizarEstadoCita(
   return { ...data, usuario: perfil || null };
 }
 
+export async function evaluarCita(
+  id: string,
+  nuevoEstado: "programada" | "completada" | "cancelada",
+  evaluacion: EvaluacionCita
+) {
+  const supabase = await createClient();
+
+  // Normalizamos campos opcionales a null cuando no vengan
+  const payload = {
+    estado: nuevoEstado,
+    asistencia: evaluacion.asistencia ?? null,
+    interaccion: evaluacion.interaccion ?? null,
+    nota: evaluacion.nota ?? null,
+    actualizada_en: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("citas_adopcion")
+    .update(payload)
+    .eq("id", id)
+    .select(`
+      id,
+      fecha_cita,
+      hora_cita,
+      estado,
+      usuario_id,
+      mascota_id,
+      asistencia,
+      interaccion,
+      nota,
+      mascotas (id, nombre)
+    `)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  // Enriquecer con usuario, igual que en las demás acciones
+  const { data: perfil, error: perfilError } = await supabase
+    .from("perfiles")
+    .select("id, nombres, email")
+    .eq("id", data.usuario_id)
+    .single();
+
+  if (perfilError) throw new Error(perfilError.message);
+
+  return { ...data, usuario: perfil || null };
+}

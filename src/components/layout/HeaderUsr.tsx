@@ -7,30 +7,26 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
-  CalendarClock,
   HeartIcon,
   Menu,
   X,
   User,
   LogOutIcon,
   ChevronDown,
+  PawPrint,
+  Dog,
+  ClipboardList,
+  Stethoscope,
+  CalendarCheck,
 } from "lucide-react";
-
-const userNav = [
-  { href: "/dashboards/usuario", label: "Inicio", icon: LayoutDashboard },
-  {
-    href: "/dashboards/usuario/mascotas",
-    label: "Mascotas",
-    icon: CalendarClock,
-  },
-  { href: "/dashboards/usuario/adopcion", label: "Adopción", icon: HeartIcon },
-];
 
 export default function UserHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [subMenuMascotas, setSubMenuMascotas] = useState(false);
+  const [subMenuAdopcion, setSubMenuAdopcion] = useState(false);
   const [userName, setUserName] = useState<string>("Cargando...");
   const supabase = createClient();
 
@@ -39,30 +35,21 @@ export default function UserHeader() {
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  // usuario actual al montar
+  // Usuario actual
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
-
       if (data.user) {
         const nombre = data.user.user_metadata?.nombre;
         setUserName(nombre || "Usuario");
-      } else {
-        setUserName("Usuario");
-      }
+      } else setUserName("Usuario");
     };
-
-    //  iniciar
     fetchUser();
 
-    //  cambios de sesión
     const { data: listener } = supabase.auth.onAuthStateChange(() => {
       fetchUser();
     });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, [supabase]);
 
   const handleLogout = async () => {
@@ -81,7 +68,7 @@ export default function UserHeader() {
               Centro de Atención Animal
             </span>
             <span className="font-medium text-lg text-[#FFF8F0]">
-              Morelia, Michoacán{" "}
+              Morelia, Michoacán
             </span>
           </div>
         </Link>
@@ -90,41 +77,99 @@ export default function UserHeader() {
         <button
           className="lg:hidden text-[#FFF8F0] p-2 cursor-pointer"
           onClick={() => setOpen((v) => !v)}
-          aria-label="Abrir menú"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
 
         {/* NAV DESKTOP */}
         <ul className="hidden lg:flex items-center gap-8">
-          {userNav.map(({ href, label, icon: Icon }) => {
-            const active = isActive(href);
-            return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className={[
-                    "group flex items-center gap-2 rounded-md px-4 py-2 transition text-lg font-medium cursor-pointer",
-                    active
-                      ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
-                      : "text-[#FFF8F0] hover:text-[#FDE68A]",
-                  ].join(" ")}
-                >
-                  <Icon
-                    size={18}
-                    className={
-                      active
-                        ? "text-[#8B4513]"
-                        : "text-[#FFF8F0] group-hover:text-[#FDE68A]"
-                    }
-                  />
-                  <span>{label}</span>
-                </Link>
-              </li>
-            );
-          })}
+          {/* Inicio */}
+          <NavItem
+            href="/dashboards/usuario"
+            label="Inicio"
+            icon={LayoutDashboard}
+            active={isActive("/dashboards/usuario")}
+          />
 
-          {/* Menú de Usuario */}
+          {/* Adoptables */}
+          <NavItem
+            href="/dashboards/usuario/mascotas"
+            label="Adoptables"
+            icon={Dog}
+            active={isActive("/dashboards/usuario/mascotas")}
+          />
+
+          {/* Adopción con submenu */}
+          <li className="relative">
+            <button
+              onClick={() => setSubMenuAdopcion((v) => !v)}
+              className={`flex items-center gap-2 px-4 py-2 text-lg font-medium transition rounded-md cursor-pointer ${
+                isActive("/dashboards/usuario/adopcion") ||
+                isActive("/dashboards/usuario/citas")
+                  ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
+                  : "text-[#FFF8F0] hover:text-[#FDE68A]"
+              }`}
+            >
+              <HeartIcon size={18} />
+              <span>Adopción</span>
+              <ChevronDown size={16} />
+            </button>
+
+            {subMenuAdopcion && (
+              <div className="absolute left-0 mt-2 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
+                <Link
+                  href="/dashboards/usuario/citas"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
+                  onClick={() => setSubMenuAdopcion(false)}
+                >
+                  <CalendarCheck size={16} />
+                  <span>Mis citas para adopción</span>
+                </Link>
+              </div>
+            )}
+          </li>
+
+          {/* MIS MASCOTAS con desplegable */}
+          <li className="relative">
+            <button
+              onClick={() => setSubMenuMascotas((v) => !v)}
+              className={`flex items-center gap-2 px-4 py-2 text-lg font-medium transition rounded-md cursor-pointer ${
+                isActive("/dashboards/usuario/mis-mascotas") ||
+                isActive("/dashboards/usuario/seguimiento") ||
+                isActive("/dashboards/usuario/citas-veterinarias")
+                  ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
+                  : "text-[#FFF8F0] hover:text-[#FDE68A]"
+              }`}
+            >
+              <PawPrint size={18} />
+              <span>Mis Mascotas</span>
+              <ChevronDown size={16} />
+            </button>
+
+            {subMenuMascotas && (
+              <div className="absolute left-0 mt-2 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
+                <Link
+                  href="/dashboards/usuario/mis-mascotas"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
+                  onClick={() => setSubMenuMascotas(false)}
+                >
+                  <PawPrint size={16} />
+                  <span>Ver mis mascotas</span>
+                </Link>
+
+                <Link
+                  href="/dashboards/usuario/citas-veterinarias"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
+                  onClick={() => setSubMenuMascotas(false)}
+                >
+                  <Stethoscope size={16} />
+                  <span>Citas veterinarias</span>
+                </Link>
+              </div>
+            )}
+          </li>
+
+          {/* Usuario */}
           <li className="relative">
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -138,7 +183,6 @@ export default function UserHeader() {
             {menuOpen && (
               <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
                 <Link
-                  //href="/dashboards/administrador/perfil"
                   href="/dashboards/perfil"
                   className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
                   onClick={() => setMenuOpen(false)}
@@ -159,5 +203,42 @@ export default function UserHeader() {
         </ul>
       </nav>
     </header>
+  );
+}
+
+// 🔹 Componente reutilizable para ítems del menú
+function NavItem({
+  href,
+  label,
+  icon: Icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: any;
+  active: boolean;
+}) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className={[
+          "group flex items-center gap-2 rounded-md px-4 py-2 transition text-lg font-medium cursor-pointer",
+          active
+            ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
+            : "text-[#FFF8F0] hover:text-[#FDE68A]",
+        ].join(" ")}
+      >
+        <Icon
+          size={18}
+          className={
+            active
+              ? "text-[#8B4513]"
+              : "text-[#FFF8F0] group-hover:text-[#FDE68A]"
+          }
+        />
+        {label}
+      </Link>
+    </li>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import ReactDOM from "react-dom";
 
 import PageHead from "@/components/layout/PageHead";
 import Filters from "@/components/masc/Filters";
@@ -50,9 +51,37 @@ export default function MascotasPage() {
   const [adopcionEnProgreso, setAdopcionEnProgreso] = useState(false);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
-  // --------------------------------------------------------
-  // 📑 Obtener estado de documentos del usuario
-  // --------------------------------------------------------
+  // 🔒 Bloquear scroll del body cuando el visor está abierto
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const body = document.body;
+    const html = document.documentElement;
+
+    if (openCard) {
+      const scrollY = window.scrollY;
+      body.dataset.scrollY = String(scrollY);
+      body.style.position = "fixed";
+      body.style.top = `-${scrollY}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+      body.style.overflow = "hidden";
+      html.style.overscrollBehavior = "none";
+    } else {
+      const prevY = Number(body.dataset.scrollY || 0);
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.width = "";
+      body.style.overflow = "";
+      delete body.dataset.scrollY;
+      html.style.overscrollBehavior = "";
+      if (!isNaN(prevY)) window.scrollTo(0, prevY);
+    }
+  }, [openCard]);
+
+  // 📑 Estado de documentos del usuario
   useEffect(() => {
     async function fetchEstado() {
       const {
@@ -94,19 +123,12 @@ export default function MascotasPage() {
         setLoading(true);
         const data = await listarMascotas();
 
-        if (!data || data.length === 0) {
-          setItems([]);
-          return;
-        }
-
-        const disponibles = data.filter(
-          (m: any) =>
-            m.disponible_adopcion === true ||
-            m.estado === "disponible" ||
-            m.activo === true
+        const disponibles = (data || []).filter(
+          (m) =>
+            m.disponible_adopcion || m.estado?.toLowerCase() === "disponible"
         );
 
-        const formateadas = disponibles.map((m: any) => {
+        const formateadas = disponibles.map((m) => {
           const totalMeses = Number(m.edad ?? 0);
           const años = Math.floor(totalMeses / 12);
           const meses = totalMeses % 12;
@@ -117,17 +139,14 @@ export default function MascotasPage() {
                 }`
               : `${meses} mes${meses !== 1 ? "es" : ""}`;
 
-          const especie = m.raza?.especie || m.especie || "Desconocido";
-          const raza = m.raza?.nombre || "Mestizo";
-
           return {
             ...m,
             edadMeses: edadFormateada,
-            especie,
-            raza,
+            especie: m.raza?.especie || m.especie || "Desconocido",
+            raza: m.raza?.nombre || "Mestizo",
             descripcion: m.personalidad || m.descripcion_fisica || "",
             foto: m.imagen_url,
-          } as Mascota;
+          };
         });
 
         setItems(formateadas);
@@ -145,92 +164,42 @@ export default function MascotasPage() {
   // 🐕 Adopción
   // ----------------------------------------------------
   async function handleAdopt(m: Mascota) {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      alert("Debes iniciar sesión para adoptar una mascota.");
-      return;
-    }
-
-    // 📄 Si no tiene documentos aprobados
-    if (docEstado !== "aprobado") {
-      setSelected(m);
-      setGateOpen(true);
-      return;
-    }
-
     try {
-      // 🔍 Verificar si ya existe una solicitud activa para esta mascota
-      const { data: existente, error: checkError } = await supabase
-        .from("solicitudes_adopcion")
-        .select("id, estado")
-        .eq("usuario_id", user.id)
-        .eq("mascota_id", m.id)
-        .in("estado", ["pendiente", "aprobada"]);
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-      if (checkError) {
-        console.error("Error verificando solicitudes existentes:", checkError);
-        mostrarToast(
-          "⚠️ Error al verificar tus solicitudes activas. Intenta nuevamente.",
-          "#fff4e7",
-          "#7a3e00",
-          "#f4caa6"
-        );
+      if (userError || !user) {
+        mostrarToast("Debes iniciar sesión para adoptar una mascota.");
         return;
       }
 
-      if (existente && existente.length > 0) {
-        mostrarToast(
-          "🐾 Ya tienes una solicitud activa para esta mascota.",
-          "#f3fff3",
-          "#225b22",
-          "#c9e9c9"
-        );
+      // 📄 Validar documentos una sola vez
+      if (docEstado !== "aprobado") {
+        setSelected(m);
+        setGateOpen(true);
         return;
       }
 
-      const { data: solicitudesActivas, error: solicitudError } = await supabase
-        .from("solicitudes_adopcion")
-        .select("id, mascota_id, estado")
-        .eq("usuario_id", user.id)
-        .in("estado", ["pendiente", "en_proceso", "aprobada"]);
+      // 🧭 Feedback instantáneo
+      setAdopcionEnProgreso(true);
+      setMensajeExito(`Procesando solicitud para ${m.nombre}...`);
 
-      if (solicitudError) {
-        console.error("Error verificando solicitudes activas:", solicitudError);
-        console.error(
-          "Detalles del error:",
-          JSON.stringify(solicitudError, null, 2)
+      // 🔁 Redirigir rápido al paso siguiente (sin esperar Supabase)
+      setTimeout(() => {
+        router.push(
+          `/dashboards/usuario/adopcion?paso=2&from=${
+            m.id
+          }&nombre=${encodeURIComponent(m.nombre)}`
         );
-        mostrarToast(
-          `⚠️ Error al verificar solicitudes activas. ${
-            solicitudError.message ||
-            "Revisa tu conexión o revisa el tipo de estado en la base de datos."
-          }`,
-          "#fff4e7",
-          "#7a3e00",
-          "#f4caa6"
-        );
-        return;
-      }
+      }, 1200);
 
-      if (solicitudesActivas && solicitudesActivas.length > 0) {
-        mostrarToast(
-          "🐾 Ya tienes una solicitud activa. Termina tu proceso o tu cita pendiente antes de adoptar otra mascota.",
-          "#f3fff3",
-          "#225b22",
-          "#c9e9c9"
-        );
-        return;
-      }
-
-      // 🧾 Crear nueva solicitud
+      // 🧱 Crear solicitud y actualizar mascota en paralelo (sin bloquear UI)
       const numero = "SOL-" + Math.floor(100000 + Math.random() * 900000);
-      const { data: solicitud, error: insertError } = await supabase
-        .from("solicitudes_adopcion")
-        .insert([
+
+      const [insertSolicitud, updateMascota] = await Promise.all([
+        supabase.from("solicitudes_adopcion").insert([
           {
             numero_solicitud: numero,
             usuario_id: user.id,
@@ -238,65 +207,24 @@ export default function MascotasPage() {
             motivo_adopcion: "Pendiente de llenar",
             estado: "pendiente",
           },
-        ])
-        .select()
-        .single();
+        ]),
+        supabase
+          .from("mascotas")
+          .update({
+            estado: "en_proceso",
+            disponible_adopcion: false,
+          })
+          .eq("id", m.id),
+      ]);
 
-      if (insertError) {
-        console.error("Error insertando solicitud:", insertError);
-        mostrarToast(
-          "❌ Error al registrar tu solicitud de adopción.",
-          "#fff4e7",
-          "#7a3e00",
-          "#f4caa6"
-        );
-        return;
-      }
-
-      // 🐾 Actualizar estado de la mascota
-      const { error: updateError } = await supabase
-        .from("mascotas")
-        .update({
-          estado: "en_proceso",
-          disponible_adopcion: false,
-        })
-        .eq("id", m.id);
-
-      if (updateError) {
-        console.error("Error actualizando mascota:", updateError);
-        mostrarToast(
-          "⚠️ La solicitud fue creada, pero hubo un problema actualizando la mascota.",
-          "#fff4e7",
-          "#7a3e00",
-          "#f4caa6"
-        );
-        return;
-      }
-
-      // 🎉 Éxito total → animación y redirección
-      setAdopcionEnProgreso(true);
-      setMensajeExito(
-        `Tu solicitud para adoptar a ${m.nombre} ha sido registrada 🐾`
-      );
-
-      setTimeout(() => {
-        setMensajeExito("Redirigiéndote al siguiente paso...");
-      }, 1800);
-
-      setTimeout(() => {
-        router.push(
-          `/dashboards/usuario/adopcion?paso=2&nombre=${encodeURIComponent(
-            m.nombre
-          )}`
-        );
-      }, 3000);
+      if (insertSolicitud.error)
+        console.warn("⚠️ Error creando solicitud:", insertSolicitud.error);
+      if (updateMascota.error)
+        console.warn("⚠️ Error actualizando mascota:", updateMascota.error);
     } catch (err) {
-      console.error("Error general al registrar adopción:", err);
+      console.error("Error al procesar adopción:", err);
       mostrarToast(
-        "❌ Ocurrió un error al procesar tu solicitud. Intenta nuevamente.",
-        "#fff4e7",
-        "#7a3e00",
-        "#f4caa6"
+        "❌ Ocurrió un problema al procesar tu solicitud. Intenta nuevamente."
       );
     }
   }
@@ -410,10 +338,7 @@ export default function MascotasPage() {
     );
   }
 
-  // --------------------------------------------------------
   // 💅 Render principal
-  // --------------------------------------------------------
-
   return (
     <>
       <PageHead
@@ -515,13 +440,54 @@ export default function MascotasPage() {
         </div>
       </Modal>
 
-      {/* Modal info mascota */}
-      <MascotaCardUsuario
-        m={selectedMascota}
-        open={openCard}
-        onClose={() => setOpenCard(false)}
-        onAdopt={() => selectedMascota && handleAdopt(selectedMascota)}
-      />
+      {/* Overlay de adopción en progreso */}
+      {adopcionEnProgreso && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm mx-auto animate-fade-in">
+            <div className="animate-bounce text-4xl mb-3">🐶</div>
+            <h2 className="text-lg font-extrabold text-[#2b1b12] mb-2">
+              {mensajeExito}
+            </h2>
+            <p className="text-sm text-[#7a5c49]">
+              Espera un momento mientras preparamos el siguiente paso...
+            </p>
+            <div className="mt-4 flex justify-center">
+              <div className="w-6 h-6 border-4 border-[#BC5F36] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🧡 Modal info mascota a pantalla completa (portal) */}
+      {openCard &&
+        typeof window !== "undefined" &&
+        ReactDOM.createPortal(
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-8">
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+              {/* Botón cerrar */}
+              <button
+                onClick={() => setOpenCard(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-[#BC5F36] transition"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+
+              {/* Contenido con scroll interno */}
+              <div className="flex-1 overflow-y-auto rounded-2xl">
+                <MascotaCardUsuario
+                  m={selectedMascota}
+                  open={true}
+                  onClose={() => setOpenCard(false)}
+                  onAdopt={() => {
+                    if (selectedMascota) handleAdopt(selectedMascota); // ✅ botón Adoptar dentro del modal
+                  }}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 }

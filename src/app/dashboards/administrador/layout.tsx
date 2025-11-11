@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Protected from "@/components/Protected";
 import { getUserRole } from "@/lib/supabase/getRole";
 import AdminHeader from "@/components/layout/HeaderAd";
+import { Toaster } from "sonner";
 
 export default function AdminLayout({
   children,
@@ -36,6 +37,14 @@ export default function AdminLayout({
 
   return (
     <Protected>
+      <Toaster
+        position="top-right"
+        richColors
+        expand
+        toastOptions={{
+          style: { borderRadius: "12px", fontSize: "0.95rem" },
+        }}
+      />
       <div className="min-h-screen bg-slate-50 relative overflow-hidden">
         {/* Header superior del admin */}
         <AdminHeader />

@@ -50,6 +50,7 @@ export default function PerfilPage() {
           perfil={perfil}
           direccion={direccion}
           solicitudes={solicitudes}
+          mascotasAdoptadas={data.mascotasAdoptadas}
           documentos={documentos}
         />
       </div>

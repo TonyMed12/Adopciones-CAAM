@@ -1,10 +1,10 @@
 "use client";
-import React from "react";
 import type {Mascota} from "@/types/mascotas.types";
 import {X} from "lucide-react";
 import {Button} from "@/components/ui/Button";
 import {motion, AnimatePresence} from "framer-motion";
 import {supabase} from "@/lib/supabase/client";
+import React, {useState} from "react";
 
 function getFotoSrc(m: Partial<Mascota>) {
     return (
@@ -27,6 +27,7 @@ type Props = {
 };
 
 export default function MascotaCardUsuario({m, open, onClose, onAdopt, adoptDisabled = false}: Props) {
+    const [loading, setLoading] = useState(false);
     if (!m) return null;
 
     const fotoSrc = getFotoSrc(m);
@@ -209,8 +210,28 @@ export default function MascotaCardUsuario({m, open, onClose, onAdopt, adoptDisa
                             </section>
 
                             <div className="mt-6 flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button variant="primary" size="md" onClick={onAdopt} disabled={adoptDisabled}>
-                                    Adoptar
+                                <Button
+                                    variant="primary"
+                                    size="md"
+                                    onClick={() => {
+                                        if (loading || adoptDisabled) return;
+                                        setLoading(true);
+
+                                        // ✅ Esperar un pequeño frame antes de llamar al padre
+                                        setTimeout(() => {
+                                            onAdopt();
+                                        }, 150);
+                                    }}
+                                    disabled={adoptDisabled || loading}
+                                >
+                                    {loading ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                            Procesando...
+                                        </div>
+                                    ) : (
+                                        "Adoptar"
+                                    )}
                                 </Button>
                             </div>
                         </div>

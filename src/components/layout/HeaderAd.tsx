@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
   CalendarDays,
+  CalendarHeart,
   Users,
   FileText,
   Menu,
@@ -15,43 +16,15 @@ import {
   User,
   LogOutIcon,
   ChevronDown,
+  FolderKanban,
 } from "lucide-react";
-
-const adminNav = [
-  { href: "/dashboards/administrador", label: "Inicio", icon: LayoutDashboard },
-  {
-    href: "/dashboards/administrador/gestion_citas",
-    label: "Citas",
-    icon: CalendarDays,
-  },
-  {
-    href: "/dashboards/administrador/mascotas",
-    label: "Mascotas",
-    icon: FileText,
-  },
-  {
-    href: "/dashboards/administrador/documentos",
-    label: "Documentos",
-    icon: FileText,
-  },
-  {
-    href: "/dashboards/administrador/usuarios",
-    label: "Usuarios",
-    icon: Users,
-  },
-  {
-    href: "/dashboards/administrador/reportes",
-    label: "Reportes",
-    icon: FileText,
-    disabled: true, 
-  },
-];
 
 export default function AdminHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [gestionOpen, setGestionOpen] = useState(false);
   const [adminName, setAdminName] = useState<string>("Cargando...");
   const supabase = createClient();
 
@@ -60,30 +33,21 @@ export default function AdminHeader() {
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  // nombre del admin logueado
+  // Obtener nombre del administrador logueado
   useEffect(() => {
     const fetchAdmin = async () => {
       const { data } = await supabase.auth.getUser();
-
       if (data.user) {
         const nombre = data.user.user_metadata?.nombre;
         setAdminName(nombre || "Administrador");
-      } else {
-        setAdminName("Administrador");
-      }
+      } else setAdminName("Administrador");
     };
 
-    // Cargar al montar
     fetchAdmin();
-
-    // Escuchar cambios de sesión
     const { data: listener } = supabase.auth.onAuthStateChange(() => {
       fetchAdmin();
     });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, [supabase]);
 
   const handleLogout = async () => {
@@ -105,7 +69,7 @@ export default function AdminHeader() {
               Centro de Atención Animal
             </span>
             <span className="font-medium text-lg text-[#FFF8F0]">
-              Morelia, Michoacán{" "}
+              Morelia, Michoacán
             </span>
           </div>
         </Link>
@@ -114,25 +78,40 @@ export default function AdminHeader() {
         <button
           className="lg:hidden text-[#FFF8F0] p-2 cursor-pointer"
           onClick={() => setOpen((v) => !v)}
-          aria-label="Abrir menú"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
 
         {/* NAV DESKTOP */}
         <ul className="hidden lg:flex items-center gap-8">
-          {adminNav.map(({ href, label, icon: Icon }) => {
+          {[
+            {
+              href: "/dashboards/administrador",
+              label: "Inicio",
+              icon: LayoutDashboard,
+            },
+            {
+              href: "/dashboards/administrador/mascotas",
+              label: "Mascotas",
+              icon: FileText,
+            },
+            {
+              href: "/dashboards/administrador/usuarios",
+              label: "Usuarios",
+              icon: Users,
+            },
+          ].map(({ href, label, icon: Icon }) => {
             const active = isActive(href);
             return (
               <li key={href}>
                 <Link
                   href={href}
-                  className={[
-                    "group flex items-center gap-2 rounded-md px-4 py-2 transition text-lg font-medium cursor-pointer",
-                    active
-                      ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
-                      : "text-[#FFF8F0] hover:text-[#FDE68A]",
-                  ].join(" ")}
+                  className={`group flex items-center gap-2 rounded-md px-4 py-2 text-lg font-medium transition
+                    ${
+                      active
+                        ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
+                        : "text-[#FFF8F0] hover:text-[#FDE68A]"
+                    }`}
                 >
                   <Icon
                     size={18}
@@ -142,11 +121,60 @@ export default function AdminHeader() {
                         : "text-[#FFF8F0] group-hover:text-[#FDE68A]"
                     }
                   />
-                  <span>{label}</span>
+                  {label}
                 </Link>
               </li>
             );
           })}
+
+          {/* MENÚ GESTIÓN */}
+          <li className="relative">
+            <button
+              onClick={() => setGestionOpen((v) => !v)}
+              className="flex items-center gap-2 text-[#FFF8F0] hover:text-[#FDE68A] transition text-lg font-medium cursor-pointer"
+            >
+              <FolderKanban size={18} />
+              <span>Gestión</span>
+              <ChevronDown size={16} />
+            </button>
+
+            {gestionOpen && (
+              <div className="absolute left-0 mt-3 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
+                <Link
+                  href="/dashboards/administrador/gestion_adopciones"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
+                  onClick={() => setGestionOpen(false)}
+                >
+                  <FileText size={16} />
+                  <span>Adopciones</span>
+                </Link>
+                <Link
+                  href="/dashboards/administrador/documentos"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
+                  onClick={() => setGestionOpen(false)}
+                >
+                  <FileText size={16} />
+                  <span>Documentos</span>
+                </Link>
+                <Link
+                  href="/dashboards/administrador/gestion_citas"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
+                  onClick={() => setGestionOpen(false)}
+                >
+                  <CalendarDays size={16} />
+                  <span>Citas de adopción</span>
+                </Link>
+                <Link
+                  href="/dashboards/administrador/gestion_citas_veterinarias"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
+                  onClick={() => setGestionOpen(false)}
+                >
+                  <CalendarHeart size={16} />
+                  <span>Citas veterinarias</span>
+                </Link>
+              </div>
+            )}
+          </li>
 
           {/* Menú Admin */}
           <li className="relative">
@@ -162,9 +190,8 @@ export default function AdminHeader() {
             {menuOpen && (
               <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
                 <Link
-                  //href="/dashboards/administrador/perfil"
                   href="/dashboards/perfil"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
                   onClick={() => setMenuOpen(false)}
                 >
                   <User size={16} />
@@ -172,7 +199,7 @@ export default function AdminHeader() {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
+                  className="w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
                 >
                   <LogOutIcon size={16} />
                   <span>Cerrar sesión</span>
@@ -182,63 +209,6 @@ export default function AdminHeader() {
           </li>
         </ul>
       </nav>
-
-      {/* NAV MÓVIL */}
-      {open && (
-        <div className="lg:hidden border-t border-white/20 bg-[#BC5F36]">
-          <div className="container mx-auto px-6 py-3">
-            <ul className="flex flex-col gap-1">
-              {adminNav.map(({ href, label, icon: Icon }) => {
-                const active = isActive(href);
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      onClick={() => setOpen(false)}
-                      className={[
-                        "flex items-center gap-3 rounded-md px-3 py-2 transition text-base cursor-pointer",
-                        active
-                          ? "bg-[#FFF1E6] text-[#8B4513] font-medium"
-                          : "text-[#FFF8F0] hover:text-[#FDE68A]",
-                      ].join(" ")}
-                    >
-                      <Icon
-                        size={18}
-                        className={active ? "text-[#8B4513]" : "text-[#FFF8F0]"}
-                      />
-                      <span>{label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-
-              {/* Menú admin móvil */}
-              <li className="mt-2 border-t border-white/20 pt-2">
-                <p className="text-[#FFF8F0] font-medium mb-2">{adminName}</p>
-                <Link
-                  //href="/dashboards/administrador/perfil"
-                  href="/dashboards/perfil"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-[#FFF8F0] hover:text-[#FDE68A] cursor-pointer"
-                >
-                  <User size={18} />
-                  <span>Mi perfil</span>
-                </Link>
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    handleLogout();
-                  }}
-                  className="flex items-center gap-3 px-3 py-2 text-[#FFF8F0] hover:text-[#FDE68A] cursor-pointer"
-                >
-                  <LogOutIcon size={18} />
-                  <span>Cerrar sesión</span>
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      )}
     </header>
   );
 }
