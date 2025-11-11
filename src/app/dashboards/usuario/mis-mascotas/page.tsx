@@ -98,7 +98,7 @@ export default function MisMascotasPage() {
                   <div className="flex flex-col justify-between w-full md:w-[55%] p-6">
                     <div>
                       <h2 className="text-2xl font-semibold text-[#5a3d1e]">
-                        {m.nombre}
+                        {m.mascota_nombre || "Sin nombre"}
                       </h2>
                       <p className="text-sm text-gray-500 italic mb-3">
                         {m.raza_nombre || m.tamano || "Sin datos"} · {m.sexo}
