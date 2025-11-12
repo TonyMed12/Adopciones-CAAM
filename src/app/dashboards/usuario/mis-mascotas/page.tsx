@@ -40,7 +40,7 @@ export default function MisMascotasPage() {
     );
 
   if (error) {
-    alert("❌ Error general: " + error.message);
+    console.error("Error al cargar mascotas:", error);
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-red-600">
         <p>❌ Error al cargar tus mascotas</p>
@@ -51,117 +51,116 @@ export default function MisMascotasPage() {
 
   if (!mascotas || mascotas.length === 0) {
     return (
-      <>
-        <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-          <p className="text-lg mb-4">Aún no has adoptado ninguna mascota 🐾</p>
-          <Link href="/usuario/mascotas">
-            <Button>Ir a adoptar</Button>
-          </Link>
-        </div>
-      </>
+      <div className="flex flex-col items-center justify-center h-[70vh] text-center">
+        <p className="text-lg mb-4">
+          Aún no has adoptado ninguna mascota 🐾
+        </p>
+        <Link href="/usuario/mascotas">
+          <Button>Ir a adoptar</Button>
+        </Link>
+      </div>
     );
   }
 
+  // 🔹 Filtrar duplicados y asegurar keys únicas
+  const mascotasUnicas = [
+    ...new Map(
+      mascotas.map((m: any) => [m.id ?? m.adopcion_id ?? crypto.randomUUID(), m])
+    ).values(),
+  ];
+
   return (
-    <>
-      <div className="max-w-7xl mx-auto py-12 px-6">
-        <h1 className="text-3xl font-bold mb-10 text-center text-[#8b4513] tracking-tight">
-          Mis Mascotas Adoptadas
-        </h1>
+    <div className="max-w-7xl mx-auto py-12 px-6">
+      <h1 className="text-3xl font-bold mb-10 text-center text-[#8b4513] tracking-tight">
+        Mis Mascotas Adoptadas
+      </h1>
 
-        <div className="grid gap-6 lg:grid-cols-1">
-          {[...new Map(mascotas.map((m) => [m.id, m])).values()].map(
-            (m: any) => {
-              const fechaAdopcion = dayjs(m.fecha_adopcion);
-              const seguimientos = generarFechasSeguimiento(fechaAdopcion);
+      <div className="grid gap-6 lg:grid-cols-1">
+        {mascotasUnicas.map((m: any) => {
+          const fechaAdopcion = dayjs(m.fecha_adopcion);
+          const seguimientos = generarFechasSeguimiento(fechaAdopcion);
+          const keyId = m.id ?? m.adopcion_id ?? crypto.randomUUID();
 
-              return (
-                <Card
-                  key={m.id}
-                  className="flex flex-col md:flex-row items-center md:items-stretch overflow-hidden border border-gray-200 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-[#fff] to-[#fffaf4] rounded-2xl"
-                >
-                  {/* Imagen grande al costado */}
-                  <div className="relative w-full md:w-[45%] h-64 md:h-auto flex-shrink-0">
-                    <Image
-                      src={
-                        m.imagen_url?.startsWith("http")
-                          ? m.imagen_url
-                          : "/placeholder.png"
-                      }
-                      alt={m.nombre}
-                      fill
-                      className="object-cover"
-                    />
+          return (
+            <Card
+              key={keyId}
+              className="flex flex-col md:flex-row items-center md:items-stretch overflow-hidden border border-gray-200 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-[#fff] to-[#fffaf4] rounded-2xl"
+            >
+              {/* Imagen de la mascota */}
+              <div className="relative w-full md:w-[45%] h-64 md:h-auto flex-shrink-0">
+               <img
+                  src={m.imagen_url?.startsWith("http") ? m.imagen_url : "/placeholder.png"}
+                  alt={m.nombre}
+                  className="object-cover w-full h-full"
+                />
+              </div>
+
+              {/* Contenido */}
+              <div className="flex flex-col justify-between w-full md:w-[55%] p-6">
+                <div>
+                  <h2 className="text-2xl font-semibold text-[#5a3d1e]">
+                    {m.mascota_nombre || "Sin nombre"}
+                  </h2>
+                  <p className="text-sm text-gray-500 italic mb-3">
+                    {m.raza_nombre || m.tamano || "Sin datos"} · {m.sexo}
+                  </p>
+
+                  <div className="text-sm space-y-1">
+                    <p>
+                      <strong>Adoptada el:</strong>{" "}
+                      {fechaAdopcion.isValid()
+                        ? fechaAdopcion.format("DD/MM/YYYY")
+                        : "Sin fecha"}
+                    </p>
+                    <p>
+                      <strong>Edad:</strong> {m.edad || "Sin datos"}
+                    </p>
                   </div>
 
-                  {/* Contenido de la ficha */}
-                  <div className="flex flex-col justify-between w-full md:w-[55%] p-6">
-                    <div>
-                      <h2 className="text-2xl font-semibold text-[#5a3d1e]">
-                        {m.mascota_nombre || "Sin nombre"}
-                      </h2>
-                      <p className="text-sm text-gray-500 italic mb-3">
-                        {m.raza_nombre || m.tamano || "Sin datos"} · {m.sexo}
-                      </p>
-
-                      <div className="text-sm space-y-1">
-                        <p>
-                          <strong>Adoptada el:</strong>{" "}
-                          {fechaAdopcion.isValid()
-                            ? fechaAdopcion.format("DD/MM/YYYY")
-                            : "Sin fecha"}
-                        </p>
-                        <p>
-                          <strong>Edad:</strong> {m.edad || "Sin datos"}
-                        </p>
-                      </div>
-
-                      <div className="border-t pt-3 mt-3">
-                        <p className="font-semibold mb-1 text-[#8b4513]">
-                          Seguimientos programados:
-                        </p>
-                        <ul className="list-disc ml-5 text-gray-600 leading-relaxed">
-                          {seguimientos.map((f, i) => (
-                            <li key={i}>{f}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* Botones */}
-                    <div className="flex flex-col sm:flex-row gap-2 mt-5">
-                      <ButtonLink
-                        href={`/dashboards/usuario/seguimiento/${m.adopcion_id}`}
-                        variant="secondary"
-                        size="md"
-                        className="sm:w-auto w-full"
-                      >
-                        Gestionar seguimiento
-                      </ButtonLink>
-
-                      <Button
-                        variant="primary"
-                        size="md"
-                        className="sm:w-auto w-full cursor-pointer"
-                        onClick={() =>
-                          alert(
-                            `📋 Crear cita veterinaria para ${
-                              m.nombre
-                            } (Adopción: ${m.numero_adopcion || "N/A"})`
-                          )
-                        }
-                      >
-                        Crear cita veterinaria
-                      </Button>
-                    </div>
+                  <div className="border-t pt-3 mt-3">
+                    <p className="font-semibold mb-1 text-[#8b4513]">
+                      Seguimientos programados:
+                    </p>
+                    <ul className="list-disc ml-5 text-gray-600 leading-relaxed">
+                      {seguimientos.map((f, i) => (
+                        <li key={`${keyId}-seg-${i}`}>{f}</li>
+                      ))}
+                    </ul>
                   </div>
-                </Card>
-              );
-            }
-          )}
-        </div>
+                </div>
+
+                {/* Botones */}
+                <div className="flex flex-col sm:flex-row gap-2 mt-5">
+                  <ButtonLink
+                    href={`/dashboards/usuario/seguimiento/${m.adopcion_id}`}
+                    variant="secondary"
+                    size="md"
+                    className="sm:w-auto w-full"
+                  >
+                    Gestionar seguimiento
+                  </ButtonLink>
+
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="sm:w-auto w-full cursor-pointer"
+                    onClick={() =>
+                      alert(
+                        `📋 Crear cita veterinaria para ${
+                          m.nombre
+                        } (Adopción: ${m.numero_adopcion || "N/A"})`
+                      )
+                    }
+                  >
+                    Crear cita veterinaria
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
-    </>
+    </div>
   );
 }
 

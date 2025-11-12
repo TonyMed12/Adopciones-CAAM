@@ -7,10 +7,10 @@ export default function LandingPage() {
         className="relative text-white py-20 overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: "url('/bg-green.jpeg')" }}
       >
-        <div className="flex flex-row justify-center container mx-auto  items-center gap-10 px-6 md:grid-cols-2">
+        <div className="flex flex-row justify-center container mx-auto items-center gap-10 px-6 md:grid-cols-2">
           {/* Texto de la izquierda */}
           <div>
-            <h1 className="text-7xl md:t font-extrabold leading-tight">
+            <h1 className="text-7xl font-extrabold leading-tight">
               Adopta y cambia una vida
             </h1>
             <p className="mt-4 text-xl text-[#FFF8F0]">
@@ -35,13 +35,14 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Imagen mascota */}
+          {/* Imagen mascota desde Supabase */}
           <div className="flex justify-center relative">
             <img
-              src="/dog.png"
+              src="https://jivnxysdyziojckvslqp.supabase.co/storage/v1/object/public/logos/Dog.png"
               alt="Perros en adopción"
               className="rounded-2xl shadow-2xl object-cover w-full max-w-md"
             />
+            
           </div>
         </div>
       </section>
