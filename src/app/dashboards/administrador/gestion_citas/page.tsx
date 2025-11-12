@@ -191,40 +191,13 @@ export default function GestionCitasPage() {
   return (
     <div className="min-h-[70vh] space-y-6 transition-all duration-300 ease-in-out">
       {/* HEADER GLOBAL DE PÁGINA */}
-      <div className="space-y-4">
-        <PageHead
+      <PageHead
           title="Gestión de citas de adopción"
           subtitle="Administra todas las citas de adopción programadas."
         />
-
+      <div className="space-y-4">
         {/* FILTROS Y BUSCADOR */}
         <div className="flex flex-wrap items-center justify-start gap-3 md:justify-between">
-          {/* 🔍 Buscador */}
-          <div className="flex items-center gap-2 flex-[2] min-w-[220px] max-w-[340px] rounded-2xl border border-[#EADACB] bg-white px-3 py-2 focus-within:ring-1 focus-within:ring-[#BC5F36] transition-all">
-            <Search className="h-4 w-4 text-[#8b6f5d]" />
-            <input
-              placeholder="Buscar por usuario, mascota o correo"
-              className="flex-1 bg-transparent text-sm text-[#2B1B12] placeholder:text-[#8b6f5d] focus:outline-none"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-
-          {/* 🔽 Filtro rápido */}
-          <div className="flex items-center gap-1 flex-shrink-0 border border-[#EADACB] rounded-2xl bg-white px-3 py-2">
-            <Filter size={14} className="text-[#BC5F36]" />
-            <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value as any)}
-              className="text-sm bg-transparent focus:outline-none text-[#2B1B12]"
-            >
-              <option value="todas">Todas</option>
-              <option value="programada">Programadas</option>
-              <option value="completada">Completadas</option>
-              <option value="cancelada">Canceladas</option>
-            </select>
-          </div>
-
           {/* 🗓️ Selector de vista */}
           <div className="flex flex-shrink-0 rounded-xl border border-[#EADACB] overflow-hidden">
             <button
