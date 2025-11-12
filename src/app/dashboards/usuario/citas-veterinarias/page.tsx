@@ -231,13 +231,13 @@ export default function CitasVeterinariasPage() {
     filtro === "todas" ? citas : citas.filter((c) => c.estado === filtro);
 
   return (
-    <div className="max-w-6xl mx-auto bg-white rounded-3xl p-8">
+    <div className="max-w-6xl mx-auto bg-white rounded-3xl p-5 sm:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <h1 className="text-4xl font-semibold text-[#8B4513]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#8B4513]">
           Citas Veterinarias
         </h1>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap justify-center sm:justify-end gap-3 w-full sm:w-auto">
           <Button
             variant={modo === "lista" ? "primary" : "ghost"}
             onClick={() => setModo("lista")}
@@ -264,11 +264,10 @@ export default function CitasVeterinariasPage() {
       {/* Mensaje global */}
       {mensaje && (
         <div
-          className={`mt-4 text-center text-sm p-3 rounded-lg ${
-            mensaje.startsWith("✅")
+          className={`mt-4 text-center text-sm p-3 rounded-lg ${mensaje.startsWith("✅")
               ? "bg-green-50 text-green-700 border border-green-200"
               : "bg-yellow-50 text-yellow-800 border border-yellow-200"
-          }`}
+            }`}
         >
           {mensaje}
         </div>
@@ -311,8 +310,8 @@ export default function CitasVeterinariasPage() {
                 </div>
 
                 {/* Tabla */}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border border-gray-200 rounded-xl overflow-hidden">
+                <div className="overflow-x-auto rounded-xl border border-gray-200">
+                  <table className="min-w-full text-sm">
                     <thead className="bg-[#FFF1E6] text-[#8B4513]">
                       <tr>
                         <th className="px-4 py-3 text-left">Mascota</th>
@@ -352,9 +351,8 @@ export default function CitasVeterinariasPage() {
                             <td className="px-4 py-3 font-medium">{horaStr}</td>
                             <td className="px-4 py-3">{cita.motivo}</td>
                             <td
-                              className={`px-4 py-3 rounded-lg ${
-                                estadoColor[cita.estado]
-                              }`}
+                              className={`px-4 py-3 rounded-lg ${estadoColor[cita.estado]
+                                }`}
                             >
                               {cita.estado.charAt(0).toUpperCase() +
                                 cita.estado.slice(1)}
@@ -382,11 +380,10 @@ export default function CitasVeterinariasPage() {
               {mascotas.map((m) => (
                 <div
                   key={m.mascota_id}
-                  className={`flex items-center gap-4 border rounded-2xl p-4 cursor-pointer transition ${
-                    mascotaSeleccionada?.mascota_id === m.mascota_id
+                  className={`flex items-center gap-4 border rounded-2xl p-4 cursor-pointer transition ${mascotaSeleccionada?.mascota_id === m.mascota_id
                       ? "bg-[#FFF1E6] border-[#8B4513]"
                       : "hover:bg-[#FFF8F3]"
-                  }`}
+                    }`}
                   onClick={() => setMascotaSeleccionada(m)}
                 >
                   <img
@@ -478,13 +475,12 @@ export default function CitasVeterinariasPage() {
                           onClick={() =>
                             !deshabilitado && setFechaSeleccionada(dateStr)
                           }
-                          className={`py-2 text-sm rounded-lg transition ${
-                            deshabilitado
+                          className={`py-2 text-sm rounded-lg transition ${deshabilitado
                               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                               : seleccionado
-                              ? "bg-[#8B4513] text-white font-semibold"
-                              : "hover:bg-[#FFF1E6] text-[#8B4513]"
-                          }`}
+                                ? "bg-[#8B4513] text-white font-semibold"
+                                : "hover:bg-[#FFF1E6] text-[#8B4513]"
+                            }`}
                         >
                           {d}
                         </button>
@@ -506,16 +502,15 @@ export default function CitasVeterinariasPage() {
                     <h3 className="font-medium text-[#8B4513] mb-2">
                       Selecciona un horario
                     </h3>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                       {horasDisponibles.map((hora) => (
                         <button
                           key={hora}
                           onClick={() => setHoraSeleccionada(hora)}
-                          className={`py-2 rounded-lg border text-sm transition ${
-                            horaSeleccionada === hora
+                          className={`py-2 rounded-lg border text-sm transition ${horaSeleccionada === hora
                               ? "bg-[#8B4513] text-white border-[#A0522D]"
                               : "hover:bg-[#FFF1E6]"
-                          }`}
+                            }`}
                         >
                           {hora}
                         </button>

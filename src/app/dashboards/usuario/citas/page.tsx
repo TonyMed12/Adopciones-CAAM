@@ -50,7 +50,7 @@ export default function MisCitasPage() {
     Math.ceil(
       (new Date().getTime() -
         new Date(solicitudActiva?.created_at || "").getTime()) /
-        (1000 * 60 * 60 * 24)
+      (1000 * 60 * 60 * 24)
     );
 
   // ------------------------------------------------------------
@@ -154,16 +154,16 @@ export default function MisCitasPage() {
       // 🔹 Formatear la cita si existe
       const citasFormateadas = citaProgramada
         ? [
-            {
-              id: citaProgramada.id,
-              fecha_cita: citaProgramada.fecha_cita,
-              hora_cita: citaProgramada.hora_cita,
-              estado: citaProgramada.estado,
-              mascota: Array.isArray(citaProgramada.mascota)
-                ? citaProgramada.mascota[0]
-                : citaProgramada.mascota ?? null,
-            },
-          ]
+          {
+            id: citaProgramada.id,
+            fecha_cita: citaProgramada.fecha_cita,
+            hora_cita: citaProgramada.hora_cita,
+            estado: citaProgramada.estado,
+            mascota: Array.isArray(citaProgramada.mascota)
+              ? citaProgramada.mascota[0]
+              : citaProgramada.mascota ?? null,
+          },
+        ]
         : [];
 
       setCitas(citasFormateadas);
@@ -225,21 +225,21 @@ export default function MisCitasPage() {
     // 🔹 3. Actualizar el estado local y mostrar confirmación
     const citaCreada = data
       ? {
-          id: data[0].id,
-          fecha_cita: data[0].fecha_cita,
-          hora_cita: data[0].hora_cita,
-          estado: data[0].estado,
-          mascota: Array.isArray(data[0].mascota)
-            ? data[0].mascota[0]
-            : data[0].mascota ?? null,
-        }
+        id: data[0].id,
+        fecha_cita: data[0].fecha_cita,
+        hora_cita: data[0].hora_cita,
+        estado: data[0].estado,
+        mascota: Array.isArray(data[0].mascota)
+          ? data[0].mascota[0]
+          : data[0].mascota ?? null,
+      }
       : {
-          id: crypto.randomUUID(),
-          fecha_cita: fecha,
-          hora_cita: horaSeleccionada,
-          estado: "programada",
-          mascota: solicitudActiva.mascota,
-        };
+        id: crypto.randomUUID(),
+        fecha_cita: fecha,
+        hora_cita: horaSeleccionada,
+        estado: "programada",
+        mascota: solicitudActiva.mascota,
+      };
 
     setNuevaCita(citaCreada);
     setCitas((prev) => [...prev, citaCreada]);
@@ -485,7 +485,7 @@ export default function MisCitasPage() {
 
       {/* PASO 2: Formulario para agendar cita */}
       {paso === "formulario" && solicitudActiva && (
-        <section className="rounded-2xl border border-[#eadacb] bg-white p-8 shadow-sm text-[#2b1b12]">
+        <section className="rounded-2xl border border-[#eadacb] bg-white p-5 sm:p-8 shadow-sm text-[#2b1b12]">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-extrabold flex items-center gap-2">
               <PawPrint className="h-5 w-5 text-[#BC5F36]" />
@@ -496,13 +496,13 @@ export default function MisCitasPage() {
             </Button>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             {/* 🐶 Información de la mascota */}
-            <div className="rounded-xl border border-[#f0e6dc] bg-[#fffaf4] p-6 flex flex-col items-center text-center shadow-sm">
+            <div className="rounded-xl border border-[#f0e6dc] bg-[#fffaf4] p-5 sm:p-6 flex flex-col items-center text-center shadow-sm">
               <img
                 src={solicitudActiva.mascota?.imagen_url || "/placeholder.jpg"}
                 alt={solicitudActiva.mascota?.nombre}
-                className="h-48 w-48 rounded-lg object-cover border border-[#eadacb] mb-4 shadow-md"
+                className="w-32 h-32 sm:w-48 sm:h-48 rounded-lg object-cover border border-[#eadacb] mb-4 shadow-md"
               />
               <h4 className="text-lg font-bold text-[#8b4513] mb-1">
                 {solicitudActiva.mascota?.nombre}
@@ -533,19 +533,20 @@ export default function MisCitasPage() {
                 <label className="block text-sm font-extrabold mb-3 text-[#2b1b12]">
                   Selecciona la fecha de tu visita
                 </label>
-                <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4 flex justify-center">
-                  <Calendar
-                    mode="single"
-                    selected={fecha ? new Date(fecha) : undefined}
-                    onSelect={(day: Date | undefined) =>
-                      setFecha(day ? day.toISOString().split("T")[0] : "")
-                    }
-                    disabled={(date: Date) =>
-                      isWeekend(date) ||
-                      date < new Date(new Date().setHours(0, 0, 0, 0))
-                    }
-                    className="rounded-md border-0 shadow-none"
-                  />
+                <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-3 sm:p-4 overflow-x-auto flex justify-start sm:justify-center scrollbar-thin scrollbar-thumb-[#d6bba8] scrollbar-track-transparent">
+                  <div className="min-w-[320px] sm:min-w-[380px]">
+                    <Calendar
+                      mode="single"
+                      selected={fecha ? new Date(fecha) : undefined}
+                      onSelect={(day: Date | undefined) =>
+                        setFecha(day ? day.toISOString().split("T")[0] : "")
+                      }
+                      disabled={(date: Date) =>
+                        isWeekend(date) || date < new Date(new Date().setHours(0, 0, 0, 0))
+                      }
+                      className="rounded-md border-0 shadow-none"
+                    />
+                  </div>
                 </div>
                 <p className="text-xs text-[#a4836b] text-center mt-2">
                   (Solo se pueden agendar citas de lunes a viernes)
@@ -557,7 +558,7 @@ export default function MisCitasPage() {
                 <label className="block text-sm font-extrabold mb-2 text-[#2b1b12]">
                   Hora disponible
                 </label>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {[
                     "08:30",
                     "09:00",
@@ -575,11 +576,11 @@ export default function MisCitasPage() {
                     <button
                       key={hora}
                       onClick={() => setHoraSeleccionada(hora)}
-                      className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-all ${
-                        horaSeleccionada === hora
+                      className={`rounded-lg border px-3 py-2 text-sm sm:text-base font-semibold transition-all text-center
+                        ${horaSeleccionada === hora
                           ? "border-[#BC5F36] bg-[#BC5F36] text-white"
                           : "border-[#eadacb] bg-[#fffaf4] text-[#2b1b12] hover:border-[#BC5F36]"
-                      }`}
+                        }`}
                     >
                       {hora}
                     </button>
@@ -588,7 +589,7 @@ export default function MisCitasPage() {
               </div>
 
               {/* CONFIRMAR */}
-              <div className="pt-4 text-center">
+              <div className="pt-6 text-center sticky bottom-4 bg-white/80 backdrop-blur-sm py-3 rounded-xl shadow-md sm:static sm:shadow-none sm:bg-transparent">
                 <Button
                   className="px-8 py-3"
                   disabled={!fecha || !horaSeleccionada}

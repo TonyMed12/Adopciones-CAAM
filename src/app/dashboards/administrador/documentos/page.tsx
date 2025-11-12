@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Eye, CheckCircle2, XCircle, Loader2, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { createPortal } from "react-dom";
+import PageHead from "@/components/layout/PageHead";
 
 type Documento = {
   id: string;
@@ -122,20 +123,22 @@ export default function GestionDocumentosPage() {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-bold text-slate-800">
-            Gestión de documentos 📄
-          </h1>
-          <div className="flex gap-2 mt-3 sm:mt-0">
+        <PageHead
+          title="Gestión de documentos 📄"
+          subtitle="Revisa, aprueba o rechaza los documentos enviados por los usuarios."
+        />
+
+        {/* 🔹 Filtros (separados del PageHead) */}
+        <div className="w-full overflow-x-auto no-scrollbar mt-3">
+          <div className="flex gap-3 min-w-max border-b border-[#eadacb] pb-1">
             {["todos", "pendiente", "aprobado", "rechazado"].map((estado) => (
               <button
                 key={estado}
                 onClick={() => setFiltro(estado)}
-                className={`px-4 py-1.5 rounded-md text-sm border transition-all ${
-                  filtro === estado
-                    ? "bg-[#BC5F36] text-white border-[#BC5F36]"
-                    : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                }`}
+                className={`whitespace-nowrap px-4 py-1.5 rounded-t-md text-sm font-semibold transition-all duration-200 border-b-2 ${filtro === estado
+                  ? "border-[#BC5F36] text-[#BC5F36] bg-[#fff8f4]"
+                  : "border-transparent text-[#7a5c49] hover:text-[#BC5F36]"
+                  }`}
               >
                 {estado.charAt(0).toUpperCase() + estado.slice(1)}
               </button>
@@ -144,8 +147,8 @@ export default function GestionDocumentosPage() {
         </div>
 
         {/* Tabla */}
-        <section className="rounded-2xl border border-[#eadacb] bg-white shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+        <section className="rounded-2xl border border-[#eadacb] bg-white shadow-sm overflow-x-auto">
+          <table className="min-w-max w-full text-sm">
             <thead className="bg-[#fff4e7] text-[#2b1b12]">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Usuario</th>
@@ -191,13 +194,12 @@ export default function GestionDocumentosPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          doc.status === "pendiente"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : doc.status === "aprobado"
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${doc.status === "pendiente"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : doc.status === "aprobado"
                             ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
-                        }`}
+                          }`}
                       >
                         {doc.status}
                       </span>

@@ -22,27 +22,38 @@ import {
 export default function AdminHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [gestionOpen, setGestionOpen] = useState(false);
-  const [adminName, setAdminName] = useState<string>("Cargando...");
   const supabase = createClient();
+
+  const [open, setOpen] = useState(false); // menú móvil
+  const [menuOpen, setMenuOpen] = useState(false); // menú perfil
+  const [gestionOpen, setGestionOpen] = useState(false); // submenú gestión
+  const [adminName, setAdminName] = useState<string>("Cargando...");
 
   // 🔹 Referencias para detectar clic fuera
   const gestionRef = useRef<HTMLLIElement>(null);
   const menuRef = useRef<HTMLLIElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  // 🔹 Cierra los menús si se hace clic fuera
+  // 🔹 Cierra menús si se hace clic fuera
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        gestionRef.current &&
-        !gestionRef.current.contains(e.target as Node)
-      ) {
+      const target = e.target as Node;
+
+      // 👇 Si el click fue dentro del menú móvil, no cierres nada
+      if (mobileMenuRef.current && mobileMenuRef.current.contains(target)) {
+        return;
+      }
+
+      if (gestionRef.current && !gestionRef.current.contains(target)) {
         setGestionOpen(false);
       }
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setMenuOpen(false);
+      }
+
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(target)) {
+        setOpen(false);
       }
     };
 
@@ -55,7 +66,7 @@ export default function AdminHeader() {
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  // 🔹 Obtener nombre de administrador
+  // 🔹 Obtener nombre del administrador
   useEffect(() => {
     const fetchAdmin = async () => {
       const { data } = await supabase.auth.getUser();
@@ -81,16 +92,13 @@ export default function AdminHeader() {
     <header className="fixed top-0 z-50 w-full bg-[#BC5F36] shadow-md">
       <nav className="container mx-auto flex items-center justify-between px-6 py-5">
         {/* Logo */}
-        <Link
-          href="/dashboards/administrador"
-          className="flex items-center gap-3"
-        >
+        <Link href="/dashboards/administrador" className="flex items-center gap-3">
           <Image src="/logo.png" alt="CAAM" width={40} height={40} />
           <div className="flex flex-col items-start">
-            <span className="font-bold text-xl text-[#FFF8F0]">
+            <span className="font-bold text-xl text-[#FFF8F0] leading-tight">
               Centro de Atención Animal
             </span>
-            <span className="font-medium text-lg text-[#FFF8F0]">
+            <span className="font-medium text-sm text-[#FFF8F0]">
               Morelia, Michoacán
             </span>
           </div>
@@ -107,41 +115,24 @@ export default function AdminHeader() {
         {/* NAV DESKTOP */}
         <ul className="hidden lg:flex items-center gap-8">
           {[
-            {
-              href: "/dashboards/administrador",
-              label: "Inicio",
-              icon: LayoutDashboard,
-            },
-            {
-              href: "/dashboards/administrador/mascotas",
-              label: "Mascotas",
-              icon: FileText,
-            },
-            {
-              href: "/dashboards/administrador/usuarios",
-              label: "Usuarios",
-              icon: Users,
-            },
+            { href: "/dashboards/administrador", label: "Inicio", icon: LayoutDashboard },
+            { href: "/dashboards/administrador/mascotas", label: "Mascotas", icon: FileText },
+            { href: "/dashboards/administrador/usuarios", label: "Usuarios", icon: Users },
           ].map(({ href, label, icon: Icon }) => {
             const active = isActive(href);
             return (
               <li key={href}>
                 <Link
                   href={href}
-                  className={`group flex items-center gap-2 rounded-md px-4 py-2 text-lg font-medium transition
-                    ${
-                      active
-                        ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
-                        : "text-[#FFF8F0] hover:text-[#FDE68A]"
-                    }`}
+                  className={`group flex items-center gap-2 rounded-md px-4 py-2 text-lg font-medium transition ${
+                    active
+                      ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
+                      : "text-[#FFF8F0] hover:text-[#FDE68A]"
+                  }`}
                 >
                   <Icon
                     size={18}
-                    className={
-                      active
-                        ? "text-[#8B4513]"
-                        : "text-[#FFF8F0] group-hover:text-[#FDE68A]"
-                    }
+                    className={active ? "text-[#8B4513]" : "text-[#FFF8F0] group-hover:text-[#FDE68A]"}
                   />
                   {label}
                 </Link>
@@ -149,7 +140,7 @@ export default function AdminHeader() {
             );
           })}
 
-          {/* 🔹 MENÚ GESTIÓN */}
+          {/* MENÚ GESTIÓN */}
           <li className="relative" ref={gestionRef}>
             <button
               onClick={() => setGestionOpen((v) => !v)}
@@ -162,43 +153,27 @@ export default function AdminHeader() {
 
             {gestionOpen && (
               <div className="absolute left-0 mt-3 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513] animate-fadeIn">
-                <Link
-                  href="/dashboards/administrador/gestion_adopciones"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
-                  onClick={() => setGestionOpen(false)}
-                >
-                  <FileText size={16} />
-                  <span>Adopciones</span>
-                </Link>
-                <Link
-                  href="/dashboards/administrador/documentos"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
-                  onClick={() => setGestionOpen(false)}
-                >
-                  <FileText size={16} />
-                  <span>Documentos</span>
-                </Link>
-                <Link
-                  href="/dashboards/administrador/gestion_citas"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
-                  onClick={() => setGestionOpen(false)}
-                >
-                  <CalendarDays size={16} />
-                  <span>Citas de adopción</span>
-                </Link>
-                <Link
-                  href="/dashboards/administrador/gestion_citas_veterinarias"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
-                  onClick={() => setGestionOpen(false)}
-                >
-                  <CalendarHeart size={16} />
-                  <span>Citas veterinarias</span>
-                </Link>
+                {[
+                  { href: "/dashboards/administrador/gestion_adopciones", label: "Adopciones", icon: FileText },
+                  { href: "/dashboards/administrador/documentos", label: "Documentos", icon: FileText },
+                  { href: "/dashboards/administrador/gestion_citas", label: "Citas de adopción", icon: CalendarDays },
+                  { href: "/dashboards/administrador/citas-veterinarias", label: "Citas veterinarias", icon: CalendarHeart },
+                ].map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
+                    onClick={() => setGestionOpen(false)}
+                  >
+                    <Icon size={16} />
+                    <span>{label}</span>
+                  </Link>
+                ))}
               </div>
             )}
           </li>
 
-          {/* 🔹 MENÚ ADMIN */}
+          {/* MENÚ ADMIN */}
           <li className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -231,6 +206,103 @@ export default function AdminHeader() {
           </li>
         </ul>
       </nav>
+
+      {/* 🔹 NAV MÓVIL */}
+      {open && (
+        <div
+          ref={mobileMenuRef}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="lg:hidden bg-[#BC5F36] border-t border-[#e3bba7] shadow-inner"
+        >
+          <ul className="flex flex-col items-center py-3 space-y-1 text-center">
+            {[
+              { href: "/dashboards/administrador", label: "Inicio" },
+              { href: "/dashboards/administrador/mascotas", label: "Mascotas" },
+              { href: "/dashboards/administrador/usuarios", label: "Usuarios" },
+            ].map(({ href, label }) => (
+              <li key={href}>
+                <button
+                  onClick={() => {
+                    router.push(href);
+                    setOpen(false);
+                  }}
+                  className={`block w-full px-4 py-2 rounded-md text-lg font-medium transition ${
+                    pathname === href
+                      ? "bg-[#FFF1E6] text-[#8B4513]"
+                      : "text-[#FFF8F0] hover:text-[#FDE68A]"
+                  }`}
+                >
+                  {label}
+                </button>
+              </li>
+            ))}
+
+            {/* Submenú Gestión */}
+            <li className="w-full">
+              <button
+                onClick={() => setGestionOpen((v) => !v)}
+                className="flex items-center justify-center gap-2 w-full text-lg font-medium text-[#FFF8F0] hover:text-[#FDE68A] transition py-2"
+              >
+                <FolderKanban size={18} />
+                <span>Gestión</span>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform ${gestionOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {gestionOpen && (
+                <div className="bg-[#FFF1E6] rounded-md mt-1 mx-6 text-left text-[#8B4513] shadow-lg">
+                  {[
+                    { href: "/dashboards/administrador/gestion_adopciones", label: "Adopciones", icon: FileText },
+                    { href: "/dashboards/administrador/documentos", label: "Documentos", icon: FileText },
+                    { href: "/dashboards/administrador/gestion_citas", label: "Citas de adopción", icon: CalendarDays },
+                    { href: "/dashboards/administrador/citas-veterinarias", label: "Citas veterinarias", icon: CalendarHeart },
+                  ].map(({ href, label, icon: Icon }) => (
+                    <button
+                      key={href}
+                      onClick={() => {
+                        router.push(href);
+                        setGestionOpen(false);
+                        setOpen(false);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 w-full text-left hover:bg-[#FDE68A]/50 transition"
+                    >
+                      <Icon size={16} />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </li>
+
+            {/* Perfil y Cerrar sesión */}
+            <li>
+              <button
+                onClick={() => {
+                  router.push("/dashboards/perfil");
+                  setOpen(false);
+                }}
+                className="block w-full px-4 py-2 text-lg text-[#FFF8F0] hover:text-[#FDE68A]"
+              >
+                Mi perfil
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  router.push("/");
+                  setOpen(false);
+                }}
+                className="w-full text-center px-5 py-3 rounded-md bg-[#8B4513] text-white font-semibold hover:bg-[#A0522D] transition"
+              >
+                Cerrar sesión
+              </button>
+            </li>
+          </ul>
+        </div>
+      )}
     </header>
   );
 }

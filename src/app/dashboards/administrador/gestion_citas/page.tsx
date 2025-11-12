@@ -13,6 +13,7 @@ import {
 import { Search, Filter, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
+import PageHead from "@/components/layout/PageHead";
 
 import CitasTable, { type Cita as CitaType } from "@/components/citas/CitasTAble";
 import CitaEvalModal from "@/components/citas/CitasEvalModal";
@@ -189,29 +190,28 @@ export default function GestionCitasPage() {
 
   return (
     <div className="min-h-[70vh] space-y-6 transition-all duration-300 ease-in-out">
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold text-[#2B1B12]">Citas</h1>
-          <p className="text-sm text-[#6b4f40]">
-            Reprograma, cancela y evalúa asistencia/interacción post-cita.
-          </p>
-        </div>
+      {/* HEADER GLOBAL DE PÁGINA */}
+      <div className="space-y-4">
+        <PageHead
+          title="Gestión de citas de adopción"
+          subtitle="Administra todas las citas de adopción programadas."
+        />
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Buscador */}
-          <div className="flex items-center gap-2 rounded-2xl border border-[#EADACB] bg-white px-3 py-2 transition-all focus-within:ring-1 focus-within:ring-[#BC5F36]">
+        {/* FILTROS Y BUSCADOR */}
+        <div className="flex flex-wrap items-center justify-start gap-3 md:justify-between">
+          {/* 🔍 Buscador */}
+          <div className="flex items-center gap-2 flex-[2] min-w-[220px] max-w-[340px] rounded-2xl border border-[#EADACB] bg-white px-3 py-2 focus-within:ring-1 focus-within:ring-[#BC5F36] transition-all">
             <Search className="h-4 w-4 text-[#8b6f5d]" />
             <input
-              placeholder="Buscar por usuario o mascota"
-              className="w-60 bg-transparent text-sm text-[#2B1B12] placeholder:text-[#8b6f5d] focus:outline-none"
+              placeholder="Buscar por usuario, mascota o correo"
+              className="flex-1 bg-transparent text-sm text-[#2B1B12] placeholder:text-[#8b6f5d] focus:outline-none"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
 
-          {/* Filtro rápido */}
-          <div className="flex items-center gap-1 border border-[#EADACB] rounded-2xl bg-white px-2 py-1">
+          {/* 🔽 Filtro rápido */}
+          <div className="flex items-center gap-1 flex-shrink-0 border border-[#EADACB] rounded-2xl bg-white px-3 py-2">
             <Filter size={14} className="text-[#BC5F36]" />
             <select
               value={filtroEstado}
@@ -225,17 +225,21 @@ export default function GestionCitasPage() {
             </select>
           </div>
 
-          {/* Vista */}
-          <div className="rounded-xl border border-[#EADACB] overflow-hidden">
+          {/* 🗓️ Selector de vista */}
+          <div className="flex flex-shrink-0 rounded-xl border border-[#EADACB] overflow-hidden">
             <button
-              className={`px-3 py-2 text-sm transition-all ${view === "tabla" ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold" : "bg-white text-[#6b4f40]"
+              className={`px-3 py-2 text-sm ${view === "tabla"
+                  ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold"
+                  : "bg-white text-[#6b4f40]"
                 }`}
               onClick={() => setView("tabla")}
             >
               Tabla
             </button>
             <button
-              className={`px-3 py-2 text-sm transition-all ${view === "calendario" ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold" : "bg-white text-[#6b4f40]"
+              className={`px-3 py-2 text-sm ${view === "calendario"
+                  ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold"
+                  : "bg-white text-[#6b4f40]"
                 }`}
               onClick={() => setView("calendario")}
             >
@@ -243,22 +247,23 @@ export default function GestionCitasPage() {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* KPIs */}
-      <div className="flex flex-wrap gap-2">
-        <span className="px-2 py-1 text-sm rounded-md border bg-yellow-50 text-yellow-700">
-          Programadas: {citas.filter((c) => c.estado === "programada").length}
-        </span>
-        <span className="px-2 py-1 text-sm rounded-md border bg-green-50 text-green-700">
-          Completadas: {citas.filter((c) => c.estado === "completada").length}
-        </span>
-        <span className="px-2 py-1 text-sm rounded-md border bg-gray-50 text-gray-700">
-          Canceladas: {citas.filter((c) => c.estado === "cancelada").length}
-        </span>
-        <span className="px-2 py-1 text-sm rounded-md border bg-green-50 text-green-700 flex items-center gap-1">
-          <CheckCircle size={14} /> Aprobadas: {citas.filter((c) => c.interaccion === "buena_aprobada").length}
-        </span>
+        {/* KPIs */}
+        <div className="flex flex-wrap gap-2">
+          <span className="px-2 py-1 text-sm rounded-md border bg-yellow-50 text-yellow-700">
+            Programadas: {citas.filter((c) => c.estado === "programada").length}
+          </span>
+          <span className="px-2 py-1 text-sm rounded-md border bg-green-50 text-green-700">
+            Completadas: {citas.filter((c) => c.estado === "completada").length}
+          </span>
+          <span className="px-2 py-1 text-sm rounded-md border bg-gray-50 text-gray-700">
+            Canceladas: {citas.filter((c) => c.estado === "cancelada").length}
+          </span>
+          <span className="px-2 py-1 text-sm rounded-md border bg-green-50 text-green-700 flex items-center gap-1">
+            <CheckCircle size={14} /> Aprobadas:{" "}
+            {citas.filter((c) => c.interaccion === "buena_aprobada").length}
+          </span>
+        </div>
       </div>
 
       {/* Contenido */}

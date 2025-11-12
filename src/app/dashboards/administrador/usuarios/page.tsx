@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { listarUsuarios, eliminarUsuario, actualizarDocumentoStatus, obtenerUrlDocumento } from "@/usuarios/usuarios-actions";
 import type { PerfilConDocumentos } from "@/usuarios/usuarios";
+import PageHead from "@/components/layout/PageHead";
 
 // Paleta del proyecto Adopciones
 // primario: #BC5F36, acento: #FF8414, fondo suave: #FFF4E7, bordes: #EADACB, texto: #2B1B12
@@ -138,26 +139,28 @@ export default function UsuariosPage() {
   return (
     <div className="min-h-[70vh] space-y-6">
       {/* Encabezado */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-[#2B1B12]">Usuarios</h1>
-          <p className="text-sm text-[#6b4f40]">
-            Listado general y panel de detalle.
-          </p>
-        </div>
+      <div className="space-y-4">
+        <PageHead
+          title="Usuarios"
+          subtitle="Listado general y panel de detalle."
+        />
 
         {/* Controles */}
-        <div className="flex items-center gap-2 rounded-2xl border border-[#EADACB] bg-white px-3 py-2">
-          <Search className="h-4 w-4 text-[#8b6f5d]" />
-          <input
-            placeholder="Buscar por nombre o correo"
-            className="w-72 bg-transparent text-sm text-[#2B1B12] placeholder:text-[#8b6f5d] focus:outline-none"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <div className="mx-2 h-5 w-px bg-[#EADACB]" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* 🔍 Buscador */}
+          <div className="flex items-center gap-2 flex-1 min-w-[220px] max-w-[380px] rounded-2xl border border-[#EADACB] bg-white px-3 py-2 focus-within:ring-1 focus-within:ring-[#BC5F36] transition-all">
+            <Search className="h-4 w-4 text-[#8b6f5d]" />
+            <input
+              placeholder="Buscar por nombre o correo"
+              className="flex-1 bg-transparent text-sm text-[#2B1B12] placeholder:text-[#8b6f5d] focus:outline-none"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+
+          {/* ⚙️ Botón filtros (placeholder visual por ahora) */}
           <button
-            className="inline-flex items-center gap-1 text-sm text-[#BC5F36] hover:opacity-90"
+            className="inline-flex items-center gap-1 rounded-2xl border border-[#EADACB] bg-[#FFF9F3] px-3 py-2 text-sm font-semibold text-[#BC5F36] hover:bg-[#FFF4E7] transition"
             title="Filtros (próximamente)"
           >
             <SlidersHorizontal className="h-4 w-4" /> Filtros
@@ -171,9 +174,9 @@ export default function UsuariosPage() {
           Cargando usuarios...
         </div>
       ) : (
-        <div className="flex gap-6">
-          {/* Tabla */}
-          <div className="w-full overflow-x-auto">
+        <div className="flex flex-col lg:flex-row gap-6 mt-4">
+          {/* Tabla usuarios */}
+          <div className="flex-1 overflow-x-auto">
             <table className="w-full rounded-2xl overflow-hidden">
               <thead>
                 <tr className="bg-[#FFF4E7] border-b border-[#EADACB]">
@@ -191,7 +194,7 @@ export default function UsuariosPage() {
                     key={u.id}
                     onClick={() => setSelected(u)}
                     className={`cursor-pointer border-b border-[#F3E8DC] transition-colors ${u.documentos?.some((d) => d.status === "pendiente")
-                      ? "bg-[#FFF9F3]" // color más cálido si tiene documentos pendientes
+                      ? "bg-[#FFF9F3]"
                       : idx % 2 === 0
                         ? "bg-white"
                         : "bg-[#FFFDF9]"
@@ -281,7 +284,7 @@ export default function UsuariosPage() {
           </div>
 
           {/* Perfil lateral */}
-          <aside className="sticky top-4 h-fit w/full max-w-sm rounded-2xl border border-[#EADACB] bg-white p-6">
+          <aside className="sticky top-4 lg:w-[320px] w-full rounded-2xl border border-[#EADACB] bg-white p-6">
             {!selected ? (
               <div className="grid place-items-center text-center text-[#6b4f40]">
                 <UserCircle className="mb-3 h-12 w-12 text-[#BC5F36]" />

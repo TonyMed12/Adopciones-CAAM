@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import PageHead from "@/components/layout/PageHead";
 import {
   Calendar,
   ClipboardList,
@@ -44,11 +45,10 @@ function StatCard({
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl border p-5 transition hover:shadow-md cursor-pointer ${
-        hasAlert
-          ? "border-[#BC5F36]/40 bg-[#fff8f4]"
-          : "border-slate-100 bg-white"
-      }`}
+      className={`rounded-2xl border p-5 transition hover:shadow-md cursor-pointer ${hasAlert
+        ? "border-[#BC5F36]/40 bg-[#fff8f4]"
+        : "border-slate-100 bg-white"
+        }`}
       style={{ boxShadow: "0 10px 30px rgba(2,6,23,.05)" }}
     >
       <div className="flex items-center justify-between">
@@ -57,9 +57,8 @@ function StatCard({
           <h3 className="text-3xl font-bold text-slate-800 mt-1">{value}</h3>
         </div>
         <div
-          className={`p-3 rounded-xl ${
-            color ?? "bg-orange-100 text-[#BC5F36]"
-          }`}
+          className={`p-3 rounded-xl ${color ?? "bg-orange-100 text-[#BC5F36]"
+            }`}
         >
           {icon}
         </div>
@@ -172,24 +171,24 @@ export default function AdminDashboard() {
         const tareas = [
           docs && docs > 0
             ? {
-                id: 1,
-                descripcion: `${docs} documentos por validar`,
-                link: "/dashboards/administrador/documentos",
-              }
+              id: 1,
+              descripcion: `${docs} documentos por validar`,
+              link: "/dashboards/administrador/documentos",
+            }
             : null,
           citasHoy && citasHoy > 0
             ? {
-                id: 2,
-                descripcion: `${citasHoy} citas programadas para hoy`,
-                link: "/dashboards/administrador/gestion_citas",
-              }
+              id: 2,
+              descripcion: `${citasHoy} citas programadas para hoy`,
+              link: "/dashboards/administrador/gestion_citas",
+            }
             : null,
           usuarios && usuarios > 0
             ? {
-                id: 3,
-                descripcion: `${usuarios} usuarios con proceso en revisión`,
-                link: "/dashboards/administrador/usuarios",
-              }
+              id: 3,
+              descripcion: `${usuarios} usuarios con proceso en revisión`,
+              link: "/dashboards/administrador/usuarios",
+            }
             : null,
         ].filter(Boolean) as {
           id: number;
@@ -245,9 +244,8 @@ export default function AdminDashboard() {
           citas?.forEach((c) =>
             eventos.push({
               tipo: "cita",
-              mensaje: `${c.perfiles?.nombres || "Un usuario"} ${
-                c.estado === "programada" ? "agendó" : "actualizó"
-              } una cita para "${c.mascotas?.nombre || "una mascota"}"`,
+              mensaje: `${c.perfiles?.nombres || "Un usuario"} ${c.estado === "programada" ? "agendó" : "actualizó"
+                } una cita para "${c.mascotas?.nombre || "una mascota"}"`,
               fecha: c.created_at,
             })
           );
@@ -313,32 +311,23 @@ export default function AdminDashboard() {
   /* ------------------------------------------------------------------ */
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-bold text-slate-800">
-          Panel de gestión 🐾
-        </h1>
-        <p className="text-sm text-slate-500">
-          Bienvenido, administrador. Revisa los pendientes del día.
-        </p>
-      </div>
+      <PageHead
+        title="Panel de gestión 🐾"
+        subtitle="Bienvenido, administrador. Revisa los pendientes del día."
+      />
       {/* Indicador de pendientes global */}
-      <div className="flex items-center justify-between rounded-xl bg-[#fff4ed] border border-[#eadacb] p-3 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl bg-[#fff4ed] border border-[#eadacb] p-3 shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-[#BC5F36] font-semibold">🔔 Pendientes:</span>
           <span className="text-slate-700 text-sm">
-            {stats.documentosPendientes +
-              stats.citasHoy +
-              stats.usuariosProceso >
-            0
-              ? `${
-                  stats.documentosPendientes +
-                  stats.citasHoy +
-                  stats.usuariosProceso
-                } tareas por revisar`
+            {stats.documentosPendientes + stats.citasHoy + stats.usuariosProceso > 0
+              ? `${stats.documentosPendientes + stats.citasHoy + stats.usuariosProceso} tareas por revisar`
               : "Sin pendientes"}
           </span>
         </div>
-        <div className="flex gap-2 text-xs text-[#7a5c49]">
+
+        {/* badges compactos y que envuelven */}
+        <div className="flex flex-wrap gap-2 text-xs text-[#7a5c49]">
           <span>📄 {stats.documentosPendientes} docs</span>
           <span>📅 {stats.citasHoy} citas</span>
           <span>👥 {stats.usuariosProceso} usuarios</span>
@@ -346,21 +335,21 @@ export default function AdminDashboard() {
       </div>
 
       {/* Botones de acción rápida */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
         <button
-          onClick={() => router.push("/dashboards/admin/documentos")}
+          onClick={() => router.push("/dashboards/administrador/documentos")}
           className="px-4 py-2 rounded-lg bg-[#BC5F36] text-white text-sm hover:bg-[#a34f2e]"
         >
           Validar documentos
         </button>
         <button
-          onClick={() => router.push("/dashboards/admin/gestion_citas")}
+          onClick={() => router.push("/dashboards/administrador/gestion_citas")}
           className="px-4 py-2 rounded-lg bg-orange-100 text-[#BC5F36] text-sm hover:bg-orange-200"
         >
           Ver citas
         </button>
         <button
-          onClick={() => router.push("/dashboards/admin/usuarios")}
+          onClick={() => router.push("/dashboards/administrador/usuarios")}
           className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm hover:bg-slate-200"
         >
           Usuarios
@@ -368,36 +357,36 @@ export default function AdminDashboard() {
       </div>
 
       {/* Estadísticas principales */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
           label="Documentos pendientes"
           value={stats.documentosPendientes}
           icon={<ClipboardList className="h-6 w-6" />}
-          onClick={() => router.push("/dashboards/admin/documentos")}
+          onClick={() => router.push("/dashboards/administrador/documentos")}
         />
         <StatCard
           label="Citas hoy"
           value={stats.citasHoy}
           icon={<CalendarDays className="h-6 w-6" />}
-          onClick={() => router.push("/dashboards/admin/gestion_citas")}
+          onClick={() => router.push("/dashboards/administrador/gestion_citas")}
         />
         <StatCard
           label="Citas esta semana"
           value={stats.citasSemana}
           icon={<Calendar className="h-6 w-6" />}
-          onClick={() => router.push("/dashboards/admin/gestion_citas")}
+          onClick={() => router.push("/dashboards/administrador/gestion_citas")}
         />
         <StatCard
           label="Usuarios en revisión"
           value={stats.usuariosProceso}
           icon={<Users className="h-6 w-6" />}
-          onClick={() => router.push("/dashboards/admin/usuarios")}
+          onClick={() => router.push("/dashboards/administrador/usuarios")}
         />
         <StatCard
           label="Mascotas adoptables"
           value={stats.mascotasAdoptables}
           icon={<PawPrint className="h-6 w-6" />}
-          onClick={() => router.push("/dashboards/admin/mascotas")}
+          onClick={() => router.push("/dashboards/administrador/mascotas")}
         />
       </div>
 
@@ -439,30 +428,33 @@ export default function AdminDashboard() {
 
       {/* Actividad reciente */}
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
+          <h2 className="text-lg sm:text-xl font-extrabold text-[#2b1b12]">
             Actividad reciente
           </h2>
-          <div className="flex gap-2">
-            {["todo", "documento", "cita", "mascota"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFiltro(f)}
-                className={`px-3 py-1 text-xs rounded-md border ${
-                  filtro === f
-                    ? "bg-[#BC5F36] text-white border-[#BC5F36]"
-                    : "border-slate-200 text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {f === "todo"
-                  ? "Todo"
-                  : f === "documento"
-                  ? "Documentos"
-                  : f === "cita"
-                  ? "Citas"
-                  : "Mascotas"}
-              </button>
-            ))}
+
+          {/* Contenedor de filtros */}
+          <div className="w-full sm:w-auto overflow-x-auto">
+            <div className="flex gap-2 sm:gap-3 min-w-max px-1 pb-1 border-b border-[#eadacb]">
+              {["todo", "documento", "cita", "mascota"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFiltro(f)}
+                  className={`whitespace-nowrap px-4 py-1.5 rounded-t-md text-sm font-semibold transition-all duration-200 border-b-2 ${filtro === f
+                      ? "border-[#BC5F36] text-[#BC5F36] bg-[#fff8f4]"
+                      : "border-transparent text-[#7a5c49] hover:text-[#BC5F36]"
+                    }`}
+                >
+                  {f === "todo"
+                    ? "Todo"
+                    : f === "documento"
+                      ? "Documentos"
+                      : f === "cita"
+                        ? "Citas"
+                        : "Mascotas"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
