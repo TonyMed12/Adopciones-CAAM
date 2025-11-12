@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Loader2, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/Button";
 
 export default function NuevaContrasenaPage() {
   const [password, setPassword] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -16,9 +22,7 @@ export default function NuevaContrasenaPage() {
     setLoading(true);
 
     const supabase = createClient();
-
     const { error } = await supabase.auth.updateUser({ password });
-
     setLoading(false);
 
     if (error) {
@@ -27,33 +31,104 @@ export default function NuevaContrasenaPage() {
       setMensaje(
         "Contraseña actualizada correctamente. Ya puedes iniciar sesión."
       );
+      setPassword("");
+      setTimeout(() => router.push("/login"), 2000);
     }
   }
 
   return (
-    <div className="max-w-md mx-auto mt-24">
-      <h1 className="text-2xl font-bold mb-4 text-center">
-        Establece una nueva contraseña
-      </h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="password"
-          placeholder="Nueva contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="border rounded p-2"
-          required
-        />
-        <button
-          disabled={loading}
-          className="bg-orange-500 text-white p-2 rounded hover:bg-orange-600"
-        >
-          {loading ? "Guardando..." : "Cambiar contraseña"}
-        </button>
-      </form>
+    <div
+      className="min-h-screen bg-[var(--background)] flex items-center justify-center px-4"
+      style={{
+        backgroundImage:
+          "radial-gradient(ellipse at 20% 10%, rgba(91,75,182,0.08), transparent 45%), radial-gradient(ellipse at 80% 0%, rgba(240,79,147,0.08), transparent 45%)",
+      }}
+    >
+      <div className="w-full max-w-md">
+        {/* Encabezado */}
+        <div className="text-center mb-6 mt-10">
+          <Link href="/(marketing)">
+            <Image
+              src="/logo.png"
+              alt="Logo CAAM"
+              width={900}
+              height={900}
+              className="mx-auto mb-4 h-20 w-auto"
+              priority
+            />
+          </Link>
+          <h1 className="text-3xl font-extrabold tracking-tight text-[var(--brand-dark)]">
+            Restablecer contraseña
+          </h1>
+          <p className="text-[var(--brand-dark)]/70 mt-2 text-sm">
+            Ingresa una nueva contraseña para recuperar el acceso a tu cuenta.
+          </p>
+        </div>
 
-      {error && <p className="text-red-500 mt-3">{error}</p>}
-      {mensaje && <p className="text-green-600 mt-3">{mensaje}</p>}
+        {/* Tarjeta */}
+        <div className="bg-white rounded-2xl shadow-lg border border-[var(--brand-purple)]/15 p-6">
+          {error && (
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-red-200/70 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {error}
+            </div>
+          )}
+          {mensaje && (
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-green-200/70 bg-green-50 px-3 py-2 text-sm text-green-700"
+            >
+              {mensaje}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <label className="block">
+              <span className="block text-sm font-medium text-[var(--brand-dark)]">
+                Nueva contraseña
+              </span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[var(--brand-dark)] placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[var(--brand-purple)]/20 focus:border-[var(--brand-purple)] transition"
+                required
+              />
+            </label>
+
+            <Button
+              type="submit"
+              full
+              variant="primary"
+              disabled={loading}
+              className="flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Lock className="w-4 h-4" />
+              )}
+              {loading ? "Actualizando..." : "Guardar nueva contraseña"}
+            </Button>
+          </form>
+
+          <div className="text-center mt-6">
+            <Link
+              href="/login"
+              className="text-[var(--brand-purple)] hover:text-[var(--brand-pink)] text-sm font-medium transition-colors cursor-pointer"
+            >
+              ← Volver al inicio de sesión
+            </Link>
+          </div>
+        </div>
+
+        <p className="mb-10 text-center text-xs text-[var(--brand-dark)]/60 mt-10">
+          Transformando adopciones en historias de amor
+        </p>
+      </div>
     </div>
   );
 }

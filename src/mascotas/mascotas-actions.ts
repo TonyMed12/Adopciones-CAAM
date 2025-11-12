@@ -67,7 +67,7 @@ export async function uploadMascotaArchivos(file: File, id?: string) {
         const {data: imgData} = supabase.storage.from("mascotas-imagenes").getPublicUrl(imageName);
 
         // 🌐 Generar link base para QR
-        let baseUrl = "http://localhost:3000";
+        let baseUrl = "https://caamorelia.vercel.app";
         if (typeof window !== "undefined") baseUrl = window.location.origin;
         else if (process.env.VERCEL_URL) baseUrl = `https://${process.env.VERCEL_URL}`;
 
