@@ -30,8 +30,12 @@ export default function UserHeader() {
 
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string) => {
+    if (href === "/dashboards/usuario") {
+      return pathname === href;
+    }
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   /* 🔹 Usuario actual */
   useEffect(() => {
@@ -70,15 +74,15 @@ export default function UserHeader() {
           <Image src="/logo.png" alt="CAAM" width={40} height={40} />
           <div className="flex flex-col items-start">
             <span className="font-bold text-xl text-[#FFF8F0]">
-              Centro de Atenci贸n Animal
+              Centro de Atención Animal
             </span>
             <span className="font-medium text-sm text-[#FFF8F0]">
-              Morelia, Michoac谩n
+              Morelia, Michoacán
             </span>
           </div>
         </Link>
 
-        {/* Bot贸n m贸vil */}
+        {/* Boton movil */}
         <button
           className="lg:hidden text-[#FFF8F0] p-2"
           onClick={() => setOpenMobile(!openMobile)}
@@ -98,6 +102,7 @@ export default function UserHeader() {
             open={openDropdown === "adopcion"}
             onOpen={() => setOpenDropdown(openDropdown === "adopcion" ? null : "adopcion")}
             items={[
+              { href: "/dashboards/usuario/adopcion", label: "Proceso de adopción", icon: HeartIcon, },
               { href: "/dashboards/usuario/citas", label: "Mis citas de adopción", icon: CalendarCheck },
             ]}
           />
@@ -133,13 +138,26 @@ export default function UserHeader() {
       {openMobile && (
         <div className="lg:hidden bg-[#BC5F36] border-t border-[#e3bba7] shadow-inner animate-slideDown">
           <ul className="flex flex-col items-center py-4 space-y-2 text-center text-[#FFF8F0]">
-            <MobileLink href="/dashboards/usuario" label="Inicio" icon={LayoutDashboard} onClick={() => setOpenMobile(false)} />
-            <MobileLink href="/dashboards/usuario/mascotas" label="Adoptables" icon={Dog} onClick={() => setOpenMobile(false)} />
+            <MobileLink
+              href="/dashboards/usuario"
+              label="Inicio"
+              icon={LayoutDashboard}
+              router={router}
+              onClick={() => setOpenMobile(false)}
+            />
+            <MobileLink
+              href="/dashboards/usuario/mascotas"
+              label="Adoptables"
+              icon={Dog}
+              router={router}
+              onClick={() => setOpenMobile(false)}
+            />
 
             <MobileDropdown
               label="Adopción"
               icon={HeartIcon}
               items={[
+                { href: "/dashboards/usuario/adopcion", label: "Proceso de adopción", icon: HeartIcon, },
                 { href: "/dashboards/usuario/citas", label: "Mis citas de adopción", icon: CalendarCheck },
               ]}
               router={router}
@@ -187,11 +205,10 @@ function NavItem({ href, label, icon: Icon, active }: any) {
     <li>
       <Link
         href={href}
-        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${
-          active
-            ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
-            : "hover:text-[#FDE68A]"
-        }`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${active
+          ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
+          : "hover:text-[#FDE68A]"
+          }`}
       >
         <Icon size={18} />
         {label}
@@ -205,9 +222,8 @@ function Dropdown({ label, icon: Icon, open, onOpen, items, align = "left" }: an
     <li className="relative group">
       <button
         onClick={onOpen}
-        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${
-          open ? "bg-[#FFF1E6] text-[#8B4513]" : "hover:text-[#FDE68A]"
-        }`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${open ? "bg-[#FFF1E6] text-[#8B4513]" : "hover:text-[#FDE68A]"
+          }`}
       >
         <Icon size={18} />
         <span>{label}</span>
@@ -248,11 +264,14 @@ function Dropdown({ label, icon: Icon, open, onOpen, items, align = "left" }: an
 
 /* 🔹 Mobile helpers */
 
-function MobileLink({ href, label, icon: Icon, onClick }: any) {
+function MobileLink({ href, label, icon: Icon, onClick, router }: any) {
   return (
     <li>
       <button
-        onClick={onClick}
+        onClick={() => {
+          router.push(href);
+          onClick?.();
+        }}
         className="flex items-center justify-center gap-2 w-full px-4 py-2 text-lg hover:text-[#FDE68A] transition"
       >
         <Icon size={18} />
@@ -261,6 +280,7 @@ function MobileLink({ href, label, icon: Icon, onClick }: any) {
     </li>
   );
 }
+
 
 function MobileDropdown({ label, icon: Icon, items, router, setOpenMobile }: any) {
   const [open, setOpen] = useState(false);
