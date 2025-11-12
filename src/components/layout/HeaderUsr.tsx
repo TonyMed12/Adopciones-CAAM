@@ -33,7 +33,7 @@ export default function UserHeader() {
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
 
-  /* 馃敼 Usuario actual */
+  /* 🔹 Usuario actual */
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -48,7 +48,7 @@ export default function UserHeader() {
     router.push("/");
   };
 
-  /* 馃敼 Cerrar dropdowns al hacer clic fuera */
+  /* 🔹 Cerrar dropdowns al hacer clic fuera */
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -88,33 +88,17 @@ export default function UserHeader() {
 
         {/* NAV DESKTOP */}
         <ul className="hidden lg:flex items-center gap-8 text-lg font-medium text-[#FFF8F0]">
-          <NavItem
-            href="/dashboards/usuario"
-            label="Inicio"
-            icon={LayoutDashboard}
-            active={isActive("/dashboards/usuario")}
-          />
-          <NavItem
-            href="/dashboards/usuario/mascotas"
-            label="Adoptables"
-            icon={Dog}
-            active={isActive("/dashboards/usuario/mascotas")}
-          />
+          <NavItem href="/dashboards/usuario" label="Inicio" icon={LayoutDashboard} active={isActive("/dashboards/usuario")} />
+          <NavItem href="/dashboards/usuario/mascotas" label="Adoptables" icon={Dog} active={isActive("/dashboards/usuario/mascotas")} />
 
-          {/* Adopci贸n */}
+          {/* Adopción */}
           <Dropdown
-            label="Adopci贸n"
+            label="Adopción"
             icon={HeartIcon}
             open={openDropdown === "adopcion"}
-            onOpen={() =>
-              setOpenDropdown(openDropdown === "adopcion" ? null : "adopcion")
-            }
+            onOpen={() => setOpenDropdown(openDropdown === "adopcion" ? null : "adopcion")}
             items={[
-              {
-                href: "/dashboards/usuario/citas",
-                label: "Mis citas de adopci贸n",
-                icon: CalendarCheck,
-              },
+              { href: "/dashboards/usuario/citas", label: "Mis citas de adopción", icon: CalendarCheck },
             ]}
           />
 
@@ -123,20 +107,10 @@ export default function UserHeader() {
             label="Mis Mascotas"
             icon={PawPrint}
             open={openDropdown === "mascotas"}
-            onOpen={() =>
-              setOpenDropdown(openDropdown === "mascotas" ? null : "mascotas")
-            }
+            onOpen={() => setOpenDropdown(openDropdown === "mascotas" ? null : "mascotas")}
             items={[
-              {
-                href: "/dashboards/usuario/mis-mascotas",
-                label: "Ver mis mascotas",
-                icon: PawPrint,
-              },
-              {
-                href: "/dashboards/usuario/citas-veterinarias",
-                label: "Citas veterinarias",
-                icon: Stethoscope,
-              },
+              { href: "/dashboards/usuario/mis-mascotas", label: "Ver mis mascotas", icon: PawPrint },
+              { href: "/dashboards/usuario/citas-veterinarias", label: "Citas veterinarias", icon: Stethoscope },
             ]}
           />
 
@@ -145,48 +119,28 @@ export default function UserHeader() {
             label={userName}
             icon={User}
             open={openDropdown === "usuario"}
-            onOpen={() =>
-              setOpenDropdown(openDropdown === "usuario" ? null : "usuario")
-            }
+            onOpen={() => setOpenDropdown(openDropdown === "usuario" ? null : "usuario")}
             items={[
               { href: "/dashboards/perfil", label: "Mi perfil", icon: User },
-              {
-                onClick: handleLogout,
-                label: "Cerrar sesi贸n",
-                icon: LogOutIcon,
-              },
+              { onClick: handleLogout, label: "Cerrar sesión", icon: LogOutIcon },
             ]}
             align="right"
           />
         </ul>
       </nav>
 
-      {/* NAV M脫VIL */}
+      {/* NAV MÓVIL */}
       {openMobile && (
         <div className="lg:hidden bg-[#BC5F36] border-t border-[#e3bba7] shadow-inner animate-slideDown">
           <ul className="flex flex-col items-center py-4 space-y-2 text-center text-[#FFF8F0]">
-            <MobileLink
-              href="/dashboards/usuario"
-              label="Inicio"
-              icon={LayoutDashboard}
-              onClick={() => setOpenMobile(false)}
-            />
-            <MobileLink
-              href="/dashboards/usuario/mascotas"
-              label="Adoptables"
-              icon={Dog}
-              onClick={() => setOpenMobile(false)}
-            />
+            <MobileLink href="/dashboards/usuario" label="Inicio" icon={LayoutDashboard} onClick={() => setOpenMobile(false)} />
+            <MobileLink href="/dashboards/usuario/mascotas" label="Adoptables" icon={Dog} onClick={() => setOpenMobile(false)} />
 
             <MobileDropdown
-              label="Adopci贸n"
+              label="Adopción"
               icon={HeartIcon}
               items={[
-                {
-                  href: "/dashboards/usuario/citas",
-                  label: "Mis citas de adopci贸n",
-                  icon: CalendarCheck,
-                },
+                { href: "/dashboards/usuario/citas", label: "Mis citas de adopción", icon: CalendarCheck },
               ]}
               router={router}
               setOpenMobile={setOpenMobile}
@@ -196,16 +150,8 @@ export default function UserHeader() {
               label="Mis Mascotas"
               icon={PawPrint}
               items={[
-                {
-                  href: "/dashboards/usuario/mis-mascotas",
-                  label: "Ver mis mascotas",
-                  icon: PawPrint,
-                },
-                {
-                  href: "/dashboards/usuario/citas-veterinarias",
-                  label: "Citas veterinarias",
-                  icon: Stethoscope,
-                },
+                { href: "/dashboards/usuario/mis-mascotas", label: "Ver mis mascotas", icon: PawPrint },
+                { href: "/dashboards/usuario/citas-veterinarias", label: "Citas veterinarias", icon: Stethoscope },
               ]}
               router={router}
               setOpenMobile={setOpenMobile}
@@ -225,7 +171,7 @@ export default function UserHeader() {
               onClick={handleLogout}
               className="w-[90%] mt-3 text-center px-5 py-3 rounded-md bg-[#8B4513] text-white font-semibold hover:bg-[#A0522D] transition"
             >
-              Cerrar sesi贸n
+              Cerrar sesión
             </button>
           </ul>
         </div>
@@ -254,14 +200,7 @@ function NavItem({ href, label, icon: Icon, active }: any) {
   );
 }
 
-function Dropdown({
-  label,
-  icon: Icon,
-  open,
-  onOpen,
-  items,
-  align = "left",
-}: any) {
+function Dropdown({ label, icon: Icon, open, onOpen, items, align = "left" }: any) {
   return (
     <li className="relative group">
       <button
@@ -272,17 +211,12 @@ function Dropdown({
       >
         <Icon size={18} />
         <span>{label}</span>
-        <ChevronDown
-          size={16}
-          className={`transition-transform ${open ? "rotate-180" : ""}`}
-        />
+        <ChevronDown size={16} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
         <div
-          className={`absolute ${
-            align === "right" ? "right-0" : "left-0"
-          } mt-2 w-56 bg-[#FFF1E6] rounded-md shadow-lg py-2 text-[#8B4513] animate-fadeIn border border-[#EADACB]`}
+          className={`absolute ${align === "right" ? "right-0" : "left-0"} mt-2 w-56 bg-[#FFF1E6] rounded-md shadow-lg py-2 text-[#8B4513] animate-fadeIn border border-[#EADACB]`}
         >
           {items.map((item: any, i: number) =>
             item.href ? (
@@ -312,7 +246,7 @@ function Dropdown({
   );
 }
 
-/* 馃敼 Mobile helpers */
+/* 🔹 Mobile helpers */
 
 function MobileLink({ href, label, icon: Icon, onClick }: any) {
   return (
@@ -328,13 +262,7 @@ function MobileLink({ href, label, icon: Icon, onClick }: any) {
   );
 }
 
-function MobileDropdown({
-  label,
-  icon: Icon,
-  items,
-  router,
-  setOpenMobile,
-}: any) {
+function MobileDropdown({ label, icon: Icon, items, router, setOpenMobile }: any) {
   const [open, setOpen] = useState(false);
   return (
     <li className="w-full">
@@ -344,10 +272,7 @@ function MobileDropdown({
       >
         <Icon size={18} />
         <span>{label}</span>
-        <ChevronDown
-          size={16}
-          className={`transition-transform ${open ? "rotate-180" : ""}`}
-        />
+        <ChevronDown size={16} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (

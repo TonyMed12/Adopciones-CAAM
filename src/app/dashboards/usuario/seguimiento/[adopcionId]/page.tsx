@@ -18,12 +18,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/Dialog";
-import Image from "next/image";
 import SeguimientoForm from "@/components/seguimiento/SeguimientoForm";
 
 export default function SeguimientoMascotasPage() {
   const [mascotas, setMascotas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const cargarSeguimientos = async () => {
       setLoading(true);
@@ -56,14 +56,14 @@ export default function SeguimientoMascotasPage() {
         .from("adopciones")
         .select(
           `
-        id,
-        fecha_adopcion,
-        solicitudes_adopcion (
-          usuario_id,
-          mascota_id,
-          mascotas ( nombre, raza_id, imagen_url )
-        )
-      `
+          id,
+          fecha_adopcion,
+          solicitudes_adopcion (
+            usuario_id,
+            mascota_id,
+            mascotas ( nombre, raza_id, imagen_url )
+          )
+        `
         )
         .order("fecha_adopcion", { ascending: false });
 
@@ -173,13 +173,19 @@ export default function SeguimientoMascotasPage() {
               className="bg-[#FFF8F0] border border-[#E5D1B8] rounded-2xl shadow-sm p-6 hover:shadow-md transition"
             >
               <div className="flex items-center gap-6 mb-5">
-                <Image
-                  src={m.imagen}
+                {/* ✅ Imagen corregida (sin next/image) */}
+                <img
+                  src={
+                    m.imagen?.startsWith("http")
+                      ? m.imagen
+                      : "/placeholder.png"
+                  }
                   alt={m.nombre}
                   width={120}
                   height={120}
-                  className="rounded-2xl object-cover border border-[#BC5F36]/30"
+                  className="rounded-2xl object-cover border border-[#BC5F36]/30 w-[120px] h-[120px]"
                 />
+
                 <div>
                   <h2 className="text-2xl font-bold text-[#8B4513] flex items-center gap-2">
                     {m.nombre} <PawPrint size={20} />
@@ -218,9 +224,9 @@ export default function SeguimientoMascotasPage() {
               </div>
 
               <div className="grid gap-3">
-                {m.seguimientos.map((s, i) => (
+                {m.seguimientos.map((s: any, i: number) => (
                   <div
-                    key={i}
+                    key={`${m.id}-${i}`}
                     className="flex justify-between items-center border border-[#E5D1B8] rounded-xl px-4 py-3 bg-white hover:bg-[#FFF3E8] transition"
                   >
                     <div className="flex items-center gap-3">

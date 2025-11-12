@@ -3,20 +3,19 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: '5mb', // ⬅️ límite aumentado a 5 MB
+      bodySizeLimit: "5mb", // límite aumentado a 5 MB
     },
   },
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "jivnxysdyziojckvslqp.supabase.co",
-        pathname: "/storage/**",
+        hostname: "**.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
       },
     ],
   },
 };
-
-module.exports = nextConfig;
 
 export default nextConfig;

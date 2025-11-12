@@ -2,23 +2,26 @@
 export default function LandingPage() {
   return (
     <main className="bg-[#FFF8F0]">
-      {/* Fondo imagen naranja */}
+      {/* Sección con imagen de fondo */}
       <section
         className="relative text-white py-20 overflow-hidden bg-cover bg-center"
-        style={{ backgroundImage: "url('/bg-green.jpeg')" }}
+        style={{
+          backgroundImage:
+            "url('https://jivnxysdyziojckvslqp.supabase.co/storage/v1/object/public/logos/bg-green.jpeg')",
+        }}
       >
-        <div className="flex flex-row justify-center container mx-auto  items-center gap-10 px-6 md:grid-cols-2">
+        <div className="flex flex-row justify-center container mx-auto items-center gap-10 px-6 md:grid-cols-2">
           {/* Texto de la izquierda */}
           <div>
-            <h1 className="text-7xl md:t font-extrabold leading-tight">
+            <h1 className="text-5xl md:text-7xl font-extrabold leading-tight drop-shadow-lg">
               Adopta y cambia una vida
             </h1>
-            <p className="mt-4 text-xl text-[#FFF8F0]">
+            <p className="mt-4 text-xl text-[#FFF8F0] max-w-lg">
               Encuentra a tu compañero de vida, animales que buscan un hogar
               lleno de amor.
             </p>
 
-            {/* Botones de lado izquierdo quienes somos e inicia sesion */}
+            {/* Botones */}
             <div className="mt-6 flex flex-wrap gap-4">
               <a
                 href="/nosotros"
@@ -35,12 +38,12 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Imagen mascota */}
+          {/* Imagen de la mascota desde Supabase */}
           <div className="flex justify-center relative">
             <img
-              src="/dog.png"
+              src="https://jivnxysdyziojckvslqp.supabase.co/storage/v1/object/public/logos/Dog.png"
               alt="Perros en adopción"
-              className="rounded-2xl shadow-2xl object-cover w-full max-w-md"
+              className="rounded-2xl shadow-2xl object-cover w-full max-w-md hover:scale-105 transition-transform duration-300"
             />
           </div>
         </div>
