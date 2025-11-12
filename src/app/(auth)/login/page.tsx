@@ -105,7 +105,7 @@ export default function LoginCAAM() {
       <div className="w-full max-w-md">
         {/* Encabezado */}
         <div className="text-center mb-6 mt-15">
-          <Link href="http://localhost:3000">
+          <Link href="/(marketing)">
             <Image
               src="/logo.png"
               alt="Logo CAAM"
