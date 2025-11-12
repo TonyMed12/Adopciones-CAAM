@@ -258,3 +258,19 @@ export async function eliminarMascota(id: string): Promise<{success: boolean}> {
     console.log(`✅ Mascota ${parsed.id} eliminada correctamente`);
     return {success: true};
 }
+
+// OBTENER POR ID
+export async function obtenerMascotaPorId(id: string) {
+    const { data, error } = await supabase
+        .from("mascotas")
+        .select("*, raza:raza_id(id, nombre, especie)")
+        .eq("id", id)
+        .single();
+
+    if (error) {
+        console.error("❌ Error obteniendo mascota:", error.message);
+        throw new Error("No se encontró la mascota");
+    }
+
+    return data;
+}
