@@ -163,10 +163,14 @@ export default function RegistroForm() {
       if (!res.ok) throw new Error(data.error || "Error en el registro");
 
       router.push("/pendiente");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error en registro:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error durante el registro";
       setErrors({
-        general: [error.message || "Ocurrió un error durante el registro"],
+        general: [errorMessage],
       });
     } finally {
       setIsLoading(false);
