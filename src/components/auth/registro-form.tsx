@@ -58,6 +58,9 @@ export default function RegistroForm() {
   // Nuevos estados para validación de email
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
+  
+  // Estado para validación de contraseña
+  const [passwordError, setPasswordError] = useState<string>("");
 
   const totalSteps = 3;
 
@@ -99,6 +102,27 @@ export default function RegistroForm() {
     }
   };
 
+  // Función para validar contraseña
+  const validatePassword = (password: string) => {
+    if (!password) {
+      setPasswordError("");
+      return;
+    }
+
+    const hasMinLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+
+    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber) {
+      setPasswordError("La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número");
+      return false;
+    }
+
+    setPasswordError("");
+    return true;
+  };
+
   // Manejador de cambios en inputs
   const handleInputChange = (
     field: keyof RegistroAdoptanteData,
@@ -114,6 +138,11 @@ export default function RegistroForm() {
     // Si es el campo email, resetear el estado de emailExists
     if (field === "email") {
       setEmailExists(false);
+    }
+
+    // Si es el campo password, limpiar el error de contraseña
+    if (field === "password") {
+      setPasswordError("");
     }
   };
 
@@ -178,6 +207,11 @@ export default function RegistroForm() {
 
     // Validación adicional: si estamos en el paso 1 y el email ya existe, no permitir avanzar
     if (currentStep === 1 && emailExists) {
+      return false;
+    }
+
+    // Validación adicional: si estamos en el paso 3 y la contraseña es inválida, no permitir continuar
+    if (currentStep === 3 && passwordError) {
       return false;
     }
 
@@ -492,7 +526,10 @@ export default function RegistroForm() {
             type={showPassword ? "text" : "password"}
             value={formData.password || ""}
             onChange={(e) => handleInputChange("password", e.target.value)}
-            className={cn(errors.password?.length > 0 && "border-red-500")}
+            onBlur={(e) => validatePassword(e.target.value)}
+            className={cn(
+              errors.password?.length > 0 || passwordError ? "border-red-500" : ""
+            )}
             placeholder="Mínimo 8 caracteres"
             disabled={isLoading}
           />
@@ -510,7 +547,18 @@ export default function RegistroForm() {
             )}
           </Button>
         </div>
-        {errors.password?.map((error, index) => (
+        {!passwordError && !errors.password && (
+          <p className="text-xs text-gray-500">
+            Debe incluir: mínimo 8 caracteres, una mayúscula, una minúscula y un número
+          </p>
+        )}
+        {passwordError && (
+          <div className="flex items-start space-x-2 text-red-600">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <p className="text-sm">{passwordError}</p>
+          </div>
+        )}
+        {!passwordError && errors.password?.map((error, index) => (
           <p key={index} className="text-sm text-red-600">
             {error}
           </p>
@@ -678,7 +726,7 @@ export default function RegistroForm() {
             ) : (
               <Button
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || !!passwordError}
                 className="bg-[#8B5E34] hover:bg-[#734C29] text-white font-semibold"
               >
                 {isLoading ? "Registrando..." : "Crear Cuenta"}
