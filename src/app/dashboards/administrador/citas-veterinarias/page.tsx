@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import CalendarioVeterinarias from "@/components/citas/CalendarioVeterinarias";
+import PageHead from "@/components/layout/PageHead";
 
 export default function GestionCitasVeterinariasPage() {
   const [citas, setCitas] = useState<any[]>([]);
@@ -66,10 +67,10 @@ export default function GestionCitasVeterinariasPage() {
 
     const buscadas = query
       ? filtradas.filter(
-          (c) =>
-            c.mascota_nombre.toLowerCase().includes(query.toLowerCase()) ||
-            c.adoptante_nombre.toLowerCase().includes(query.toLowerCase())
-        )
+        (c) =>
+          c.mascota_nombre.toLowerCase().includes(query.toLowerCase()) ||
+          c.adoptante_nombre.toLowerCase().includes(query.toLowerCase())
+      )
       : filtradas;
 
     return [...buscadas].sort(
@@ -97,14 +98,10 @@ export default function GestionCitasVeterinariasPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#8B4513]">
-          Gestión de citas veterinarias
-        </h1>
-        <p className="text-sm text-gray-600">
-          Revisa y aprueba las citas veterinarias agendadas por adoptantes.
-        </p>
-      </div>
+      <PageHead
+        title="Citas Veterinarias"
+        subtitle="Administra las citas veterinarias agendadas por los adoptantes."
+      />
 
       {/* KPIs */}
       <div className="flex flex-wrap gap-2">
@@ -121,9 +118,9 @@ export default function GestionCitasVeterinariasPage() {
 
       {/* Layout principal */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 items-start">
-        {/* 🧾 Tabla */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <table className="min-w-full text-sm text-left text-gray-700 align-top">
+        {/* 🧾 Tabla en ESCRITORIO */}
+        <div className="hidden lg:block bg-white rounded-xl shadow-md overflow-x-auto">
+          <table className="min-w-[900px] w-full text-sm text-left text-gray-700 align-top">
             <thead className="bg-[#FFF6E5] text-[#8B4513]">
               <tr>
                 <th className="px-4 py-3 font-semibold">Adoptante</th>
@@ -131,18 +128,13 @@ export default function GestionCitasVeterinariasPage() {
                 <th className="px-4 py-3 font-semibold">Fecha</th>
                 <th className="px-4 py-3 font-semibold">Motivo</th>
                 <th className="px-4 py-3 font-semibold">Estado</th>
-                <th className="px-4 py-3 font-semibold text-center">
-                  Acciones
-                </th>
+                <th className="px-4 py-3 font-semibold text-center">Acciones</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-[#f5e6d3]">
               {citasOrdenadas.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-[#FFF8F0] transition-colors"
-                >
+                <tr key={item.id} className="hover:bg-[#FFF8F0] transition-colors">
                   <td className="px-4 py-3">{item.adoptante_nombre}</td>
                   <td className="px-4 py-3 flex items-center gap-2">
                     {item.mascota_imagen && (
@@ -155,53 +147,118 @@ export default function GestionCitasVeterinariasPage() {
                     <span>{item.mascota_nombre}</span>
                   </td>
                   <td className="px-4 py-3 text-gray-700">
-                    {format(
-                      new Date(item.fecha_cita),
-                      "EEEE d 'de' MMMM, h:mm a",
-                      { locale: es }
-                    )}
+                    {format(new Date(item.fecha_cita), "EEEE d 'de' MMMM, h:mm a", { locale: es })}
                   </td>
                   <td className="px-4 py-3 text-gray-700">{item.motivo}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                        item.estado === "pendiente"
+                      className={`px-2 py-1 rounded-md text-xs font-semibold ${item.estado === "pendiente"
                           ? "bg-yellow-100 text-yellow-700"
                           : item.estado === "aprobada"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
                     >
-                      {item.estado.charAt(0).toUpperCase() +
-                        item.estado.slice(1)}
+                      {item.estado.charAt(0).toUpperCase() + item.estado.slice(1)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
                     {item.estado === "pendiente" ? (
                       <div className="flex justify-center gap-2">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => aprobarCita(item.id)}
-                        >
+                        <Button variant="primary" size="sm" onClick={() => aprobarCita(item.id)}>
                           Aprobar
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => cancelarCita(item.id)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => cancelarCita(item.id)}>
                           Cancelar
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-gray-400 italic">Aprobada</span>
+                      <span className="text-gray-400 italic">{item.estado}</span>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+
+
+        {/* 📱 TARJETAS en MOVIL */}
+        <div className="lg:hidden space-y-4">
+          {citasOrdenadas.map((c) => (
+            <div
+              key={c.id}
+              className="bg-white rounded-xl border border-[#EADACB] p-4 shadow-sm space-y-3"
+            >
+              {/* Encabezado */}
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-[#8B4513] text-base">
+                  {c.mascota_nombre}
+                </div>
+
+                <span
+                  className={`px-2 py-1 rounded-md text-xs font-semibold ${c.estado === "pendiente"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : c.estado === "aprobada"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                >
+                  {c.estado.charAt(0).toUpperCase() + c.estado.slice(1)}
+                </span>
+              </div>
+
+              {/* Imagen e info */}
+              <div className="flex items-center gap-3">
+                {c.mascota_imagen && (
+                  <img
+                    src={c.mascota_imagen}
+                    alt={c.mascota_nombre}
+                    className="w-12 h-12 rounded-md object-cover"
+                  />
+                )}
+
+                <div className="text-sm text-gray-700">
+                  <p className="font-semibold text-[#8B4513]">{c.adoptante_nombre}</p>
+
+                  <p className="text-xs mt-1">
+                    {format(new Date(c.fecha_cita), "EEEE d 'de' MMMM, h:mm a", {
+                      locale: es,
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Motivo */}
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold text-[#8B4513]">Motivo: </span>
+                {c.motivo}
+              </p>
+
+              {/* Acciones */}
+              {c.estado === "pendiente" && (
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => aprobarCita(c.id)}
+                    className="flex-1"
+                  >
+                    Aprobar
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => cancelarCita(c.id)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* 📆 Panel lateral */}
@@ -240,13 +297,12 @@ export default function GestionCitasVeterinariasPage() {
                       </p>
                     </div>
                     <span
-                      className={`text-xs font-semibold ${
-                        c.estado === "aprobada"
+                      className={`text-xs font-semibold ${c.estado === "aprobada"
                           ? "text-green-700"
                           : c.estado === "pendiente"
-                          ? "text-yellow-700"
-                          : "text-red-700"
-                      }`}
+                            ? "text-yellow-700"
+                            : "text-red-700"
+                        }`}
                     >
                       {c.estado.charAt(0).toUpperCase() + c.estado.slice(1)}
                     </span>

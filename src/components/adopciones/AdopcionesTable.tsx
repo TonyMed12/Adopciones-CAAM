@@ -1,8 +1,8 @@
 "use client";
 
-import {useMemo, useState} from "react";
-import type {AdopcionAdminRow} from "@/adopciones/adopciones";
-import {Search, X, ChevronDown} from "lucide-react";
+import { useMemo, useState } from "react";
+import type { AdopcionAdminRow } from "@/adopciones/adopciones";
+import { Search, X, ChevronDown } from "lucide-react";
 import AdopcionCardFull from "@/components/adopciones/AdopcionCardFull";
 
 export type FiltroEstado = "todas" | AdopcionAdminRow["estado"];
@@ -22,14 +22,13 @@ function Th(props: React.HTMLAttributes<HTMLTableCellElement>) {
     return (
         <th
             {...props}
-            className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#2b1b12] ${
-                props.className || ""
-            }`}
+            className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#2b1b12] ${props.className || ""
+                }`}
         />
     );
 }
 
-function EstadoBadge({estado}: {estado: AdopcionAdminRow["estado"]}) {
+function EstadoBadge({ estado }: { estado: AdopcionAdminRow["estado"] }) {
     const map: Record<AdopcionAdminRow["estado"], string> = {
         pendiente: "bg-yellow-50 text-yellow-700 border-yellow-200",
         aprobada: "bg-green-50 text-green-700 border-green-200",
@@ -75,15 +74,17 @@ export default function AdopcionesTable({
                 {/* Toolbar */}
                 <div className="p-3 flex flex-wrap items-center gap-3">
                     {/* Search pill */}
-                    <div className="relative">
-                        <div className="flex items-center gap-2 rounded-full border border-[#EADACB] bg-white pl-3 pr-2 py-2">
+                    <div className="relative flex-1 min-w-[180px]">
+                        <div className="flex items-center gap-2 rounded-full border border-[#EADACB] bg-white pl-3 pr-2 py-2 w-full">
                             <Search className="h-4 w-4 text-[#8b6f5d]" />
+
                             <input
                                 placeholder="Buscar por usuario, mascota, vivienda o espacio"
-                                className="w-[280px] md:w-[420px] bg-transparent text-sm text-[#2B1B12] placeholder:text-[#8b6f5d] focus:outline-none"
+                                className="flex-1 bg-transparent text-sm text-[#2B1B12] placeholder:text-[#8b6f5d] focus:outline-none"
                                 value={query}
                                 onChange={(e) => onQueryChange(e.target.value)}
                             />
+
                             {query && (
                                 <button
                                     type="button"
@@ -134,9 +135,8 @@ export default function AdopcionesTable({
                             {filtered.map((f, idx) => (
                                 <tr
                                     key={f.id}
-                                    className={`border-b border-[#F3E8DC] ${
-                                        idx % 2 === 0 ? "bg-white" : "bg-[#FFFDF9]"
-                                    }`}
+                                    className={`border-b border-[#F3E8DC] ${idx % 2 === 0 ? "bg-white" : "bg-[#FFFDF9]"
+                                        }`}
                                 >
                                     {/* Adoptante (clic abre detalles) */}
                                     <td

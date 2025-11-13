@@ -85,7 +85,7 @@ export default function CitasTable({
       {/* Toolbar (igual visual que Adopciones) */}
       <div className="p-3 flex flex-wrap items-center gap-3">
         {/* Buscador pill */}
-        <div className="relative">
+        <div className="relative flex-1 min-w-[180px]">
           <div className="flex items-center gap-2 rounded-full border border-[#EADACB] bg-white pl-3 pr-2 py-2 shadow-[0_1px_0_rgba(0,0,0,0.03)] focus-within:ring-2 focus-within:ring-[#F1C9B6]/60">
             <Search className="h-4 w-4 text-[#8b6f5d]" />
             <input

@@ -7,6 +7,7 @@ import type {AdopcionAdminRow} from "@/adopciones/adopciones";
 import {createClient} from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
+import PageHead from "@/components/layout/PageHead";
 
 export default function GestionAdopcionesPage() {
     const [rows, setRows] = useState<AdopcionAdminRow[]>([]);
@@ -100,10 +101,10 @@ export default function GestionAdopcionesPage() {
 
     return (
         <div className="p-6 space-y-4">
-            <div>
-                <h1 className="text-2xl font-bold">Gestión de adopciones</h1>
-                <p className="text-sm text-gray-600">Revisa las solicitudes y aprueba o rechaza la adopción.</p>
-            </div>
+            <PageHead
+                title="Gestión de Adopciones"
+                subtitle="Revisa y administra las solicitudes de adopción."
+            />
 
             {/* KPIs opcionales, mismo estilo de “citas” */}
             <div className="flex flex-wrap gap-2">
