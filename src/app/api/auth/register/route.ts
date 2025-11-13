@@ -5,56 +5,72 @@ export async function POST(req: Request) {
   try {
     const formData = await req.json();
 
-    // Crear usuario
-    const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
+    console.log("📝 Iniciando registro para:", formData.email);
+
+    // ✅ Usar admin.createUser en lugar de signUp
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: formData.email,
       password: formData.password,
-      options: {
-        data: {
-          nombre: formData.nombres,
-        },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/confirmado`,
+      email_confirm: true,
+      user_metadata: {
+        nombre: formData.nombres,
       },
     });
 
-    console.log(" Resultado signUp:", authData, authError);
+    console.log("👤 Resultado creación usuario:", {
+      userId: authData?.user?.id,
+      error: authError?.message,
+    });
 
-    if (authError) {
-      console.error("Error creando usuario:", authError.message);
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+    if (authError || !authData.user) {
+      console.error("❌ Error creando usuario:", authError);
+      return NextResponse.json(
+        { error: authError?.message || "No se pudo crear el usuario" },
+        { status: 400 }
+      );
     }
 
-    if (!authData.user) {
-      console.error("no jalo user");
-      return NextResponse.json({ error: "No se pudo crear el usuario" }, { status: 400 });
-    }
+    console.log("💾 Creando perfil para usuario:", authData.user.id);
 
     // Crear perfil
-    const { error: perfilError } = await supabaseAdmin.from("perfiles").insert([
-      {
-        id: authData.user.id,
-        nombres: formData.nombres,
-        apellido_paterno: formData.apellido_paterno,
-        apellido_materno: formData.apellido_materno,
-        curp: formData.curp,
-        telefono: formData.telefono,
-        fecha_nacimiento: formData.fecha_nacimiento,
-        ocupacion: formData.ocupacion,
-        email: formData.email,
-        rol_id: 2,
-      },
-    ]);
-
+    const { error: perfilError } = await supabaseAdmin
+      .from("perfiles")
+      .insert([
+        {
+          id: authData.user.id,
+          nombres: formData.nombres,
+          apellido_paterno: formData.apellido_paterno,
+          apellido_materno: formData.apellido_materno || null,
+          curp: formData.curp || null,
+          telefono: formData.telefono || null,
+          fecha_nacimiento: formData.fecha_nacimiento || null,
+          ocupacion: formData.ocupacion || null,
+          email: formData.email,
+          rol_id: 2,
+        },
+      ]);
 
     if (perfilError) {
-      console.error("Error creando perfil:", perfilError.message);
-      return NextResponse.json({ error: perfilError.message }, { status: 400 });
+      console.error("❌ Error creando perfil:", perfilError);
+      
+      // ✅ Si falla el perfil, elimina el usuario para evitar inconsistencias
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      
+      return NextResponse.json(
+        { error: `Error creando perfil: ${perfilError.message}` },
+        { status: 400 }
+      );
     }
 
-    console.log("Usuario y perfil creados correctamente");
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error("Error general en registro:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.log("✅ Usuario y perfil creados exitosamente");
+    return NextResponse.json({ success: true }, { status: 200 });
+
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+    console.error("❌ Error general en registro:", errorMessage);
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
   }
 }
