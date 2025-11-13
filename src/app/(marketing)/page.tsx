@@ -27,7 +27,7 @@ export default function LandingPage() {
 
       {/* Glow */}
       <motion.div
-        className="absolute right-10 top-20 w-[350px] h-[350px] rounded-full bg-[#D97706]/25 blur-[140px]"
+        className="absolute right-0 top-10 w-[200px] md:w-[350px] h-[200px] md:h-[350px] rounded-full bg-[#D97706]/25 blur-[100px] md:blur-[140px]"
         animate={{
           opacity: [0.1, 0.25, 0.1],
           scale: [1, 1.12, 1],
@@ -36,20 +36,20 @@ export default function LandingPage() {
       />
 
       {/* HERO */}
-      <section className="relative z-20 py-24 md:py-32">
-        <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-16">
+      <section className="relative z-20 pt-24 md:pt-32 pb-14 md:pb-24">
+        <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-14 md:gap-20">
           {/* TEXT */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2 }}
-            className="max-w-xl relative z-40"
+            transition={{ duration: 1.1 }}
+            className="max-w-xl relative z-40 text-center md:text-left"
           >
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
               Adopta amor
             </h1>
 
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mt-2">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mt-2 leading-tight">
               en su forma más pura
             </h1>
 
@@ -58,8 +58,8 @@ export default function LandingPage() {
               lleno de amor.
             </p>
 
-            {/* BOTONES */}
-            <div className="mt-8 flex gap-4 flex-wrap">
+            {/* BUTTONS */}
+            <div className="mt-8 flex gap-4 justify-center md:justify-start flex-wrap">
               <motion.a
                 href="/nosotros"
                 className="px-6 py-3 rounded-xl bg-white text-[#D97706] font-semibold shadow-md hover:bg-gray-100 transition cursor-pointer"
@@ -78,92 +78,124 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          {/* BLOBCITOS*/}
-          <div className="relative w-full max-w-lg h-[320px] md:h-[420px]">
-            {/* Blob 1 */}
-            <motion.div
-              className="absolute overflow-hidden"
-              style={{
-                width: "230px",
-                height: "230px",
-                backgroundImage: `url(${IMAGES[0]})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-              animate={{
-                borderRadius: [
-                  "60% 40% 70% 30%",
-                  "55% 45% 40% 60%",
-                  "70% 30% 60% 40%",
-                  "60% 40% 70% 30%",
-                ],
-                x: [0, 25, -10, 0],
-                y: [0, -18, 15, 0],
-              }}
-              transition={{
-                duration: 14,
-                repeat: Infinity,
-                repeatType: "mirror",
-              }}
-            />
+          {/* BLOBS - RESPONSIVE + FIXED LAYOUT */}
+          <div className="relative w-full h-[260px] md:h-[420px] flex items-center justify-center md:block">
+            {/* MOBILE VERSION (STACKED BLOBS) */}
+            <div className="md:hidden relative flex gap-6">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-[120px] h-[120px] rounded-full overflow-hidden"
+                  style={{
+                    backgroundImage: `url(${IMAGES[i]})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                  animate={{
+                    borderRadius: [
+                      "60% 40% 70% 30%",
+                      "50% 50% 40% 60%",
+                      "70% 30% 60% 40%",
+                      "60% 40% 70% 30%",
+                    ],
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{
+                    duration: 8 + i * 2,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                  }}
+                />
+              ))}
+            </div>
 
-            {/* Blob 2 */}
-            <motion.div
-              className="absolute left-[32%] top-[20%] overflow-hidden"
-              style={{
-                width: "260px",
-                height: "260px",
-                backgroundImage: `url(${IMAGES[1]})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-              animate={{
-                borderRadius: [
-                  "45% 55% 60% 40%",
-                  "55% 45% 48% 52%",
-                  "65% 35% 55% 45%",
-                  "45% 55% 60% 40%",
-                ],
-                x: [0, -20, 18, 0],
-                y: [0, 15, -18, 0],
-                scale: [1, 1.05, 1],
-              }}
-              transition={{
-                duration: 16,
-                repeat: Infinity,
-                repeatType: "mirror",
-                delay: 0.5,
-              }}
-            />
+            {/* DESKTOP VERSION */}
+            <div className="hidden md:block relative w-full h-full">
+              {/* Blob 1 */}
+              <motion.div
+                className="absolute overflow-hidden"
+                style={{
+                  width: "230px",
+                  height: "230px",
+                  backgroundImage: `url(${IMAGES[0]})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+                animate={{
+                  borderRadius: [
+                    "60% 40% 70% 30%",
+                    "55% 45% 40% 60%",
+                    "70% 30% 60% 40%",
+                    "60% 40% 70% 30%",
+                  ],
+                  x: [0, 25, -10, 0],
+                  y: [0, -18, 15, 0],
+                }}
+                transition={{
+                  duration: 14,
+                  repeat: Infinity,
+                  repeatType: "mirror",
+                }}
+              />
 
-            {/* Blob 3 */}
-            <motion.div
-              className="absolute right-0 bottom-4 overflow-hidden"
-              style={{
-                width: "210px",
-                height: "210px",
-                backgroundImage: `url(${IMAGES[2]})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-              animate={{
-                borderRadius: [
-                  "55% 45% 50% 50%",
-                  "50% 50% 60% 40%",
-                  "65% 35% 45% 55%",
-                  "55% 45% 50% 50%",
-                ],
-                x: [0, -15, 12, 0],
-                y: [0, -10, 20, 0],
-                scale: [1, 1.07, 1],
-              }}
-              transition={{
-                duration: 15,
-                repeat: Infinity,
-                repeatType: "mirror",
-                delay: 1,
-              }}
-            />
+              {/* Blob 2 */}
+              <motion.div
+                className="absolute left-[32%] top-[20%] overflow-hidden"
+                style={{
+                  width: "260px",
+                  height: "260px",
+                  backgroundImage: `url(${IMAGES[1]})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+                animate={{
+                  borderRadius: [
+                    "45% 55% 60% 40%",
+                    "55% 45% 48% 52%",
+                    "65% 35% 55% 45%",
+                    "45% 55% 60% 40%",
+                  ],
+                  x: [0, -20, 18, 0],
+                  y: [0, 15, -18, 0],
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{
+                  duration: 16,
+                  repeat: Infinity,
+                  repeatType: "mirror",
+                  delay: 0.4,
+                }}
+              />
+
+              {/* Blob 3 */}
+              <motion.div
+                className="absolute right-0 bottom-4 overflow-hidden"
+                style={{
+                  width: "210px",
+                  height: "210px",
+                  backgroundImage: `url(${IMAGES[2]})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+                animate={{
+                  borderRadius: [
+                    "55% 45% 50% 50%",
+                    "50% 50% 60% 40%",
+                    "65% 35% 45% 55%",
+                    "55% 45% 50% 50%",
+                  ],
+                  x: [0, -15, 12, 0],
+                  y: [0, -10, 20, 0],
+                  scale: [1, 1.07, 1],
+                }}
+                transition={{
+                  duration: 15,
+                  repeat: Infinity,
+                  repeatType: "mirror",
+                  delay: 1,
+                }}
+              />
+            </div>
           </div>
         </div>
       </section>
