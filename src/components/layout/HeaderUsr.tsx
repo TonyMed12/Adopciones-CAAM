@@ -52,7 +52,7 @@ export default function UserHeader() {
     router.push("/");
   };
 
-  /* 🔹 Cerrar dropdowns al hacer clic fuera */
+  /* Cerrar dropdowns al hacer clic fuera */
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
