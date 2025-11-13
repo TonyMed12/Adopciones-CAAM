@@ -13,6 +13,7 @@ import {
   IdCard,
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
@@ -53,22 +54,70 @@ export default function RegistroForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Nuevos estados para validación de email
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
 
   const totalSteps = 3;
 
-  //  cambios en inputs
+  // Función para verificar si el email existe
+  const checkEmailExists = async (email: string) => {
+    if (!email || !email.includes("@")) return;
+
+    setIsCheckingEmail(true);
+    setEmailExists(false);
+
+    try {
+      const response = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.exists) {
+        setEmailExists(true);
+        setErrors((prev) => ({
+          ...prev,
+          email: ["Este correo electrónico ya está registrado"],
+        }));
+      } else {
+        setEmailExists(false);
+        // Solo limpiar el error de email si no hay otros errores
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.email;
+          return newErrors;
+        });
+      }
+    } catch (error) {
+      console.error("Error verificando email:", error);
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  // Manejador de cambios en inputs
   const handleInputChange = (
     field: keyof RegistroAdoptanteData,
     value: string | boolean
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    
     // Limpiar errores del campo cuando se modifica
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: [] }));
     }
+
+    // Si es el campo email, resetear el estado de emailExists
+    if (field === "email") {
+      setEmailExists(false);
+    }
   };
 
-  //  datos del paso actual
+  // Obtener datos del paso actual
   const getStepData = (step: number) => {
     switch (step) {
       case 1:
@@ -111,7 +160,7 @@ export default function RegistroForm() {
     }
   };
 
-  // Validar  actual
+  // Validar paso actual
   const validateCurrentStep = () => {
     const stepData = getStepData(currentStep);
     const result = getStepSchema(currentStep).safeParse(stepData);
@@ -127,18 +176,23 @@ export default function RegistroForm() {
       return false;
     }
 
+    // Validación adicional: si estamos en el paso 1 y el email ya existe, no permitir avanzar
+    if (currentStep === 1 && emailExists) {
+      return false;
+    }
+
     setErrors({});
     return true;
   };
 
-  // siguiente paso
+  // Ir al siguiente paso
   const handleNextStep = () => {
     if (validateCurrentStep()) {
       setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     }
   };
 
-  //  paso anterior
+  // Ir al paso anterior
   const handlePrevStep = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
     setErrors({});
@@ -147,6 +201,14 @@ export default function RegistroForm() {
   const handleSubmit = async () => {
     const result = registroAdoptanteSchema.safeParse(formData);
     if (!result.success) {
+      return;
+    }
+
+    // Verificación final del email antes de enviar
+    if (emailExists) {
+      setErrors({
+        general: ["El correo electrónico ya está registrado"],
+      });
       return;
     }
 
@@ -177,7 +239,7 @@ export default function RegistroForm() {
     }
   };
 
-  // Datos personales
+  // Paso 1: Datos personales
   const renderStep1 = () => (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -267,15 +329,35 @@ export default function RegistroForm() {
             type="email"
             value={formData.email || ""}
             onChange={(e) => handleInputChange("email", e.target.value)}
+            onBlur={(e) => checkEmailExists(e.target.value)}
             className={cn(
               "pl-10",
-              errors.email?.length > 0 && "border-red-500"
+              (errors.email?.length > 0 || emailExists) && "border-red-500"
             )}
             placeholder="ejemplo@correo.com"
             disabled={isLoading}
           />
+          {isCheckingEmail && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-[#8B5E34] rounded-full" />
+            </div>
+          )}
         </div>
-        {errors.email?.map((error, index) => (
+        {emailExists && (
+          <div className="flex items-start space-x-2 text-red-600">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <p className="text-sm">
+              Este correo electrónico ya está registrado.{" "}
+              <a
+                href="/login"
+                className="underline hover:text-red-700"
+              >
+                Inicia sesión aquí
+              </a>
+            </p>
+          </div>
+        )}
+        {!emailExists && errors.email?.map((error, index) => (
           <p key={index} className="text-sm text-red-600">
             {error}
           </p>
@@ -308,7 +390,7 @@ export default function RegistroForm() {
     </div>
   );
 
-  // Información adicional
+  // Paso 2: Información adicional
   const renderStep2 = () => (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -390,7 +472,7 @@ export default function RegistroForm() {
     </div>
   );
 
-  // Contraseña y términos
+  // Paso 3: Contraseña y términos
   const renderStep3 = () => (
     <div className="space-y-4">
       <div className="text-center mb-6">
@@ -587,7 +669,7 @@ export default function RegistroForm() {
             {currentStep < totalSteps ? (
               <Button
                 onClick={handleNextStep}
-                disabled={isLoading}
+                disabled={isLoading || isCheckingEmail || emailExists}
                 className="bg-[#8B5E34] hover:bg-[#734C29] text-white font-semibold"
               >
                 Siguiente
