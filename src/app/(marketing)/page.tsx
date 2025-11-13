@@ -9,7 +9,18 @@ export default function LandingPage() {
     "https://baluka.es/cdn/shop/articles/razas-de-perros-mas-comunes.jpg?v=1695689090&width=1000",
   ];
   const TypewriterWords = () => {
-    const words = ["amor", "compañía", "alegría", "amistad", "una vida"];
+    const words = [
+      "amor",
+      "sonrisas",
+      "alegría",
+      "amistad",
+      "una vida",
+      "ilusión",
+      "lealtad",
+      "felicidad",
+      "cariño",
+      "ternura",
+    ];
     const [index, setIndex] = React.useState(0);
     const [subIndex, setSubIndex] = React.useState(0);
     const [deleting, setDeleting] = React.useState(false);
