@@ -1,5 +1,5 @@
 "use client";
-
+import React from "react";
 import { motion } from "framer-motion";
 
 export default function LandingPage() {
@@ -8,6 +8,38 @@ export default function LandingPage() {
     "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&q=70&w=1000",
     "https://baluka.es/cdn/shop/articles/razas-de-perros-mas-comunes.jpg?v=1695689090&width=1000",
   ];
+  const TypewriterWords = () => {
+    const words = ["amor", "compañía", "alegría", "amistad", "una vida"];
+    const [index, setIndex] = React.useState(0);
+    const [subIndex, setSubIndex] = React.useState(0);
+    const [deleting, setDeleting] = React.useState(false);
+
+    React.useEffect(() => {
+      const timeout = setTimeout(
+        () => {
+          if (!deleting && subIndex < words[index].length) {
+            setSubIndex(subIndex + 1);
+          } else if (deleting && subIndex > 0) {
+            setSubIndex(subIndex - 1);
+          } else if (!deleting && subIndex === words[index].length) {
+            setTimeout(() => setDeleting(true), 900);
+          } else if (deleting && subIndex === 0) {
+            setDeleting(false);
+            setIndex((prev) => (prev + 1) % words.length);
+          }
+        },
+        deleting ? 60 : 90
+      );
+
+      return () => clearTimeout(timeout);
+    }, [subIndex, deleting, index]);
+
+    return (
+      <span className="border-r-4 border-white pr-1 inline-flex items-center h-[1.25em] leading-[1.05] text-inherit">
+        {words[index].substring(0, subIndex)}
+      </span>
+    );
+  };
 
   return (
     <main className="bg-[#FFF8F0] relative overflow-hidden w-full">
@@ -38,34 +70,71 @@ export default function LandingPage() {
       {/* HERO */}
       <section className="relative z-20 pt-24 md:pt-32 pb-14 md:pb-24">
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-14 md:gap-20">
-          {/* TEXT */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.1 }}
-            className="max-w-xl relative z-40 text-center md:text-left"
+            className="
+    relative z-50 
+    w-full 
+    md:max-w-3xl 
+    text-left 
+    pl-6 md:pl-14 lg:pl-20  
+  "
           >
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
-              Adopta amor
-            </h1>
+            {/* CONTENEDOR DEL TÍTULO AJUSTADO */}
+            <div
+              className="
+    font-extrabold text-white 
+    leading-[1.05] 
+    text-3xl md:text-5xl lg:text-6xl xl:text-7xl
+    mb-10 
+    select-none
+  "
+            >
+              {/* Línea 1 */}
+              <div className="flex items-center gap-3 h-[1.25em]">
+                <span className="whitespace-nowrap flex items-center">
+                  Adopta
+                </span>
 
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mt-2 leading-tight">
-              en su forma más pura
-            </h1>
+                <span
+                  className="
+        inline-flex 
+        items-center 
+        h-[1.25em] 
+        overflow-hidden 
+        min-w-[150px]
+      "
+                >
+                  <TypewriterWords />
+                </span>
+              </div>
 
-            <p className="mt-6 text-lg md:text-xl text-[#FFF8F0] leading-relaxed">
+              {/* Línea 2 */}
+              <div className="mt-3 whitespace-nowrap h-[1.25em] flex items-center">
+                en su forma
+              </div>
+              {/* Línea 2 */}
+              <div className="mt-3 whitespace-nowrap h-[1.25em] flex items-center">
+                más pura
+              </div>
+            </div>
+
+            {/* DESCRIPCIÓN */}
+            <p className="mt-2 text-lg md:text-xl text-[#FFF8F0] leading-relaxed max-w-lg">
               Encuentra a tu compañero de vida, animales que buscan un hogar
               lleno de amor.
             </p>
 
-            {/* BUTTONS */}
-            <div className="mt-8 flex gap-4 justify-center md:justify-start flex-wrap">
+            {/* BOTONES */}
+            <div className="mt-10 flex gap-4 flex-wrap">
               <motion.a
                 href="/nosotros"
                 className="px-6 py-3 rounded-xl bg-white text-[#D97706] font-semibold shadow-md hover:bg-gray-100 transition cursor-pointer"
                 whileHover={{ scale: 1.06 }}
               >
-                ¿Quién Somos?
+                ¿Quiénes Somos?
               </motion.a>
 
               <motion.a
