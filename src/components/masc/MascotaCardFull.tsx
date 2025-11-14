@@ -221,7 +221,7 @@ export default function MascotaCardFull({
                     {m.condicion_ingreso && (
                       <div>
                         <dt className="font-semibold text-slate-700">
-                          Condición al ingreso
+                          Condición de ingreso
                         </dt>
                         <dd>{capitalize(m.condicion_ingreso)}</dd>
                       </div>
