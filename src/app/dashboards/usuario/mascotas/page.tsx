@@ -23,7 +23,8 @@ export default function MascotasPage() {
   const searchParams = useSearchParams();
   const especieQS = searchParams.get("especie");
   const supabase = createClient();
-
+  const [showCancelSolicitudModal, setShowCancelSolicitudModal] =
+    useState(false);
   const [items, setItems] = useState<Mascota[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -160,9 +161,7 @@ export default function MascotasPage() {
     fetchMascotas();
   }, []);
 
-  // ----------------------------------------------------
-  // 🐕 Adopción
-  // ----------------------------------------------------
+  // Adopción
   async function handleAdopt(m: Mascota) {
     try {
       const {
@@ -179,6 +178,59 @@ export default function MascotasPage() {
       if (docEstado !== "aprobado") {
         setSelected(m);
         setGateOpen(true);
+        return;
+      }
+
+      // 🚫 VALIDAR SI YA TIENE UNA SOLICITUD ACTIVA
+      const { data: solicitudesActivas, error: solicitudesError } =
+        await supabase
+          .from("solicitudes_adopcion")
+          .select("id, estado")
+          .eq("usuario_id", user.id)
+          .in("estado", ["pendiente", "en_proceso"])
+          .limit(1);
+
+      if (solicitudesError) {
+        console.error(
+          "Error consultando solicitudes activas:",
+          solicitudesError
+        );
+        mostrarToast(
+          "No se pudo verificar tu solicitud actual. Inténtalo de nuevo en unos minutos."
+        );
+        return;
+      }
+
+      if (solicitudesActivas && solicitudesActivas.length > 0) {
+        mostrarToast(
+          "Ya tienes una adopción en curso. Termina la adopción actual antes de iniciar otra."
+        );
+        router.push("/dashboards/usuario/adopcion");
+        return;
+      }
+
+      // 🚫 VALIDAR SI YA TIENE UNA CITA ACTIVA
+      const { data: citasActivas, error: citasError } = await supabase
+        .from("citas_adopcion")
+        .select("id, estado")
+        .eq("usuario_id", user.id)
+        .in("estado", ["programada"])
+        .limit(1);
+
+      if (citasError) {
+        console.error("Error consultando citas activas:", citasError);
+        mostrarToast(
+          "No se pudo verificar tus citas de adopción. Inténtalo de nuevo en unos minutos."
+        );
+        return;
+      }
+
+      if (citasActivas && citasActivas.length > 0) {
+        mostrarToast(
+          "Ya tienes una cita de adopción programada. Concluye ese proceso antes de iniciar una nueva adopción."
+        );
+        // Si quieres, también puedes redirigir:
+        // router.push("/dashboards/usuario/adopcion?paso=2");
         return;
       }
 

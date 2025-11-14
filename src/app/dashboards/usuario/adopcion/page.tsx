@@ -20,6 +20,8 @@ import PageHead from "@/components/layout/PageHead";
 import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
+import { showSoftToast } from "@/lib/showSoftToast";
+import ConfirmCancelSolicitudModal from "@/components/adopciones/ConfirmCancelSolicitudModal";
 const StepperAdopcion = dynamic(() => import("./StepperAdopcion"), {
   ssr: false,
 });
@@ -49,6 +51,9 @@ export default function ProcesoAdopcionPage() {
     }[]
   >([]);
   const [citaActiva, setCitaActiva] = useState<any | null>(null);
+  const [showCancelSolicitudModal, setShowCancelSolicitudModal] =
+    useState(false);
+  const [adopcionEstado, setAdopcionEstado] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -127,15 +132,18 @@ export default function ProcesoAdopcionPage() {
 
       // 🔍 Verificar si ya existe una adopción enviada por el usuario
       if (solicitud?.id) {
-        const { data: adopcionExistente, error: adopError } = await supabase
+        const { data: adopcionExistente } = await supabase
           .from("adopciones")
-          .select("id")
+          .select("id, estado")
           .eq("solicitud_id", solicitud.id)
           .maybeSingle();
 
-        if (!adopError && adopcionExistente) {
+        if (adopcionExistente) {
           setYaTieneAdopcion(true);
-          console.log("✅ Ya existe un formulario de adopción enviado.");
+          setAdopcionEstado(adopcionExistente.estado); // ⭐ NUEVO
+        } else {
+          setYaTieneAdopcion(false);
+          setAdopcionEstado(null);
         }
       }
 
@@ -181,6 +189,29 @@ export default function ProcesoAdopcionPage() {
 
     cargarDatos();
   }, []);
+
+  async function handleConfirmCancelar() {
+    const supabase = createClient();
+    const mascotaId = solicitudActiva?.mascota_id;
+
+    await supabase
+      .from("solicitudes_adopcion")
+      .update({ estado: "rechazada" })
+      .eq("id", solicitudActiva?.id);
+
+    if (mascotaId) {
+      await supabase
+        .from("mascotas")
+        .update({
+          estado: "disponible",
+          disponible_adopcion: true,
+        })
+        .eq("id", mascotaId);
+    }
+
+    showSoftToast("Solicitud cancelada correctamente 🐾");
+    window.location.reload();
+  }
 
   const [mostrarAgendar, setMostrarAgendar] = useState(false);
   const nombreMascota = qs.get("nombre");
@@ -381,338 +412,368 @@ export default function ProcesoAdopcionPage() {
   // 💡 Render principal
   // --------------------------------------------------------
   return (
-    <div className="space-y-8">
-      <PageHead
-        title="Proceso de adopción"
-        subtitle={
-          estado === "aprobado"
-            ? "¡Listo! Ya puedes agendar tu cita para conocer a una mascota."
-            : "Sube tus documentos para que un administrador los valide antes de continuar."
-        }
-      />
-
-      {estado === "rechazado" && (
-        <PanelEstado
-          tone="danger"
-          icon={<XCircle className="h-6 w-6" />}
-          title="Documentos rechazados"
-          desc="Por favor corrige lo indicado y vuelve a enviarlos."
-        />
-      )}
-      {/* -------- Bloques por estado -------- */}
-      {(estado === "sin_documentos" || estado === "rechazado") && (
-        <SeccionCarga
-          archivos={archivos}
-          docs={docs}
-          onPick={(id, file) =>
-            setArchivos({ ...archivos, [id]: file ?? null })
-          }
-          onEnviar={enviar}
-          deshabilitarEnviar={
-            estado === "sin_documentos"
-              ? !completos
-              : docs
-                .filter((d) => d.estado === "rechazado")
-                .some((d) => !archivos[d.tipo])
+    <>
+      <div className="space-y-8">
+        <PageHead
+          title="Proceso de adopción"
+          subtitle={
+            estado === "aprobado"
+              ? "¡Listo! Ya puedes agendar tu cita para conocer a una mascota."
+              : "Sube tus documentos para que un administrador los valide antes de continuar."
           }
         />
-      )}
 
-      {estado === "en_revision" && (
-        <section className="rounded-2xl border border-[#eadacb] bg-[#fff9f3] p-10 text-center shadow-sm">
-          <div className="flex flex-col items-center justify-center gap-4">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[#BC5F36]/10">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-                className="flex items-center justify-center w-16 h-16 rounded-full bg-[#BC5F36]/10"
-              >
-                <Clock className="h-10 w-10 text-[#BC5F36]" />
-              </motion.div>{" "}
-            </div>
-            <h2 className="text-xl font-extrabold text-[#2b1b12]">
-              Tus documentos están en revisión
-            </h2>
-            <p className="max-w-md text-sm text-[#7a5c49] leading-relaxed">
-              Un administrador revisará que todo esté correcto. <br />
-              Te avisaremos por correo o al iniciar sesión cuando hayan sido
-              aprobados.
-            </p>
-            <div className="mt-6">
-              <div className="animate-pulse text-[#BC5F36] font-medium"></div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* -------- Vista Aprobado -------- */}
-      {estado === "aprobado" && (
-        <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
-          {/* 🟢 Panel principal */}
-          <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <h3 className="text-sm font-extrabold text-green-800">
-                ¡Tus documentos fueron aprobados!
-              </h3>
-            </div>
-            <p className="mt-1 text-sm text-green-700">
-              Todo está en orden. Ya puedes continuar con el proceso de
-              adopción.
-            </p>
-          </div>
-
-          {/* 🔹 Stepper dinámico */}
-          <StepperAdopcion
-            activeStep={citaActiva ? 3 : solicitudActiva ? 2 : 1}
+        {estado === "rechazado" && (
+          <PanelEstado
+            tone="danger"
+            icon={<XCircle className="h-6 w-6" />}
+            title="Documentos rechazados"
+            desc="Por favor corrige lo indicado y vuelve a enviarlos."
           />
+        )}
+        {/* -------- Bloques por estado -------- */}
+        {(estado === "sin_documentos" || estado === "rechazado") && (
+          <SeccionCarga
+            archivos={archivos}
+            docs={docs}
+            onPick={(id, file) =>
+              setArchivos({ ...archivos, [id]: file ?? null })
+            }
+            onEnviar={enviar}
+            deshabilitarEnviar={
+              estado === "sin_documentos"
+                ? !completos
+                : docs
+                    .filter((d) => d.estado === "rechazado")
+                    .some((d) => !archivos[d.tipo])
+            }
+          />
+        )}
 
-          {/* 🔸 Bloque según estado */}
-          {citaActiva && !yaTieneAdopcion ? (
-            /* ✅ CASO 3: Ya tiene cita activa */
-            <div className="rounded-xl bg-white p-5 mb-4 mt-5">
-              <h3 className="text-sm font-extrabold text-green-700 flex items-center gap-2">
-                <CalendarCheck className="h-4 w-4" /> ¡Tienes una cita programada!
-              </h3>
-              <div className="mt-2 text-sm text-[#497a49]">
-                <p>
-                  <strong>Mascota:</strong>{" "}
-                  {citaActiva.mascota?.nombre || "Sin nombre"}
-                </p>
-                <p>
-                  <strong>Fecha:</strong> {citaActiva.fecha_cita} —{" "}
-                  <strong>Hora:</strong> {citaActiva.hora_cita}
-                </p>
-                <p className="mt-2">
-                  Te esperamos en el CAAM 🐾 Recuerda llegar 10 minutos antes.
-                </p>
-              </div>
-
-              {/* 🔽 Botón solo si aún no envió el formulario */}
-              {!yaTieneAdopcion && (
-                <div className="mt-4 text-right">
-                  <Button
-                    onClick={() =>
-                      router.push(
-                        `/dashboards/usuario/form-adopcion/${citaActiva.solicitud_id}`
-                      )
-                    }
-                    className="bg-[#16A34A] hover:bg-[#15803D]"
-                  >
-                    <FileText className="h-4 w-4 mr-1" /> Llenar formulario de adopción
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : solicitudActiva ? (
-            /* 🟠 CASO 2: Tiene solicitud activa pero sin cita */
-            <div className="rounded-xl border border-[#ffedd5] bg-[#fffaf4] p-5 mb-4 mt-5">
-              <h3 className="text-sm font-extrabold text-[#BC5F36] flex items-center gap-2">
-                <PawPrint className="h-4 w-4" /> Solicitud pendiente
-              </h3>
-              <p className="mt-2 text-sm text-[#7a5c49]">
-                Ya tienes una solicitud activa. Ahora puedes continuar con el
-                proceso y agendar tu cita para conocer a{" "}
-                <strong>tu mascota seleccionada</strong>.
-              </p>
-
-              {solicitudActiva?.mascota_id && (
-                <div className="mt-4 flex items-center gap-3 rounded-lg border border-[#eadacb] bg-white/60 p-3">
-                  <img
-                    src={
-                      solicitudActiva.mascota?.imagen_url ||
-                      "/img/placeholder-mascota.jpg"
-                    }
-                    alt={
-                      solicitudActiva.mascota?.nombre || "Mascota seleccionada"
-                    }
-                    className="h-14 w-14 rounded-full object-cover border border-[#eadacb]"
-                  />
-                  <div>
-                    <p className="font-semibold text-[#2b1b12] text-sm">
-                      {solicitudActiva.mascota?.nombre || "Mascota sin nombre"}
-                    </p>
-                    <p className="text-xs text-[#7a5c49]">
-                      Esta es la mascota que seleccionaste para adoptar 💕
-                    </p>
-                    <button
-                      onClick={async () => {
-                        if (
-                          confirm(
-                            "¿Estás seguro de que deseas cancelar tu solicitud de adopción? Esta acción no se puede deshacer."
-                          )
-                        ) {
-                          try {
-                            const supabase = createClient();
-
-                            // 1️⃣ Eliminar la solicitud
-                            const { error: deleteError } = await supabase
-                              .from("solicitudes_adopcion")
-                              .delete()
-                              .eq("id", solicitudActiva.id);
-
-                            if (deleteError) {
-                              console.error(
-                                "❌ Error al eliminar solicitud:",
-                                deleteError
-                              );
-                              alert("Hubo un error al cancelar la solicitud.");
-                              return;
-                            }
-
-                            // 2️⃣ Volver a poner la mascota como disponible
-                            if (solicitudActiva.mascota_id) {
-                              const { error: updateError } = await supabase
-                                .from("mascotas")
-                                .update({
-                                  estado: "disponible",
-                                  disponible_adopcion: true,
-                                })
-                                .eq("id", solicitudActiva.mascota_id);
-
-                              if (updateError) {
-                                console.error(
-                                  "⚠️ Error al actualizar mascota:",
-                                  updateError
-                                );
-                              } else {
-                                console.log(
-                                  "✅ Mascota actualizada a disponible"
-                                );
-                              }
-                            }
-
-                            alert("Solicitud cancelada correctamente.");
-                            window.location.reload();
-                          } catch (e) {
-                            console.error(e);
-                          }
-                        }
-                      }}
-                      className="text-xs text-red-700 hover:text-red-800 underline mt-1"
-                    >
-                      Cancelar solicitud
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-4 text-right">
-                <Button
-                  className="bg-[#BC5F36] hover:bg-[#a64d2e]"
-                  onClick={() => router.push("/dashboards/usuario/citas")}
+        {estado === "en_revision" && (
+          <section className="rounded-2xl border border-[#eadacb] bg-[#fff9f3] p-10 text-center shadow-sm">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-[#BC5F36]/10">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+                  className="flex items-center justify-center w-16 h-16 rounded-full bg-[#BC5F36]/10"
                 >
-                  <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
-                </Button>
+                  <Clock className="h-10 w-10 text-[#BC5F36]" />
+                </motion.div>{" "}
+              </div>
+              <h2 className="text-xl font-extrabold text-[#2b1b12]">
+                Tus documentos están en revisión
+              </h2>
+              <p className="max-w-md text-sm text-[#7a5c49] leading-relaxed">
+                Un administrador revisará que todo esté correcto. <br />
+                Te avisaremos por correo o al iniciar sesión cuando hayan sido
+                aprobados.
+              </p>
+              <div className="mt-6">
+                <div className="animate-pulse text-[#BC5F36] font-medium"></div>
               </div>
             </div>
-          ) : (
-            /* ⚪ CASO 1: Aún sin solicitud ni cita */
-            <div className="grid gap-3 sm:grid-cols-2 mt-5">
-              {/* 🐾 Paso 1: Mascota seleccionada */}
-              <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <PawPrint className="h-5 w-5 text-[#BC5F36]" />
-                  <p className="text-sm font-extrabold text-[#2b1b12]">
-                    1) Mascota seleccionada
+          </section>
+        )}
+
+        {/* -------- Vista Aprobado -------- */}
+        {estado === "aprobado" && (
+          <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
+            {/* 🟢 Panel principal */}
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <h3 className="text-sm font-extrabold text-green-800">
+                  ¡Tus documentos fueron aprobados!
+                </h3>
+              </div>
+              <p className="mt-1 text-sm text-green-700">
+                Todo está en orden. Ya puedes continuar con el proceso de
+                adopción.
+              </p>
+            </div>
+
+            {/* 🔹 Stepper dinámico */}
+            <StepperAdopcion
+              activeStep={citaActiva ? 3 : solicitudActiva ? 2 : 1}
+            />
+
+            {/* 🔸 Bloque según estado */}
+            {citaActiva ? (
+              /* 🔐 NUEVA REGLA — SI YA EXISTE FORMULARIO DE ADOPCIÓN */
+              adopcionEstado === "pendiente" ? (
+                /* 🟡 Caso: Formulario ya enviado, en revisión */
+                <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-5 mb-4 mt-5">
+                  <h3 className="text-sm font-extrabold text-yellow-800 flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Tu formulario está en revisión
+                  </h3>
+                  <p className="mt-2 text-sm text-yellow-700">
+                    Ya completaste el formulario de adopción. El CAAM está
+                    revisando tu información. Por favor espera la confirmación
+                    final.
                   </p>
                 </div>
+              ) : adopcionEstado === "aprobada" ? (
+                /* 💚 Caso: Adopción aprobada */
+                <div className="rounded-xl border border-green-300 bg-green-50 p-5 mb-4 mt-5">
+                  <h3 className="text-sm font-extrabold text-green-800 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    ¡Adopción aprobada! 🎉
+                  </h3>
+                  <p className="mt-2 text-sm text-green-700">
+                    ¡Felicidades! El proceso de adopción ha sido aprobado. El
+                    CAAM se pondrá en contacto contigo para los siguientes
+                    pasos.
+                  </p>
+                </div>
+              ) : citaActiva.estado === "programada" ||
+                citaActiva.estado === "pendiente" ||
+                citaActiva.estado === "confirmada" ? (
+                /* 🟠 Caso: Cita programada — NO mostrar formulario */
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 mb-4 mt-5">
+                  <h3 className="text-sm font-extrabold text-blue-800 flex items-center gap-2">
+                    <CalendarCheck className="h-4 w-4" />
+                    Ya tienes una cita programada
+                  </h3>
+                  <p className="mt-2 text-sm text-blue-700">
+                    Estamos esperando la evaluación de la visita. Por favor
+                    espera a que el CAAM valore tu cita antes de continuar.
+                  </p>
 
-                {solicitudActiva?.mascota_id ? (
-                  <div className="flex items-center gap-3">
+                  <div className="mt-3 text-sm text-blue-700">
+                    <p>
+                      <strong>Mascota:</strong> {citaActiva.mascota?.nombre}
+                    </p>
+                    <p>
+                      <strong>Fecha:</strong> {citaActiva.fecha_cita}
+                    </p>
+                    <p>
+                      <strong>Hora:</strong> {citaActiva.hora_cita}
+                    </p>
+                  </div>
+
+                  <p className="mt-3 text-xs text-blue-600 italic">
+                    Si la visita es aprobada, podrás continuar con el formulario
+                    de adopción.
+                  </p>
+                </div>
+              ) : citaActiva.estado === "completada" &&
+                citaActiva.asistencia === "asistio" &&
+                citaActiva.interaccion === "buena_aprobada" ? (
+                /* 🟢 Cita aprobada — Mostrar formulario (solo si NO existe adopción previa) */
+                <div className="rounded-xl border border-green-200 bg-green-50 p-5 mb-4 mt-5">
+                  <h3 className="text-sm font-extrabold text-green-800 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    ¡Tu cita fue aprobada!
+                  </h3>
+                  <p className="mt-2 text-sm text-green-700">
+                    ¡Felicidades! El CAAM aprobó la interacción con la mascota.
+                    Ahora completa el formulario final para continuar con la
+                    adopción.
+                  </p>
+
+                  <div className="mt-3 text-sm text-green-700">
+                    <p>
+                      <strong>Mascota:</strong> {citaActiva.mascota?.nombre}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 text-right">
+                    <Button
+                      onClick={() =>
+                        router.push(
+                          `/dashboards/usuario/form-adopcion/${citaActiva.solicitud_id}`
+                        )
+                      }
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <FileText className="h-4 w-4 mr-1" /> Llenar formulario de
+                      adopción
+                    </Button>
+                  </div>
+                </div>
+              ) : null
+            ) : solicitudActiva ? (
+              /* 🟠 CASO 2: Tiene solicitud activa pero sin cita */
+              <div className="rounded-xl border border-[#ffedd5] bg-[#fffaf4] p-5 mb-4 mt-5">
+                <h3 className="text-sm font-extrabold text-[#BC5F36] flex items-center gap-2">
+                  <PawPrint className="h-4 w-4" /> Solicitud pendiente
+                </h3>
+                <p className="mt-2 text-sm text-[#7a5c49]">
+                  Ya tienes una solicitud activa. Ahora puedes continuar con el
+                  proceso y agendar tu cita para conocer a{" "}
+                  <strong>tu mascota seleccionada</strong>.
+                </p>
+
+                {solicitudActiva?.mascota_id && (
+                  <div className="mt-4 flex items-center gap-3 rounded-lg border border-[#eadacb] bg-white/60 p-3">
                     <img
                       src={
                         solicitudActiva.mascota?.imagen_url ||
                         "/img/placeholder-mascota.jpg"
                       }
-                      alt={solicitudActiva.mascota?.nombre || "Mascota"}
-                      className="h-16 w-16 rounded-full object-cover border border-[#eadacb]"
+                      alt={
+                        solicitudActiva.mascota?.nombre ||
+                        "Mascota seleccionada"
+                      }
+                      className="h-14 w-14 rounded-full object-cover border border-[#eadacb]"
                     />
                     <div>
-                      <p className="font-semibold text-[#2b1b12]">
+                      <p className="font-semibold text-[#2b1b12] text-sm">
                         {solicitudActiva.mascota?.nombre ||
                           "Mascota sin nombre"}
                       </p>
                       <p className="text-xs text-[#7a5c49]">
-                        Ya seleccionaste tu mascota favorita 💕
+                        Esta es la mascota que seleccionaste para adoptar 💕
+                      </p>
+                      <button
+                        onClick={() => setShowCancelSolicitudModal(true)}
+                        className="
+    text-xs 
+    font-semibold
+    text-[#BC5F36] 
+    bg-[#fff5f3]
+    border border-[#e8c9b8]
+    px-3 py-1.5
+    rounded-lg
+    hover:bg-[#ffe7e2]
+    hover:text-[#8b4513]
+    cursor-pointer
+    transition-all
+  "
+                      >
+                        Cancelar solicitud
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 text-right">
+                  <Button
+                    className="bg-[#BC5F36] hover:bg-[#a64d2e]"
+                    onClick={() => router.push("/dashboards/usuario/citas")}
+                  >
+                    <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* ⚪ CASO 1: Aún sin solicitud ni cita */
+              <div className="grid gap-3 sm:grid-cols-2 mt-5">
+                {/* 🐾 Paso 1: Mascota seleccionada */}
+                <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <PawPrint className="h-5 w-5 text-[#BC5F36]" />
+                    <p className="text-sm font-extrabold text-[#2b1b12]">
+                      1) Mascota seleccionada
+                    </p>
+                  </div>
+
+                  {solicitudActiva?.mascota_id ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={
+                          solicitudActiva.mascota?.imagen_url ||
+                          "/img/placeholder-mascota.jpg"
+                        }
+                        alt={solicitudActiva.mascota?.nombre || "Mascota"}
+                        className="h-16 w-16 rounded-full object-cover border border-[#eadacb]"
+                      />
+                      <div>
+                        <p className="font-semibold text-[#2b1b12]">
+                          {solicitudActiva.mascota?.nombre ||
+                            "Mascota sin nombre"}
+                        </p>
+                        <p className="text-xs text-[#7a5c49]">
+                          Ya seleccionaste tu mascota favorita 💕
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-1 text-[#BC5F36]"
+                          onClick={() =>
+                            router.push("/dashboards/usuario/mascotas")
+                          }
+                        >
+                          Cambiar mascota
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-sm text-[#7a5c49]">
+                        Aún no has seleccionado una mascota.
                       </p>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-1 text-[#BC5F36]"
+                        className="mt-3 w-full"
                         onClick={() =>
                           router.push("/dashboards/usuario/mascotas")
                         }
                       >
-                        Cambiar mascota
+                        Ver mascotas disponibles
                       </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="mt-1 text-sm text-[#7a5c49]">
-                      Aún no has seleccionado una mascota.
-                    </p>
-                    <Button
-                      className="mt-3 w-full"
-                      onClick={() =>
-                        router.push("/dashboards/usuario/mascotas")
-                      }
-                    >
-                      Ver mascotas disponibles
-                    </Button>
-                  </>
-                )}
-              </div>
-
-              {/* 📅 Paso 2: Agendar visita */}
-              <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CalendarCheck className="h-5 w-5 text-[#BC5F36]" />
-                  <p className="text-sm font-extrabold text-[#2b1b12]">
-                    2) Agendar visita
-                  </p>
+                    </>
+                  )}
                 </div>
-                <p className="text-sm text-[#7a5c49]">
-                  Programa una cita para conocer a tu mascota seleccionada.
-                </p>
 
-                <Button
-                  className="mt-3 w-full text-[#BC5F36]"
-                  variant={solicitudActiva?.mascota_id ? "default" : "ghost"}
-                  disabled={!solicitudActiva?.mascota_id}
-                  onClick={() => router.push("/dashboards/usuario/citas")}
-                >
-                  <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
-                </Button>
-
-                {!solicitudActiva?.mascota_id && (
-                  <p className="text-xs text-[#a88b77] mt-2 italic">
-                    Primero selecciona una mascota antes de agendar tu cita.
+                {/* 📅 Paso 2: Agendar visita */}
+                <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CalendarCheck className="h-5 w-5 text-[#BC5F36]" />
+                    <p className="text-sm font-extrabold text-[#2b1b12]">
+                      2) Agendar visita
+                    </p>
+                  </div>
+                  <p className="text-sm text-[#7a5c49]">
+                    Programa una cita para conocer a tu mascota seleccionada.
                   </p>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
 
-      {/* FAQs */}
-      {/* FAQs: solo visibles si aún no ha subido nada */}
-      {estado === "sin_documentos" && (
-        <section className="rounded-2xl border border-[#eadacb] bg-white p-5 text-[#2b1b12] shadow-sm">
-          <div className="flex items-center gap-2">
-            <Info className="h-5 w-5 text-[#BC5F36]" />
-            <h3 className="text-sm font-extrabold">Preguntas frecuentes</h3>
-          </div>
-          <ul className="mt-3 grid gap-2 text-sm text-[#7a5c49]">
-            <li>• Formatos aceptados: PDF, JPG, PNG. Tamaño máx. 5 MB.</li>
-            <li>• La revisión la realiza un administrador.</li>
-            <li>• Si hay observaciones, podrás corregir y volver a enviar.</li>
-          </ul>
-        </section>
-      )}
-    </div>
+                  <Button
+                    className="mt-3 w-full text-[#BC5F36]"
+                    variant={solicitudActiva?.mascota_id ? "default" : "ghost"}
+                    disabled={!solicitudActiva?.mascota_id}
+                    onClick={() => router.push("/dashboards/usuario/citas")}
+                  >
+                    <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
+                  </Button>
+
+                  {!solicitudActiva?.mascota_id && (
+                    <p className="text-xs text-[#a88b77] mt-2 italic">
+                      Primero selecciona una mascota antes de agendar tu cita.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* FAQs */}
+        {/* FAQs: solo visibles si aún no ha subido nada */}
+        {estado === "sin_documentos" && (
+          <section className="rounded-2xl border border-[#eadacb] bg-white p-5 text-[#2b1b12] shadow-sm">
+            <div className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-[#BC5F36]" />
+              <h3 className="text-sm font-extrabold">Preguntas frecuentes</h3>
+            </div>
+            <ul className="mt-3 grid gap-2 text-sm text-[#7a5c49]">
+              <li>• Formatos aceptados: PDF, JPG, PNG. Tamaño máx. 5 MB.</li>
+              <li>• La revisión la realiza un administrador.</li>
+              <li>
+                • Si hay observaciones, podrás corregir y volver a enviar.
+              </li>
+            </ul>
+          </section>
+        )}
+      </div>
+      <ConfirmCancelSolicitudModal
+        open={showCancelSolicitudModal}
+        onClose={() => setShowCancelSolicitudModal(false)}
+        onConfirm={handleConfirmCancelar}
+      />
+    </>
   );
 }
 
@@ -843,19 +904,21 @@ function Stepper({ estado }: { estado: Estado }) {
       {steps.map((s, i) => (
         <li
           key={s.key}
-          className={`rounded-xl border p-4 shadow-sm ${i === current
-            ? "border-[#BC5F36] bg-[#fff4e7]"
-            : "border-[#eadacb] bg-white"
-            }`}
+          className={`rounded-xl border p-4 shadow-sm ${
+            i === current
+              ? "border-[#BC5F36] bg-[#fff4e7]"
+              : "border-[#eadacb] bg-white"
+          }`}
         >
           <div className="flex items-center gap-2">
             <span
-              className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${i < current
-                ? "bg-[#BC5F36] text-white"
-                : i === current
+              className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${
+                i < current
+                  ? "bg-[#BC5F36] text-white"
+                  : i === current
                   ? "bg-[#BC5F36]/15 text-[#BC5F36]"
                   : "bg-[#f5ebe1] text-[#7a5c49]"
-                }`}
+              }`}
             >
               {i < current ? "✓" : i + 1}
             </span>
