@@ -73,7 +73,7 @@ export default function MascotaCard({
         )}
       </div>
 
-      {/* Información */}
+      {/* Info */}
       <div className="body">
         <div className="titleRow">
           <h3 className="name" title={m.nombre}>
@@ -111,6 +111,7 @@ export default function MascotaCard({
         </footer>
       </div>
 
+      {/* ====================== ESTILOS ====================== */}
       <style jsx>{`
         .masc-card {
           background: #fffaf2;
@@ -121,6 +122,11 @@ export default function MascotaCard({
           display: flex;
           flex-direction: column;
           transition: all 0.3s ease;
+          font-family: 'Inter', sans-serif;
+        }
+
+        .masc-card * {
+          font-family: 'Inter', sans-serif !important;
         }
 
         .masc-card:hover {
@@ -147,34 +153,39 @@ export default function MascotaCard({
           background: #f2e8dc;
         }
 
+        /* SEXO */
         .sex {
           position: absolute;
           left: 14px;
           top: 14px;
-          padding: 6px 10px;
+          padding: 6px 12px;
           border-radius: 999px;
-          font-weight: 800;
-          font-size: 12px;
+          font-weight: 700;
+          font-size: 13px;
           color: #fff;
+          text-transform: capitalize;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
+
         .sex.f {
-          background: #f472b6;
+          background: #ec4899; /* rosa */
         }
         .sex.m {
-          background: #60a5fa;
+          background: #3b82f6; /* azul */
         }
 
+        /* ESTADO */
         .estado-tag {
           position: absolute;
           bottom: 14px;
           right: 14px;
-          padding: 5px 10px;
+          padding: 6px 12px;
           border-radius: 999px;
           font-weight: 700;
           font-size: 12px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
+
         .estado-tag.proceso {
           background: #facc15;
           color: #1f1f1f;
@@ -214,31 +225,30 @@ export default function MascotaCard({
           font-weight: 600;
           font-size: 12px;
         }
+
         .meta {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 4px;
-        color: #6c5241;
-        font-size: 14px;
-        margin-top: 4px;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 4px;
+          color: #6c5241;
+          font-size: 14px;
         }
 
         .meta span {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        line-height: 1.4;
+          display: flex;
+          gap: 4px;
+          align-items: center;
         }
 
         .meta strong {
-        color: #2b1b12;
-        font-weight: 700;
-        min-width: 75px;
+          color: #2b1b12;
+          font-weight: 700;
+          min-width: 75px;
         }
+
         .desc {
           color: #2b1b12;
           font-size: 14px;
-          margin-top: 4px;
         }
 
         .actions {
