@@ -1,114 +1,105 @@
 "use server";
 
-import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 import { DeleteUsuarioSchema } from "./usuarios-schemas";
-import type { PerfilConDocumentos } from "./usuarios";
+import type { PerfilConDireccion } from "./usuarios";
 
-export async function listarUsuarios(): Promise<PerfilConDocumentos[]> {
-  const { data, error } = await supabase
+// ======================================================
+// LISTAR USUARIOS (ADMIN)
+// ======================================================
+export async function listarUsuarios(): Promise<PerfilConDireccion[]> {
+  const supabase = await createClient();
+
+  // 1. Obtener perfiles
+  const { data: perfiles, error } = await supabase
     .from("perfiles")
-    .select(`
-    *,
-    documentos (
-      id,
-      perfil_id,
-      tipo,
-      url,
-      status,
-      created_at
-    )
-  `)
+    .select("*")
     .eq("rol_id", 2)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error cargando usuarios:", error.message);
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
+  if (!perfiles) return [];
 
-  return data as unknown as PerfilConDocumentos[];
+  // 2. Obtener dirección principal
+  const usuariosConDireccion = await Promise.all(
+    perfiles.map(async (perfil) => {
+      const { data: direccion } = await supabase
+        .from("direcciones")
+        .select("*")
+        .eq("usuario_id", perfil.id)
+        .eq("direccion_principal", true)
+        .maybeSingle();
+
+      return {
+        ...perfil,
+        direccion: direccion || null,
+      };
+    })
+  );
+
+  return usuariosConDireccion as PerfilConDireccion[];
 }
 
-export async function obtenerUrlDocumento(ruta: string) {
-  if (!ruta) throw new Error("Ruta de documento no especificada");
-
-  const { data } = await supabase
-    .storage
-    .from("documentos_adopcion")
-    .getPublicUrl(ruta);
-
-  if (!data?.publicUrl) {
-    throw new Error("No se pudo generar la URL del documento");
-  }
-
-  return data.publicUrl;
-
-}
-
+// ======================================================
+// ELIMINAR USUARIO
+// ======================================================
 export async function eliminarUsuario(id: string): Promise<{ success: boolean }> {
+  const supabase = await createClient();
+
   const parsed = DeleteUsuarioSchema.parse({ id });
 
-  const { error } = await supabase.from("perfiles").delete().eq("id", parsed.id);
-
-  if (error) {
-    console.error("Error eliminando usuario:", error.message);
-    throw new Error(error.message);
-  }
-
-  return { success: true };
-}
-
-export async function actualizarDocumentoStatus(
-  documentoId: string,
-  nuevoStatus: string
-): Promise<{ success: boolean }> {
   const { error } = await supabase
-    .from("documentos")
-    .update({ status: nuevoStatus })
-    .eq("id", documentoId);
+    .from("perfiles")
+    .delete()
+    .eq("id", parsed.id);
 
-  if (error) {
-    console.error("Error actualizando documento:", error.message);
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   return { success: true };
 }
 
+// ======================================================
+// CONTAR USUARIOS
+// ======================================================
 export async function contarUsuarios(): Promise<number> {
+  const supabase = await createClient();
+
   const { count, error } = await supabase
     .from("perfiles")
     .select("*", { count: "exact", head: true })
-    .eq("rol_id", 2); 
+    .eq("rol_id", 2);
 
-  if (error) {
-    console.error("Error contando usuarios:", error.message);
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   return count ?? 0;
 }
 
+// ======================================================
+// TIPOS PARA ADOPCIONES (los mantengo porque sí se usan)
+// ======================================================
 export type AdopcionUsuario = {
   id: string;
   numero_adopcion: string;
   fecha_adopcion: string;
-  fecha_adopcion_raw: string; // por si luego quieres formatear con dayjs
+  fecha_adopcion_raw: string;
   estado: string;
   mascota_nombre: string;
   imagen_url: string | null;
 };
 
-// 👇 Obtener adopciones de un usuario (adoptante_id)
+// ======================================================
+// LISTAR ADOPCIONES DE USUARIO (ADMIN)
+// ======================================================
 export async function listarAdopcionesPorUsuario(
   adoptanteId: string
 ): Promise<AdopcionUsuario[]> {
+  const supabase = await createClient();
+
   if (!adoptanteId) return [];
 
   const { data, error } = await supabase
     .from("adopciones")
-    .select(
-      `
+    .select(`
       id,
       numero_adopcion,
       fecha_adopcion,
@@ -118,51 +109,45 @@ export async function listarAdopcionesPorUsuario(
         nombre,
         imagen_url
       )
-    `
-    )
+    `)
     .eq("adoptante_id", adoptanteId)
     .order("fecha_adopcion", { ascending: false });
 
-  if (error) {
-    console.error(
-      "Error cargando adopciones del usuario:",
-      error.message
-    );
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
-  // Normalizamos la respuesta
   return (data || []).map((row: any) => ({
     id: row.id,
     numero_adopcion: row.numero_adopcion,
     fecha_adopcion_raw: row.fecha_adopcion,
-    fecha_adopcion: row.fecha_adopcion, // luego lo puedes formatear en el front
+    fecha_adopcion: row.fecha_adopcion,
     estado: row.estado,
     mascota_nombre: row.mascota?.nombre ?? "Mascota",
     imagen_url: row.mascota?.imagen_url ?? null,
   }));
 }
 
+// ======================================================
+// LISTAR SOLICITUDES ACTIVAS DEL USUARIO
+// ======================================================
 export async function listarSolicitudesActivasPorUsuario(usuarioId: string) {
+  const supabase = await createClient();
+
   const { data: solicitudes, error } = await supabase
     .from("solicitudes_adopcion")
     .select(`
+      id,
+      estado,
+      fecha_creada: created_at,
+      mascota: mascotas (
         id,
-        estado,
-        fecha_creada: created_at,
-        mascota: mascotas (
-            id,
-            nombre,
-            imagen_url
-        )
+        nombre,
+        imagen_url
+      )
     `)
     .eq("usuario_id", usuarioId)
     .in("estado", ["pendiente", "en_proceso"]);
 
-  if (error) {
-    console.error("Error cargando solicitudes activas:", error.message);
-    return [];
-  }
+  if (error) return [];
 
   return solicitudes || [];
 }

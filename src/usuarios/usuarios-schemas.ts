@@ -1,15 +1,20 @@
 import { z } from "zod";
 
-export const DocumentoSchema = z.object({
+export const DireccionSchema = z.object({
   id: z.string().uuid(),
-  perfil_id: z.string().uuid().nullable().optional(),
-  tipo: z.string(),
-  url: z.string(),
-  status: z.string().nullable().optional(),
-  created_at: z.string().datetime().nullable().optional(),
+  usuario_id: z.string().uuid(),
+  calle: z.string(),
+  numero_exterior: z.string().nullable().optional(),
+  numero_interior: z.string().nullable().optional(),
+  colonia: z.string(),
+  codigo_postal: z.string(),
+  municipio: z.string(),
+  estado: z.string(),
+  pais: z.string().nullable().optional(),
+  tipo_vivienda: z.string().nullable().optional(),
+  es_propia: z.boolean().nullable().optional(),
+  direccion_principal: z.boolean().nullable().optional(),
 });
-
-export type Documento = z.infer<typeof DocumentoSchema>;
 
 export const PerfilSchema = z.object({
   id: z.string().uuid(),
@@ -33,12 +38,12 @@ export const PerfilSchema = z.object({
 
 export type Perfil = z.infer<typeof PerfilSchema>;
 
-export const PerfilConDocumentosSchema = PerfilSchema.extend({
-  documentos: z.array(DocumentoSchema).optional(),
+export const PerfilConDireccionSchema = PerfilSchema.extend({
+  direccion: DireccionSchema.nullable().optional(),
 });
+
+export type PerfilConDireccion = z.infer<typeof PerfilConDireccionSchema>;
 
 export const DeleteUsuarioSchema = z.object({
   id: z.string().uuid("ID inválido"),
 });
-
-export type PerfilConDocumentos = z.infer<typeof PerfilConDocumentosSchema>;
