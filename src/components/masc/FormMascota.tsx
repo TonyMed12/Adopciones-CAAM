@@ -597,8 +597,8 @@ export default function FormMascota({
             onChange={setEsterilizado}
             options={[
               { label: "Seleccionar opción", value: "" },
-              { label: "Sí", value: "sí" },
-              { label: "No", value: "no" },
+              { label: "Sí", value: "Sí" },
+              { label: "No", value: "No" },
             ]}
             ariaLabel="Seleccionar esterilización"
           />
@@ -611,21 +611,21 @@ export default function FormMascota({
             onChange={setPersonalidad}
             options={[
               { label: "Seleccionar personalidad", value: "" },
-              { label: "Tranquilo", value: "tranquilo" },
-              { label: "Juguetón", value: "juguetón" },
-              { label: "Curioso", value: "curioso" },
-              { label: "Tímido", value: "tímido" },
-              { label: "Protector", value: "protector" },
-              { label: "Energético", value: "energético" },
-              { label: "Independiente", value: "independiente" },
-              { label: "Cariñoso", value: "cariñoso" },
-              { label: "Sociable", value: "sociable" },
-              { label: "Obediente", value: "obediente" },
-              { label: "Nervioso", value: "nervioso" },
-              { label: "Territorial", value: "territorial" },
-              { label: "Leal", value: "leal" },
-              { label: "Inteligente", value: "inteligente" },
-              { label: "Dormilón", value: "dormilón" },
+              { label: "Tranquilo", value: "Tranquilo" },
+              { label: "Juguetón", value: "Juguetón" },
+              { label: "Curioso", value: "Curioso" },
+              { label: "Tímido", value: "Tímido" },
+              { label: "Protector", value: "Protector" },
+              { label: "Energético", value: "Energético" },
+              { label: "Independiente", value: "Independiente" },
+              { label: "Cariñoso", value: "Cariñoso" },
+              { label: "Sociable", value: "Sociable" },
+              { label: "Obediente", value: "Obediente" },
+              { label: "Nervioso", value: "Nervioso" },
+              { label: "Territorial", value: "Territorial" },
+              { label: "Leal", value: "Leal" },
+              { label: "Inteligente", value: "Inteligente" },
+              { label: "Dormilón", value: "Dormilón" },
             ]}
             ariaLabel="Seleccionar personalidad"
           />
@@ -705,22 +705,22 @@ export default function FormMascota({
             onChange={setCondicionIngreso}
             options={[
               { label: "Seleccionar condición", value: "" },
-              { label: "Sano", value: "sano" },
-              { label: "Heridas leves", value: "heridas leves" },
-              { label: "Heridas moderadas", value: "heridas moderadas" },
-              { label: "Heridas graves", value: "heridas graves" },
-              { label: "Desnutrido", value: "desnutrido" },
-              { label: "Deshidratado", value: "deshidratado" },
+              { label: "Sano", value: "Sano" },
+              { label: "Heridas leves", value: "Heridas leves" },
+              { label: "Heridas moderadas", value: "Heridas moderadas" },
+              { label: "Heridas graves", value: "Heridas graves" },
+              { label: "Desnutrido", value: "Desnutrido" },
+              { label: "Deshidratado", value: "Deshidratado" },
               {
                 label: "Enfermedad respiratoria",
-                value: "enfermedad respiratoria",
+                value: "Enfermedad respiratoria",
               },
-              { label: "Problemas de piel", value: "problemas de piel" },
-              { label: "Parasitosis", value: "parasitosis" },
-              { label: "Trauma o golpe", value: "trauma o golpe" },
-              { label: "Envenenamiento", value: "envenenamiento" },
-              { label: "Maltrato evidente", value: "maltrato evidente" },
-              { label: "Atropellado", value: "atropellado" },
+              { label: "Problemas de piel", value: "Problemas de piel" },
+              { label: "Parasitosis", value: "Parasitosis" },
+              { label: "Trauma o golpe", value: "Trauma o golpe" },
+              { label: "Envenenamiento", value: "Envenenamiento" },
+              { label: "Maltrato evidente", value: "Maltrato evidente" },
+              { label: "Atropellado", value: "Atropellado" },
             ]}
             ariaLabel="Seleccionar condición"
           />

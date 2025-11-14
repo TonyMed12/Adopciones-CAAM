@@ -95,11 +95,12 @@ export default function MascotaCard({
           <span>
             <strong>Edad:</strong> {m.edadMeses}
           </span>
+          <span>
+            <strong>Pers:</strong> {m.descripcion}
+          </span>
         </div>
 
-        {m.descripcion && (
-          <p className="desc line-clamp-3">{m.descripcion}</p>
-        )}
+        
 
         <footer className="actions">
           <Button variant="ghost" size="md" onClick={onView}>
