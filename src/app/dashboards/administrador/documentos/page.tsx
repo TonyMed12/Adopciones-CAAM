@@ -37,6 +37,8 @@ export default function GestionDocumentosPage() {
     "Nombre no coincide",
     "Documento vencido",
   ];
+
+  /* ----------------------- BLOQUEAR SCROLL CON VISOR ----------------------- */
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -72,6 +74,7 @@ export default function GestionDocumentosPage() {
     }
   }, [visorActivo]);
 
+  /* ----------------------- Cargar documentos ----------------------- */
   useEffect(() => {
     fetchDocumentos();
   }, [filtro]);
@@ -93,6 +96,7 @@ export default function GestionDocumentosPage() {
     setLoading(false);
   }
 
+  /* ----------------------- Actualizar estado ----------------------- */
   async function actualizarEstado(
     id: string,
     nuevoEstado: string,
@@ -119,26 +123,28 @@ export default function GestionDocumentosPage() {
     );
   }
 
+  /* ========================= RENDER PAGE ========================= */
+
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
         <PageHead
           title="Gestión de documentos 📄"
           subtitle="Revisa, aprueba o rechaza los documentos enviados por los usuarios."
         />
 
-        {/* 🔹 Filtros (separados del PageHead) */}
+        {/* FILTROS */}
         <div className="w-full overflow-x-auto no-scrollbar mt-3">
           <div className="flex gap-3 min-w-max border-b border-[#eadacb] pb-1">
             {["todos", "pendiente", "aprobado", "rechazado"].map((estado) => (
               <button
                 key={estado}
                 onClick={() => setFiltro(estado)}
-                className={`whitespace-nowrap px-4 py-1.5 rounded-t-md text-sm font-semibold transition-all duration-200 border-b-2 ${filtro === estado
-                  ? "border-[#BC5F36] text-[#BC5F36] bg-[#fff8f4]"
-                  : "border-transparent text-[#7a5c49] hover:text-[#BC5F36]"
-                  }`}
+                className={`whitespace-nowrap px-4 py-1.5 rounded-t-md text-sm font-semibold transition-all duration-200 border-b-2 ${
+                  filtro === estado
+                    ? "border-[#BC5F36] text-[#BC5F36] bg-[#fff8f4]"
+                    : "border-transparent text-[#7a5c49] hover:text-[#BC5F36]"
+                }`}
               >
                 {estado.charAt(0).toUpperCase() + estado.slice(1)}
               </button>
@@ -146,7 +152,7 @@ export default function GestionDocumentosPage() {
           </div>
         </div>
 
-        {/* Tabla */}
+        {/* TABLA */}
         <section className="rounded-2xl border border-[#eadacb] bg-white shadow-sm overflow-x-auto">
           <table className="min-w-max w-full text-sm">
             <thead className="bg-[#fff4e7] text-[#2b1b12]">
@@ -161,6 +167,7 @@ export default function GestionDocumentosPage() {
                 </th>
               </tr>
             </thead>
+
             <tbody>
               {loading ? (
                 <tr>
@@ -188,21 +195,25 @@ export default function GestionDocumentosPage() {
                     <td className="px-4 py-3 text-slate-500 text-xs">
                       {doc.perfiles?.email}
                     </td>
+
                     <td className="px-4 py-3 capitalize flex items-center gap-2">
                       <FileText className="h-4 w-4 text-[#BC5F36]" />
                       {doc.tipo}
                     </td>
+
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${doc.status === "pendiente"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : doc.status === "aprobado"
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          doc.status === "pendiente"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : doc.status === "aprobado"
                             ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
-                          }`}
+                        }`}
                       >
                         {doc.status}
                       </span>
+
                       {doc.status === "rechazado" &&
                         doc.observacion_admin && (
                           <p className="text-xs text-red-700 mt-1">
@@ -210,21 +221,36 @@ export default function GestionDocumentosPage() {
                           </p>
                         )}
                     </td>
+
                     <td className="px-4 py-3 text-slate-500 text-xs">
                       {new Date(doc.created_at).toLocaleDateString()}
                     </td>
+
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
+
+                        {/* ============================= */}
+                        {/* 🔥 BOTÓN "VER" CORREGIDO AQUÍ */}
+                        {/* ============================= */}
                         <button
-                          onClick={() =>
-                            setVisorActivo(
-                              `https://jivnxysdyziojckvslqp.supabase.co/storage/v1/object/public/documentos_adopcion/${doc.url}`
-                            )
-                          }
+                          onClick={async () => {
+                            const esUrlCompleta = doc.url.startsWith("http");
+
+                            if (esUrlCompleta) {
+                              setVisorActivo(doc.url);
+                            } else {
+                              const { data } = await supabase.storage
+                                .from("documentos_adopcion")
+                                .getPublicUrl(doc.url);
+
+                              setVisorActivo(data.publicUrl);
+                            }
+                          }}
                           className="text-[#BC5F36] hover:underline flex items-center text-xs"
                         >
                           <Eye className="h-4 w-4 mr-1" /> Ver
                         </button>
+                        {/* ============================= */}
 
                         {doc.status === "pendiente" && (
                           <>
@@ -236,6 +262,7 @@ export default function GestionDocumentosPage() {
                             >
                               <CheckCircle2 className="h-4 w-4 mr-1" /> Aprobar
                             </Button>
+
                             <Button
                               onClick={() => setRechazoActivo(doc)}
                               variant="ghost"
@@ -255,12 +282,13 @@ export default function GestionDocumentosPage() {
         </section>
       </div>
 
-      {/* === VISOR DOCUMENTOS === */}
+      {/* ========================== VISOR DOCUMENTOS ========================== */}
       {visorActivo &&
         typeof window !== "undefined" &&
         createPortal(
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center overflow-auto">
             <div className="relative bg-[#fffaf4] rounded-2xl shadow-2xl w-full max-w-6xl mx-auto flex flex-col h-[92vh] border border-[#eadacb] animate-fadeIn">
+              
               {/* Botón cerrar */}
               <button
                 onClick={() => setVisorActivo(null)}
@@ -269,55 +297,49 @@ export default function GestionDocumentosPage() {
                 <X className="h-6 w-6" />
               </button>
 
-              {/* Barra superior */}
-              <div className="flex flex-wrap justify-between items-center px-6 py-3 border-b border-[#eadacb] bg-[#fff1e8] rounded-t-2xl">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold text-[#2b1b12]">
-                      Vista del documento
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Revisa el archivo antes de aprobar o rechazar
-                    </p>
-                  </div>
+              {/* Header visor */}
+              <div className="flex justify-between items-center px-6 py-3 border-b border-[#eadacb] bg-[#fff1e8] rounded-t-2xl">
+                <div>
+                  <h2 className="text-lg font-semibold text-[#2b1b12]">
+                    Vista del documento
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Revisa el archivo antes de aprobar o rechazar
+                  </p>
+                </div>
 
-                  {/* Botones movidos a la izquierda */}
-                  <div className="flex gap-2 mt-2 sm:mt-0">
-                    <Button
-                      variant="ghost"
-                      onClick={() => window.open(visorActivo, "_blank")}
-                      className="text-[#BC5F36] hover:bg-[#ffe8db] flex items-center gap-1"
-                    >
-                      <FileText className="h-4 w-4" /> Abrir pestaña
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        const link = document.createElement("a");
-                        link.href = visorActivo;
-                        link.download =
-                          visorActivo.split("/").pop() || "documento.pdf";
-                        link.click();
-                      }}
-                      className="text-[#BC5F36] hover:bg-[#ffe8db] flex items-center gap-1"
-                    >
-                      Descargar
-                    </Button>
-                  </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => window.open(visorActivo!, "_blank")}
+                    className="text-[#BC5F36] hover:bg-[#ffe8db] flex items-center gap-1"
+                  >
+                    <FileText className="h-4 w-4" /> Abrir pestaña
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      const link = document.createElement("a");
+                      link.href = visorActivo!;
+                      link.download =
+                        visorActivo!.split("/").pop() || "documento.pdf";
+                      link.click();
+                    }}
+                    className="text-[#BC5F36] hover:bg-[#ffe8db] flex items-center gap-1"
+                  >
+                    Descargar
+                  </Button>
                 </div>
               </div>
 
-              {/* Contenido */}
+              {/* Contenido visor */}
               <div className="flex-1 bg-[#fdf9f5] flex items-center justify-center p-4 overflow-hidden">
                 <div className="w-full h-full rounded-xl overflow-hidden shadow-inner bg-white border border-[#e7d8c8]">
                   <iframe
-                    src={visorActivo}
+                    src={visorActivo!}
                     className="w-full h-full border-none rounded-xl"
                     title="Documento del usuario"
-                    style={{
-                      backgroundColor: "white",
-                      filter: "drop-shadow(0 0 6px rgba(0,0,0,0.1))",
-                    }}
                   />
                 </div>
               </div>
