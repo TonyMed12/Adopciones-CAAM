@@ -189,81 +189,81 @@ export async function eliminarFotoMascota(id: string, imagen_url: string | null)
 }
 
 /* ======================== ELIMINAR MASCOTA COMPLETA ======================== */
-export async function eliminarMascota(id: string): Promise<{ success: boolean }> {
+export async function eliminarMascota(id: string): Promise<{ success: boolean; reason?: string }> {
     const parsed = DeleteMascotaSchema.parse({ id });
+
     console.log("🚮 Iniciando eliminación de mascota:", parsed.id);
 
-    // 1️⃣ Verificar y eliminar solicitudes de adopción relacionadas
+    /* 1️⃣ VALIDAR ESTADO DE LA MASCOTA */
+    const { data: mascotaEstado, error: estadoError } = await supabase
+        .from("mascotas")
+        .select("estado, disponible_adopcion, imagen_url, qr_code")
+        .eq("id", parsed.id)
+        .maybeSingle();
+
+    if (estadoError) {
+        console.error("⚠️ No se pudo obtener el estado de la mascota:", estadoError.message);
+        return { success: false, reason: "error_estado" };
+    }
+
+    if (!mascotaEstado) {
+        return { success: false, reason: "no_existe" };
+    }
+
+    const { estado, disponible_adopcion, imagen_url, qr_code } = mascotaEstado;
+
+    // 🚫 Mascota no se puede eliminar
+    if (estado !== "disponible" || disponible_adopcion !== true) {
+        return { success: false, reason: "no_eliminable" };
+    }
+
+    /* 2️⃣ ELIMINAR SOLICITUDES ASOCIADAS */
     try {
-        const { data: solicitudes, error: fetchSolicitudesError } = await supabase
+        const { data: solicitudes } = await supabase
             .from("solicitudes_adopcion")
             .select("id")
             .eq("mascota_id", parsed.id);
 
-        if (fetchSolicitudesError) {
-            console.warn("⚠️ No se pudieron obtener solicitudes:", fetchSolicitudesError.message);
-        }
-
-        if (solicitudes && solicitudes.length > 0) {
-            console.log(`📦 Se encontraron ${solicitudes.length} solicitudes. Eliminando...`);
-            const { error: delSolicitudesError } = await supabase
+        if (solicitudes?.length) {
+            await supabase
                 .from("solicitudes_adopcion")
                 .delete()
                 .eq("mascota_id", parsed.id);
-
-            if (delSolicitudesError) {
-                console.error("❌ Error al eliminar solicitudes:", delSolicitudesError);
-                throw new Error(delSolicitudesError.message);
-            } else {
-                console.log("🧹 Solicitudes de adopción eliminadas correctamente.");
-            }
-        } else {
-            console.log("✅ No hay solicitudes asociadas a esta mascota.");
         }
     } catch (err) {
         console.warn("⚠️ Error manejando solicitudes:", err);
-        // Continuar aunque haya fallado el fetch
     }
 
-    // 2️⃣ Obtener datos de la mascota (imagen y QR)
-    const { data: mascotaData, error: fetchError } = await supabase
-        .from("mascotas")
-        .select("imagen_url, qr_code")
-        .eq("id", parsed.id)
-        .single();
+    /* 3️⃣ ELIMINAR IMAGEN */
+    if (imagen_url) {
+        const fileName = imagen_url.split("/").pop()?.split("?")[0] ?? null;
 
-    if (fetchError) {
-        console.warn("⚠️ No se pudo obtener la mascota antes de eliminar:", fetchError.message);
-    }
-
-    // 3️⃣ Eliminar imagen si existe
-    if (mascotaData?.imagen_url) {
-        const fileName = mascotaData.imagen_url.split("/").pop()?.split("?")[0];
         if (fileName) {
-            const { error: delImgError } = await supabase.storage.from("mascotas-imagenes").remove([fileName]);
-            if (delImgError) console.warn("⚠️ No se pudo eliminar imagen:", delImgError.message);
-            else console.log("🧹 Imagen eliminada:", fileName);
+            await supabase.storage.from("mascotas-imagenes").remove([fileName]);
         }
     }
 
-    // 4️⃣ Eliminar QR si existe
-    if (mascotaData?.qr_code) {
-        const { error: delQrError } = await supabase.storage.from("mascotas-qr").remove([mascotaData.qr_code]);
-        if (delQrError) console.warn("⚠️ No se pudo eliminar QR:", delQrError.message);
-        else console.log("🧹 QR eliminado:", mascotaData.qr_code);
+    /* 4️⃣ ELIMINAR QR */
+    if (qr_code) {
+        await supabase.storage.from("mascotas-qr").remove([qr_code]);
     }
 
-    // 5️⃣ Finalmente eliminar mascota
-    const { error: deleteMascotaError } = await supabase.from("mascotas").delete().eq("id", parsed.id);
+    /* 5️⃣ ELIMINAR MASCOTA */
+    const { error: deleteMascotaError } = await supabase
+        .from("mascotas")
+        .delete()
+        .eq("id", parsed.id);
 
     if (deleteMascotaError) {
-        console.error("❌ Error al eliminar mascota:", deleteMascotaError);
-        throw new Error(deleteMascotaError.message);
+        console.error("❌ Error al eliminar mascota:", deleteMascotaError.message);
+        return { success: false, reason: "error_eliminar" };
     }
 
-    console.log(`✅ Mascota ${parsed.id} eliminada correctamente`);
     return { success: true };
 }
+
+
+
 
 // OBTENER POR ID
 export async function obtenerMascotaPorId(id: string) {
