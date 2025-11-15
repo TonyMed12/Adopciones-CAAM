@@ -1,18 +1,17 @@
 "use client";
 
 import { UserCircle } from "lucide-react";
-import type { PerfilConDocumentos } from "@/usuarios/usuarios";
+import type { PerfilConDireccion } from "@/usuarios/usuarios";
 
 export default function UserTable({
   usuarios,
   onSelect,
 }: {
-  usuarios: PerfilConDocumentos[];
-  onSelect: (u: PerfilConDocumentos) => void;
+  usuarios: PerfilConDireccion[];
+  onSelect: (u: PerfilConDireccion) => void;
 }) {
   return (
     <div className="rounded-2xl border border-[#EADACB] bg-white overflow-hidden">
-
       {/* ===== DESKTOP HEADER ===== */}
       <div className="hidden md:grid grid-cols-5 bg-[#FFF4E7] border-b border-[#EADACB] text-[11px] font-bold uppercase tracking-wide text-[#2B1B12] px-4 py-2">
         <div>Nombre</div>
@@ -34,11 +33,8 @@ export default function UserTable({
               hover:bg-[#FFF2E5]
             `}
           >
-
             {/* ===== MOBILE CARD ===== */}
             <div className="md:hidden p-4 flex flex-col gap-2">
-
-              {/* Avatar + Nombre */}
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full border border-[#EADACB] bg-[#FFF7F0] grid place-items-center text-[#BC5F36] shadow-inner">
                   <UserCircle className="h-5 w-5" />
@@ -47,11 +43,12 @@ export default function UserTable({
                   <p className="font-semibold text-[#2B1B12] leading-tight">
                     {u.nombres} {u.apellido_paterno} {u.apellido_materno}
                   </p>
-                  <p className="text-[11px] text-[#8B6F5D]">ID {u.id.slice(0, 6)}</p>
+                  <p className="text-[11px] text-[#8B6F5D]">
+                    ID {u.id.slice(0, 6)}
+                  </p>
                 </div>
               </div>
 
-              {/* CAMPOS CON LABELS */}
               <div className="text-xs text-[#8B6F5D] mt-1">Correo:</div>
               <div className="text-sm text-[#2B1B12] break-words">{u.email}</div>
 
@@ -65,7 +62,9 @@ export default function UserTable({
               <div className="flex justify-start">
                 <span
                   className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                    u.activo ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
+                    u.activo
+                      ? "bg-green-50 text-green-700"
+                      : "bg-red-50 text-red-600"
                   }`}
                 >
                   {u.activo ? "Activo" : "Inactivo"}
@@ -75,8 +74,6 @@ export default function UserTable({
 
             {/* ===== DESKTOP ROW ===== */}
             <div className="hidden md:grid grid-cols-5 items-center px-4 py-2">
-
-              {/* Nombre */}
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-full border border-[#EADACB] bg-[#FFF7F0] grid place-items-center text-[#BC5F36] shadow-inner">
                   <UserCircle className="h-4 w-4" />
@@ -91,28 +88,24 @@ export default function UserTable({
                 </div>
               </div>
 
-              {/* Correo */}
               <div className="text-[#2B1B12] text-sm truncate">{u.email}</div>
 
-              {/* Teléfono */}
               <div className="text-[#2B1B12] text-sm">{u.telefono || "—"}</div>
 
-              {/* Ocupación */}
               <div className="text-[#2B1B12] text-sm capitalize">{u.ocupacion}</div>
 
-              {/* Estado */}
               <div>
                 <span
-                  className={`
-                    text-xs font-semibold px-2.5 py-1 rounded-full
-                    ${u.activo ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}
-                  `}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    u.activo
+                      ? "bg-green-50 text-green-700"
+                      : "bg-red-50 text-red-600"
+                  }`}
                 >
                   {u.activo ? "Activo" : "Inactivo"}
                 </span>
               </div>
             </div>
-
           </button>
         ))}
       </div>

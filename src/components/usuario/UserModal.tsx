@@ -6,7 +6,7 @@ import {
     MapPin,
     UserCircle,
     PawPrint,
-    Trash2,
+    BriefcaseBusiness,
     X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ export default function UserModal({
     adopciones,
     solicitudesActivas,
     onClose,
+    
 }: {
     open: boolean;
     user: any;
@@ -24,7 +25,9 @@ export default function UserModal({
     solicitudesActivas: any[];
     onClose: () => void;
     onDeleteClick: () => void;
+    
 }) {
+    
     return (
         <AnimatePresence>
             {open && user && (
@@ -101,7 +104,7 @@ export default function UserModal({
 
                                     {user.ocupacion && (
                                         <div className="flex items-center gap-3">
-                                            <MapPin className="h-4 w-4 text-[#BC5F36]" />
+                                            <BriefcaseBusiness className="h-4 w-4 text-[#BC5F36]" />
                                             <span>{user.ocupacion}</span>
                                         </div>
                                     )}
@@ -112,16 +115,15 @@ export default function UserModal({
                                         {user.direccion ? (
                                             <div className="leading-tight">
                                                 <p>
-                                                    {user.direccion.calle}{" "}
-                                                    {user.direccion.numero_exterior},{" "}
-                                                    {user.direccion.colonia}
+                                                    {user.direccion.calle || "—"}{" "}
+                                                    {user.direccion.numero_exterior || ""}{" "}
+                                                    {user.direccion.colonia || ""}
                                                 </p>
                                                 <p>
-                                                    {user.direccion.municipio},{" "}
-                                                    {user.direccion.estado}, CP{" "}
-                                                    {user.direccion.codigo_postal}
+                                                    {user.direccion.municipio || "—"}, {user.direccion.estado || "—"},
+                                                    CP {user.direccion.codigo_postal || "—"}
                                                 </p>
-                                                <p>{user.direccion.pais}</p>
+                                                <p>{user.direccion.pais || "—"}</p>
                                             </div>
                                         ) : (
                                             <p className="text-[#8B6F5D]">

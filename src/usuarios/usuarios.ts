@@ -1,13 +1,21 @@
-
-export interface Documento {
+// ========================= DIRECCIÓN =========================
+export interface Direccion {
   id: string;
-  perfil_id?: string | null;
-  tipo: string;
-  url: string;
-  status?: string | null;
-  created_at?: string | null;
+  usuario_id: string;
+  calle: string;
+  numero_exterior?: string | null;
+  numero_interior?: string | null;
+  colonia: string;
+  codigo_postal: string;
+  municipio: string;
+  estado: string;
+  pais?: string | null;
+  tipo_vivienda?: string | null;
+  es_propia?: boolean | null;
+  direccion_principal?: boolean | null;
 }
 
+// ========================= PERFIL =========================
 export interface Perfil {
   id: string;
   nombres: string;
@@ -28,6 +36,8 @@ export interface Perfil {
   updated_at?: string | null;
 }
 
-export interface PerfilConDocumentos extends Perfil {
-  documentos?: Documento[] | null;
+// ========================= PERFIL + DIRECCIÓN =========================
+// EL TIPO QUE AHORA SÍ USA EL ADMIN
+export interface PerfilConDireccion extends Perfil {
+  direccion?: Direccion | null;
 }
