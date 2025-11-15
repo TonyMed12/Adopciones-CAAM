@@ -11,6 +11,8 @@ import Image from "next/image";
 import dayjs from "dayjs";
 import CertificadoModal from "@/components/certificados/CertificadoModal";
 import { useState } from "react";
+import PageHead from "@/components/layout/PageHead";
+import { Page } from "@/stories/Page";
 
 const fetcher = async () => {
   try {
@@ -78,9 +80,10 @@ export default function MisMascotasPage() {
 
   return (
     <div className="max-w-7xl mx-auto py-12 px-6">
-      <h1 className="text-3xl font-bold mb-10 text-center text-[#8b4513] tracking-tight">
-        Mis Mascotas Adoptadas
-      </h1>
+      <PageHead
+        title="Mis Mascotas Adoptadas"
+        subtitle="Consulta el seguimiento de las mascotas que has adoptado."
+      />
 
       <div className="grid gap-6 lg:grid-cols-1">
         {mascotasUnicas.map((m: any) => {
