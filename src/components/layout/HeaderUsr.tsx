@@ -92,18 +92,38 @@ export default function UserHeader() {
 
         {/* NAV DESKTOP */}
         <ul className="hidden lg:flex items-center gap-8 text-lg font-medium text-[#FFF8F0]">
-          <NavItem href="/dashboards/usuario" label="Inicio" icon={LayoutDashboard} active={isActive("/dashboards/usuario")} />
-          <NavItem href="/dashboards/usuario/mascotas" label="Adoptables" icon={Dog} active={isActive("/dashboards/usuario/mascotas")} />
+          <NavItem
+            href="/dashboards/usuario"
+            label="Inicio"
+            icon={LayoutDashboard}
+            active={isActive("/dashboards/usuario")}
+          />
+          <NavItem
+            href="/dashboards/usuario/mascotas"
+            label="Adoptables"
+            icon={Dog}
+            active={isActive("/dashboards/usuario/mascotas")}
+          />
 
           {/* Adopción */}
           <Dropdown
             label="Adopción"
             icon={HeartIcon}
             open={openDropdown === "adopcion"}
-            onOpen={() => setOpenDropdown(openDropdown === "adopcion" ? null : "adopcion")}
+            onOpen={() =>
+              setOpenDropdown(openDropdown === "adopcion" ? null : "adopcion")
+            }
             items={[
-              { href: "/dashboards/usuario/adopcion", label: "Proceso de adopción", icon: HeartIcon, },
-              { href: "/dashboards/usuario/citas", label: "Mis citas de adopción", icon: CalendarCheck },
+              {
+                href: "/dashboards/usuario/adopcion",
+                label: "Proceso de adopción",
+                icon: HeartIcon,
+              },
+              {
+                href: "/dashboards/usuario/citas",
+                label: "Mis citas de adopción",
+                icon: CalendarCheck,
+              },
             ]}
           />
 
@@ -112,10 +132,20 @@ export default function UserHeader() {
             label="Mis Mascotas"
             icon={PawPrint}
             open={openDropdown === "mascotas"}
-            onOpen={() => setOpenDropdown(openDropdown === "mascotas" ? null : "mascotas")}
+            onOpen={() =>
+              setOpenDropdown(openDropdown === "mascotas" ? null : "mascotas")
+            }
             items={[
-              { href: "/dashboards/usuario/mis-mascotas", label: "Ver mis mascotas", icon: PawPrint },
-              { href: "/dashboards/usuario/citas-veterinarias", label: "Citas veterinarias", icon: Stethoscope },
+              {
+                href: "/dashboards/usuario/mis-mascotas",
+                label: "Ver mis mascotas",
+                icon: PawPrint,
+              },
+              {
+                href: "/dashboards/usuario/citas-veterinarias",
+                label: "Citas veterinarias",
+                icon: Stethoscope,
+              },
             ]}
           />
 
@@ -124,10 +154,16 @@ export default function UserHeader() {
             label={userName}
             icon={User}
             open={openDropdown === "usuario"}
-            onOpen={() => setOpenDropdown(openDropdown === "usuario" ? null : "usuario")}
+            onOpen={() =>
+              setOpenDropdown(openDropdown === "usuario" ? null : "usuario")
+            }
             items={[
               { href: "/dashboards/perfil", label: "Mi perfil", icon: User },
-              { onClick: handleLogout, label: "Cerrar sesión", icon: LogOutIcon },
+              {
+                onClick: handleLogout,
+                label: "Cerrar sesión",
+                icon: LogOutIcon,
+              },
             ]}
             align="right"
           />
@@ -157,8 +193,16 @@ export default function UserHeader() {
               label="Adopción"
               icon={HeartIcon}
               items={[
-                { href: "/dashboards/usuario/adopcion", label: "Proceso de adopción", icon: HeartIcon, },
-                { href: "/dashboards/usuario/citas", label: "Mis citas de adopción", icon: CalendarCheck },
+                {
+                  href: "/dashboards/usuario/adopcion",
+                  label: "Proceso de adopción",
+                  icon: HeartIcon,
+                },
+                {
+                  href: "/dashboards/usuario/citas",
+                  label: "Mis citas de adopción",
+                  icon: CalendarCheck,
+                },
               ]}
               router={router}
               setOpenMobile={setOpenMobile}
@@ -168,8 +212,16 @@ export default function UserHeader() {
               label="Mis Mascotas"
               icon={PawPrint}
               items={[
-                { href: "/dashboards/usuario/mis-mascotas", label: "Ver mis mascotas", icon: PawPrint },
-                { href: "/dashboards/usuario/citas-veterinarias", label: "Citas veterinarias", icon: Stethoscope },
+                {
+                  href: "/dashboards/usuario/mis-mascotas",
+                  label: "Ver mis mascotas",
+                  icon: PawPrint,
+                },
+                {
+                  href: "/dashboards/usuario/citas-veterinarias",
+                  label: "Citas veterinarias",
+                  icon: Stethoscope,
+                },
               ]}
               router={router}
               setOpenMobile={setOpenMobile}
@@ -205,10 +257,11 @@ function NavItem({ href, label, icon: Icon, active }: any) {
     <li>
       <Link
         href={href}
-        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${active
-          ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
-          : "hover:text-[#FDE68A]"
-          }`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${
+          active
+            ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
+            : "hover:text-[#FDE68A]"
+        }`}
       >
         <Icon size={18} />
         {label}
@@ -217,22 +270,35 @@ function NavItem({ href, label, icon: Icon, active }: any) {
   );
 }
 
-function Dropdown({ label, icon: Icon, open, onOpen, items, align = "left" }: any) {
+function Dropdown({
+  label,
+  icon: Icon,
+  open,
+  onOpen,
+  items,
+  align = "left",
+}: any) {
   return (
     <li className="relative group">
       <button
         onClick={onOpen}
-        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${open ? "bg-[#FFF1E6] text-[#8B4513]" : "hover:text-[#FDE68A]"
-          }`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${
+          open ? "bg-[#FFF1E6] text-[#8B4513]" : "hover:text-[#FDE68A]"
+        }`}
       >
         <Icon size={18} />
         <span>{label}</span>
-        <ChevronDown size={16} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (
         <div
-          className={`absolute ${align === "right" ? "right-0" : "left-0"} mt-2 w-56 bg-[#FFF1E6] rounded-md shadow-lg py-2 text-[#8B4513] animate-fadeIn border border-[#EADACB]`}
+          className={`absolute ${
+            align === "right" ? "right-0" : "left-0"
+          } mt-2 w-56 bg-[#FFF1E6] rounded-md shadow-lg py-2 text-[#8B4513] animate-fadeIn border border-[#EADACB]`}
         >
           {items.map((item: any, i: number) =>
             item.href ? (
@@ -281,8 +347,13 @@ function MobileLink({ href, label, icon: Icon, onClick, router }: any) {
   );
 }
 
-
-function MobileDropdown({ label, icon: Icon, items, router, setOpenMobile }: any) {
+function MobileDropdown({
+  label,
+  icon: Icon,
+  items,
+  router,
+  setOpenMobile,
+}: any) {
   const [open, setOpen] = useState(false);
   return (
     <li className="w-full">
@@ -292,7 +363,10 @@ function MobileDropdown({ label, icon: Icon, items, router, setOpenMobile }: any
       >
         <Icon size={18} />
         <span>{label}</span>
-        <ChevronDown size={16} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {open && (
