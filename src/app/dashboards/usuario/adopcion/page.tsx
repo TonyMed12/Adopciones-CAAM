@@ -61,6 +61,22 @@ export default function ProcesoAdopcionPage() {
     return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
   }
 
+  function formateaFechaBonita(isoDate: string) {
+    if (!isoDate) return "";
+
+    const fecha = new Date(isoDate);
+
+    const formatter = new Intl.DateTimeFormat("es-MX", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    // Ejemplo: "lunes, 5 de febrero de 2025"
+    return formatter.format(fecha);
+  }
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -519,48 +535,118 @@ export default function ProcesoAdopcionPage() {
               </div>
             </div>
 
-            {/* 🔹 Stepper dinámico */}
-            <StepperAdopcion
-              activeStep={citaActiva ? 3 : solicitudActiva ? 2 : 1}
-              onStepClick={(step) => {
-                if (step === 1) {
-                  router.push("/dashboards/usuario/mascotas");
+            <div className="relative z-10">
+              <StepperAdopcion
+                activeStep={
+                  adopcionEstado === "aprobada" ||
+                  adopcionEstado === "rechazada"
+                    ? 5 // ✅ Paso final: adopción aprobada
+                    : adopcionEstado === "pendiente"
+                    ? 4 // ✅ Paso de evaluación / revisión del formulario
+                    : citaActiva
+                    ? 3 // Cita realizada / aprobada
+                    : solicitudActiva
+                    ? 2 // Solicitud creada
+                    : 1 // Documentos
                 }
-
-                if (step === 2) {
-                  router.push("/dashboards/usuario/citas");
-                }
-
-                if (step === 3) {
-                  if (citaActiva?.solicitud_id) {
-                    router.push(
-                      `/dashboards/usuario/form-adopcion/${citaActiva.solicitud_id}`
-                    );
-                  } else {
-                    router.push("/dashboards/usuario/adopcion");
+                solicitudId={citaActiva?.solicitud_id ?? null}
+                blockedSteps={{
+                  3: !(
+                    citaActiva &&
+                    citaActiva.estado === "completada" &&
+                    citaActiva.asistencia === "asistio" &&
+                    citaActiva.interaccion === "buena_aprobada"
+                  ),
+                  4: true,
+                  5: true,
+                }}
+                onStepClick={(step) => {
+                  if (step === 1) {
+                    router.push("/dashboards/usuario/mascotas");
+                    return;
                   }
-                }
 
-                // Paso 4 y 5 por ahora pueden solo quedarse informativos,
-                // o más adelante los mandas a un panel de "seguimiento" / "historial".
-              }}
-            />
+                  if (step === 2) {
+                    router.push("/dashboards/usuario/citas");
+                    return;
+                  }
+
+                  if (step === 3) {
+                    if (
+                      citaActiva &&
+                      citaActiva.estado === "completada" &&
+                      citaActiva.asistencia === "asistio" &&
+                      citaActiva.interaccion === "buena_aprobada"
+                    ) {
+                      router.push(
+                        `/dashboards/usuario/form-adopcion/${citaActiva.solicitud_id}`
+                      );
+                    }
+                    return;
+                  }
+
+                  if (step === 4) {
+                    router.push("/dashboards/usuario/citas");
+                    return;
+                  }
+
+                  // Por ahora los pasos 4 y 5 son solo informativos,
+                  // no navegan a ningún lado.
+                }}
+              />
+            </div>
 
             {/* 🔸 Bloque según estado */}
             {citaActiva ? (
               /* 🔐 NUEVA REGLA — SI YA EXISTE FORMULARIO DE ADOPCIÓN */
               adopcionEstado === "pendiente" ? (
                 /* 🟡 Caso: Formulario ya enviado, en revisión */
-                <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-5 mb-4 mt-5">
-                  <h3 className="text-sm font-extrabold text-yellow-800 flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    Tu formulario está en revisión
-                  </h3>
-                  <p className="mt-2 text-sm text-yellow-700">
-                    Ya completaste el formulario de adopción. El CAAM está
-                    revisando tu información. Por favor espera la confirmación
-                    final.
-                  </p>
+                <div
+                  className="
+  mt-6 mb-6
+  rounded-2xl 
+  border border-[#f2d4b7] 
+  bg-gradient-to-br from-[#fff7f1] via-white to-[#ffe9d6]
+  p-6 sm:p-8 
+  shadow-[0_4px_18px_rgba(188,95,54,0.18)]
+  animate-fade-in
+"
+                >
+                  {/* Icono */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="
+      h-12 w-12 
+      rounded-full 
+      bg-[#BC5F36] 
+      text-white 
+      flex items-center justify-center 
+      shadow-md
+    "
+                    >
+                      <Info className="h-6 w-6" />
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-extrabold text-[#8b4513]">
+                        Tu formulario está en revisión
+                      </h3>
+
+                      <p className="text-sm sm:text-base text-[#7a5c49] mt-1">
+                        Ya completaste el formulario de adopción. El equipo del
+                        CAAM está revisando tu información.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mensaje adicional */}
+                  <div className="mt-5 text-sm text-[#7a5c49] leading-relaxed">
+                    Por favor espera la confirmación final. Te avisaremos cuando
+                    tu proceso continúe al siguiente paso.
+                  </div>
+
+                  {/* Línea decorativa */}
+                  <div className="mt-5 h-1 w-full bg-gradient-to-r from-[#BC5F36] to-[#e4a07e] rounded-full opacity-60"></div>
                 </div>
               ) : adopcionEstado === "aprobada" ? (
                 /* 💚 Caso: Adopción aprobada */
@@ -575,69 +661,245 @@ export default function ProcesoAdopcionPage() {
                     pasos.
                   </p>
                 </div>
+              ) : adopcionEstado === "rechazada" ? (
+                /* 🔴 Caso: Adopción rechazada */
+                <div className="rounded-xl border border-red-300 bg-red-50 p-5 mb-4 mt-5">
+                  <h3 className="text-sm font-extrabold text-red-800 flex items-center gap-2">
+                    <XCircle className="h-4 w-4" />
+                    Adopción no aprobada
+                  </h3>
+                  <p className="mt-2 text-sm text-red-700">
+                    En esta ocasión tu solicitud de adopción no fue aprobada.
+                    Puedes volver a intentar más adelante o iniciar un nuevo
+                    proceso con otra mascota cuando lo desees.
+                  </p>
+                </div>
               ) : citaActiva.estado === "programada" ||
                 citaActiva.estado === "pendiente" ||
                 citaActiva.estado === "confirmada" ? (
                 /* 🟠 Caso: Cita programada — NO mostrar formulario */
-                <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 mb-4 mt-5">
-                  <h3 className="text-sm font-extrabold text-blue-800 flex items-center gap-2">
-                    <CalendarCheck className="h-4 w-4" />
-                    Ya tienes una cita programada
-                  </h3>
-                  <p className="mt-2 text-sm text-blue-700">
-                    Estamos esperando la evaluación de la visita. Por favor
-                    espera a que el CAAM valore tu cita antes de continuar.
-                  </p>
+                <div
+                  className="
+      mt-6 mb-4
+      rounded-2xl border border-[#c7ddff]
+      bg-gradient-to-br from-[#eef4ff] via-[#e3f0ff] to-[#d6e7ff]
+      p-6 shadow-md
+    "
+                >
+                  <div className="flex flex-col md:flex-row gap-5 items-start">
+                    {/* Columna izquierda: mensaje principal */}
+                    <div className="flex-1">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold text-[#1d4ed8] border border-[#c7ddff]">
+                        <CalendarCheck className="h-3 w-3" />
+                        Cita en proceso de evaluación
+                      </div>
 
-                  <div className="mt-3 text-sm text-blue-700">
-                    <p>
-                      <strong>Mascota:</strong> {citaActiva.mascota?.nombre}
-                    </p>
-                    <p>
-                      <strong>Fecha:</strong> {citaActiva.fecha_cita}
-                    </p>
-                    <p>
-                      <strong>Hora:</strong> {citaActiva.hora_cita}
-                    </p>
+                      <h3 className="mt-3 text-base md:text-lg font-extrabold text-[#1e3a8a] flex items-center gap-2">
+                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#1d4ed8]/10">
+                          <CalendarCheck className="h-4 w-4 text-[#1d4ed8]" />
+                        </span>
+                        ¡Ya tienes una cita programada!
+                      </h3>
+
+                      <p className="mt-2 text-sm text-[#1e40af] leading-relaxed">
+                        Estamos esperando la evaluación de tu visita. Por favor
+                        espera a que el CAAM valore tu cita antes de continuar
+                        con el siguiente paso del proceso.
+                      </p>
+
+                      {/* Datos de la cita */}
+                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-xl bg-white/70 border border-[#d4e3ff] px-4 py-3 text-xs text-[#1e3a8a]">
+                          <p className="font-semibold text-[11px] uppercase tracking-wide text-[#2563eb]/90">
+                            Mascota
+                          </p>
+                          <p className="mt-1 text-sm font-bold">
+                            {citaActiva.mascota?.nombre || "Sin nombre"}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl bg-white/70 border border-[#d4e3ff] px-4 py-3 text-xs text-[#1e3a8a]">
+                          <p className="font-semibold text-[11px] uppercase tracking-wide text-[#2563eb]/90">
+                            Fecha
+                          </p>
+                          <p className="mt-1 text-sm font-bold">
+                            {formateaFechaBonita(citaActiva.fecha_cita)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl bg-white/70 border border-[#d4e3ff] px-4 py-3 text-xs text-[#1e3a8a]">
+                          <p className="font-semibold text-[11px] uppercase tracking-wide text-[#2563eb]/90">
+                            Hora
+                          </p>
+                          <p className="mt-1 text-sm font-bold">
+                            {citaActiva.hora_cita}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Columna derecha: mini timeline / siguiente paso */}
+                    <div className="w-full md:w-56 rounded-2xl bg-white/80 border border-[#d4e3ff] px-4 py-4 text-xs text-[#1e3a8a] shadow-sm">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2563eb] mb-2 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        ¿Qué sigue?
+                      </p>
+
+                      <ol className="space-y-2">
+                        <li className="flex gap-2">
+                          <span className="mt-[3px] h-1.5 w-1.5 rounded-full bg-[#2563eb]" />
+                          <p>
+                            Acude a tu cita en el{" "}
+                            <span className="font-semibold">CAAM</span> en la
+                            fecha y hora indicadas.
+                          </p>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="mt-[3px] h-1.5 w-1.5 rounded-full bg-[#2563eb]" />
+                          <p>
+                            El equipo del CAAM registrará la interacción con la
+                            mascota y evaluará la visita.
+                          </p>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="mt-[3px] h-1.5 w-1.5 rounded-full bg-[#2563eb]" />
+                          <p>
+                            Si la visita es aprobada, el paso{" "}
+                            <span className="font-semibold">“Formulario”</span>{" "}
+                            del proceso se desbloqueará automáticamente.
+                          </p>
+                        </li>
+                      </ol>
+                    </div>
                   </div>
 
-                  <p className="mt-3 text-xs text-blue-600 italic">
-                    Si la visita es aprobada, podrás continuar con el formulario
-                    de adopción.
-                  </p>
+                  {/* Pie: nota + botón ver cita */}
+                  <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                    <p className="text-[11px] text-[#1e3a8a] italic flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      Mientras tanto, puedes revisar tus documentos o tu perfil,
+                      pero no podrás avanzar al siguiente paso hasta que se
+                      registre la evaluación de la cita.
+                    </p>
+
+                    <Button
+                      onClick={() => router.push("/dashboards/usuario/citas")}
+                      className="
+          self-stretch sm:self-auto
+          bg-white/90 text-[#1d4ed8]
+          border border-[#bfdbfe]
+          hover:bg-[#eff6ff] hover:border-[#2563eb]
+          text-xs sm:text-sm font-semibold
+          px-4 py-2 rounded-xl shadow-sm
+          cursor-pointer transition-all duration-200
+        "
+                    >
+                      Ver detalles de mi cita
+                    </Button>
+                  </div>
                 </div>
               ) : citaActiva.estado === "completada" &&
                 citaActiva.asistencia === "asistio" &&
                 citaActiva.interaccion === "buena_aprobada" ? (
                 /* 🟢 Cita aprobada — Mostrar formulario (solo si NO existe adopción previa) */
-                <div className="rounded-xl border border-green-200 bg-green-50 p-5 mb-4 mt-5">
-                  <h3 className="text-sm font-extrabold text-green-800 flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4" />
-                    ¡Tu cita fue aprobada!
-                  </h3>
-                  <p className="mt-2 text-sm text-green-700">
-                    ¡Felicidades! El CAAM aprobó la interacción con la mascota.
-                    Ahora completa el formulario final para continuar con la
-                    adopción.
-                  </p>
+                <div
+                  className="
+  mt-6 mb-6
+  rounded-2xl 
+  border border-blue-200 
+  bg-gradient-to-br from-blue-50 via-white to-blue-100
+  p-6 sm:p-8 
+  shadow-[0_4px_15px_rgba(0,0,0,0.07)]
+  animate-fade-in
+"
+                >
+                  {/* Encabezado */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="
+      h-12 w-12 
+      rounded-full 
+      bg-blue-600 
+      text-white 
+      flex items-center justify-center 
+      shadow-md
+    "
+                    >
+                      <CheckCircle2 className="h-6 w-6" />
+                    </div>
 
-                  <div className="mt-3 text-sm text-green-700">
-                    <p>
-                      <strong>Mascota:</strong> {citaActiva.mascota?.nombre}
-                    </p>
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-extrabold text-blue-900">
+                        ¡Tu cita fue aprobada! 🎉
+                      </h3>
+                      <p className="text-sm sm:text-base text-blue-700 mt-1">
+                        El CAAM confirmó que la interacción con tu mascota fue
+                        positiva.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="mt-4 text-right">
-                    <Button
-                      onClick={() =>
-                        router.push(
-                          `/dashboards/usuario/form-adopcion/${citaActiva.solicitud_id}`
-                        )
-                      }
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                  {/* Mascota + Texto */}
+                  <div className="mt-6 grid sm:grid-cols-[140px_1fr] gap-6 items-center">
+                    {/* Foto mascota */}
+                    <div
+                      className="
+      w-full 
+      rounded-2xl 
+      overflow-hidden 
+      border border-blue-200 
+      shadow-sm bg-white
+    "
                     >
-                      <FileText className="h-4 w-4 mr-1" /> Llenar formulario de
-                      adopción
+                      <img
+                        src={
+                          citaActiva.mascota?.imagen_url || "/placeholder.jpg"
+                        }
+                        alt={citaActiva.mascota?.nombre}
+                        className="w-full h-36 object-cover"
+                      />
+                    </div>
+
+                    {/* Texto */}
+                    <div className="space-y-2">
+                      <p className="text-sm sm:text-base text-blue-900 leading-relaxed">
+                        ¡Felicidades! La convivencia fue{" "}
+                        <strong className="text-blue-700">aprobada</strong>, lo
+                        que significa que avanzaste al último paso del proceso
+                        de adopción.
+                      </p>
+
+                      <div className="text-sm text-blue-800">
+                        <p>
+                          <strong>Mascota:</strong> {citaActiva.mascota?.nombre}
+                        </p>
+                      </div>
+
+                      <p className="text-sm text-blue-700 italic mt-2">
+                        “Un último paso para darle un hogar lleno de amor.”
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Botón */}
+                  <div className="mt-6 flex justify-end">
+                    <Button
+                      onClick={() => router.push(`/dashboards/usuario/citas`)}
+                      className="
+    bg-blue-600 
+    text-white 
+    px-6 py-3 
+    rounded-xl 
+    shadow-md 
+    transition-all 
+    flex items-center gap-2
+    cursor-pointer
+    hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-300
+    active:scale-95
+  "
+                    >
+                      <FileText className="h-5 w-5" />
+                      Llenar formulario de adopción
                     </Button>
                   </div>
                 </div>
@@ -667,7 +929,6 @@ export default function ProcesoAdopcionPage() {
       items-start
     "
                   >
-
                     <div className="hidden lg:block lg:col-span-2 mb-0">
                       <button
                         onClick={() => router.push("/dashboards/usuario/citas")}
@@ -691,8 +952,6 @@ export default function ProcesoAdopcionPage() {
                     </div>
 
                     <div className="flex flex-col gap-4">
-
-
                       <div
                         className="
           rounded-xl 

@@ -27,7 +27,7 @@ const PASOS_ADOPCION = [
     desc: "Llena tus datos.",
     detalle:
       "Completa el formulario para continuar con la evaluación del CAAM.",
-    ruta: "formulario",
+    ruta: "/dashboards/usuario/citas",
   },
   {
     id: 4,
@@ -49,108 +49,127 @@ const PASOS_ADOPCION = [
 export default function StepperAdopcion({
   activeStep,
   solicitudId,
+  blockedSteps,
+  onStepClick,
 }: {
   activeStep: number;
   solicitudId?: string | null;
+  blockedSteps?: Record<number, boolean>;
+  onStepClick?: (step: number) => void;
 }) {
   const router = useRouter();
   const [hovered, setHovered] = useState<number | null>(null);
 
+  const totalSteps = PASOS_ADOPCION.length;
+  const progress =
+    totalSteps <= 1 ? 0 : ((activeStep - 1) / (totalSteps - 1)) * 100;
+
   return (
     <div className="relative mt-8">
-      {/* 📌 Línea gris del timeline */}
+      {/* Línea base */}
       <div className="absolute top-1/2 left-0 right-0 h-[4px] bg-[#eadacb] -translate-y-1/2 z-0 rounded-full" />
 
-      {/* 📌 Línea azul animada del progreso */}
+      {/* Línea de progreso */}
       <div
         className="
-          absolute top-1/2 left-0 h-[4px] bg-blue-600 -translate-y-1/2 z-0 rounded-full
+          absolute top-1/2 left-0 h-[4px] bg-[#2563eb] -translate-y-1/2 z-0 rounded-full
           transition-all duration-700 ease-out
         "
-        style={{
-          width: `${((activeStep - 1) / (PASOS_ADOPCION.length - 1)) * 100}%`,
-        }}
+        style={{ width: `${progress}%` }}
       />
 
-      {/* 📌 Grid de pasos */}
+      {/* Pasos */}
       <div className="relative grid gap-5 md:grid-cols-5 z-10">
         {PASOS_ADOPCION.map((paso) => {
           const completado = paso.id < activeStep;
           const activo = paso.id === activeStep;
-          const futuro = paso.id > activeStep;
 
-          const clickHabilitado = activo && paso.ruta !== null;
+          const bloqueado =
+            paso.id !== activeStep || blockedSteps?.[paso.id] === true;
+
+          const handleClick = () => {
+            if (bloqueado) return;
+
+            if (onStepClick) {
+              onStepClick(paso.id);
+              return;
+            }
+
+            if (!paso.ruta) return;
+
+            if (paso.ruta === "formulario" && solicitudId) {
+              router.push(`/dashboards/usuario/form-adopcion/${solicitudId}`);
+              return;
+            }
+
+            if (paso.ruta && paso.ruta !== "formulario") {
+              router.push(paso.ruta);
+            }
+          };
 
           return (
             <div
               key={paso.id}
               onMouseEnter={() => setHovered(paso.id)}
               onMouseLeave={() => setHovered(null)}
-              onClick={() => {
-                if (!clickHabilitado) return;
-
-                if (paso.ruta === "formulario" && solicitudId) {
-                  router.push(
-                    `/dashboards/usuario/form-adopcion/${solicitudId}`
-                  );
-                  return;
-                }
-
-                if (paso.ruta) router.push(paso.ruta);
-              }}
+              onClick={handleClick}
               className={`
-                relative rounded-2xl border p-4 shadow-sm text-center transition-all duration-300
+                relative rounded-2xl border p-4 shadow-sm text-center 
+                transition-all duration-300
                 ${
                   completado
-                    ? "border-blue-600 bg-blue-100 text-blue-900"
+                    ? "border-[#2563eb] bg-[#e0edff] text-[#1d3a8a]"
                     : activo
                     ? "border-[#BC5F36] bg-[#fff4e7] text-[#2b1b12] scale-[1.02]"
+                    : bloqueado
+                    ? "border-[#e5d5c5] bg-[#f9f3ec] text-[#b5a090] opacity-80"
                     : "border-[#eadacb] bg-white text-[#7a5c49]"
                 }
                 ${
-                  clickHabilitado
-                    ? "cursor-pointer hover:shadow-md"
-                    : "cursor-default"
+                  bloqueado
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer hover:shadow-md hover:-translate-y-[1px]"
                 }
               `}
             >
-              {/* ICONO / NÚMERO */}
               <div className="flex justify-center mb-2">
                 <span
                   className={`
                     grid h-9 w-9 place-items-center rounded-full border text-sm font-bold
                     ${
                       completado
-                        ? "border-blue-600 bg-blue-200 text-blue-800"
+                        ? "border-[#2563eb] bg-[#2563eb] text-white"
                         : activo
-                        ? "border-[#BC5F36] text-[#BC5F36]"
-                        : "border-[#eadacb] text-[#7a5c49]"
+                        ? "border-[#BC5F36] bg-white text-[#BC5F36]"
+                        : bloqueado
+                        ? "border-[#e5d5c5] bg-[#f5ebe1] text-[#b5a090]"
+                        : "border-[#eadacb] bg-white text-[#7a5c49]"
                     }
                   `}
                 >
                   {completado ? (
-                    <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                    <CheckCircle2 className="h-5 w-5" />
+                  ) : bloqueado && paso.id > activeStep ? (
+                    "🔒"
                   ) : (
                     paso.id
                   )}
                 </span>
               </div>
 
-              {/* TÍTULO */}
               <p className="text-sm font-extrabold">{paso.titulo}</p>
-
-              {/* DESCRIPCIÓN */}
               <p className="mt-1 text-xs leading-relaxed">{paso.desc}</p>
 
-              {/* ESTADO DEL PASO */}
               <p
                 className={`
                   mt-2 text-[11px] font-medium flex justify-center items-center gap-1
                   ${
                     completado
-                      ? "text-blue-700"
+                      ? "text-[#2563eb]"
                       : activo
                       ? "text-[#BC5F36]"
+                      : bloqueado
+                      ? "text-[#c49b80]"
                       : "text-[#a88b77]"
                   }
                 `}
@@ -160,10 +179,11 @@ export default function StepperAdopcion({
                   ? "Paso completado"
                   : activo
                   ? "Paso actual"
+                  : bloqueado
+                  ? "Aún no disponible"
                   : "Pendiente"}
               </p>
 
-              {/* TOOLTIP */}
               {hovered === paso.id && (
                 <div
                   className="
@@ -176,7 +196,7 @@ export default function StepperAdopcion({
                   <p className="font-extrabold text-[#2b1b12] mb-1">
                     {paso.titulo}
                   </p>
-                  {paso.detalle}
+                  <p>{paso.detalle}</p>
                 </div>
               )}
             </div>
