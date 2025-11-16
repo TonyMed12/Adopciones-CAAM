@@ -237,7 +237,7 @@ export default function RegistroForm() {
       case 2:
         return {
           fecha_nacimiento: formData.fecha_nacimiento,
-          curp: formData.curp, // Ahora es obligatorio
+          curp: formData.curp,
           ocupacion: formData.ocupacion,
         };
       case 3:
@@ -269,58 +269,84 @@ export default function RegistroForm() {
   // Validar paso actual
   const validateCurrentStep = () => {
     const stepData = getStepData(currentStep);
-    const result = getStepSchema(currentStep).safeParse(stepData);
+    const newErrors: FormErrors = {};
 
-    if (!result.success) {
-      const newErrors: FormErrors = {};
-      result.error.issues.forEach((issue) => {
-        const field = issue.path[0] as string;
-        if (!newErrors[field]) newErrors[field] = [];
-        newErrors[field].push(issue.message);
-      });
+    // Validación del Paso 1
+    if (currentStep === 1) {
+      if (!formData.nombres || formData.nombres.trim() === "") {
+        newErrors.nombres = ["Campo requerido"];
+      }
+      if (!formData.apellido_paterno || formData.apellido_paterno.trim() === "") {
+        newErrors.apellido_paterno = ["Campo requerido"];
+      }
+      if (!formData.email || formData.email.trim() === "") {
+        newErrors.email = ["Campo requerido"];
+      } else if (emailExists) {
+        newErrors.email = ["Este correo electrónico ya está registrado"];
+      }
+      if (!formData.telefono || formData.telefono.trim() === "") {
+        newErrors.telefono = ["Campo requerido"];
+      }
+    }
+
+    // Validación del Paso 2
+    if (currentStep === 2) {
+      if (!formData.fecha_nacimiento) {
+        newErrors.fecha_nacimiento = ["Campo requerido"];
+      }
+      if (!formData.curp || formData.curp.trim() === "") {
+        newErrors.curp = ["Campo requerido"];
+      } else if (curpExists) {
+        newErrors.curp = ["Este CURP ya está registrado"];
+      } else if (formData.curp.length !== 18) {
+        newErrors.curp = ["El CURP debe tener 18 caracteres"];
+      }
+      if (!formData.ocupacion || formData.ocupacion.trim() === "") {
+        newErrors.ocupacion = ["Campo requerido"];
+      }
+    }
+
+    // Validación del Paso 3
+    if (currentStep === 3) {
+      if (!formData.password || formData.password.trim() === "") {
+        newErrors.password = ["Campo requerido"];
+        setPasswordError("Campo requerido");
+      } else if (passwordError) {
+        newErrors.password = [passwordError];
+      }
+
+      if (!formData.confirmPassword || formData.confirmPassword.trim() === "") {
+        newErrors.confirmPassword = ["Campo requerido"];
+        setConfirmPasswordError("Campo requerido");
+      } else if (confirmPasswordError) {
+        newErrors.confirmPassword = [confirmPasswordError];
+      }
+
+      if (!formData.acceptTerms) {
+        newErrors.acceptTerms = ["Debes aceptar los términos y condiciones"];
+      }
+      if (!formData.acceptPrivacy) {
+        newErrors.acceptPrivacy = ["Debes aceptar la política de privacidad"];
+      }
+    }
+
+    // Si hay errores, mostrarlos y retornar false
+    if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return false;
     }
 
-    // Validación adicional: si estamos en el paso 1 y el email ya existe, no permitir avanzar
-    if (currentStep === 1 && emailExists) {
+    // Validación con schema de Zod
+    const result = getStepSchema(currentStep).safeParse(stepData);
+    if (!result.success) {
+      const schemaErrors: FormErrors = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!schemaErrors[field]) schemaErrors[field] = [];
+        schemaErrors[field].push(issue.message);
+      });
+      setErrors(schemaErrors);
       return false;
-    }
-
-    // Validación adicional: si estamos en el paso 2 y el CURP ya existe o está vacío, no permitir avanzar
-    if (currentStep === 2) {
-      if (curpExists) {
-        return false;
-      }
-      // Verificar que el CURP no esté vacío (es obligatorio)
-      if (!formData.curp || formData.curp.trim() === "") {
-        setErrors((prev) => ({
-          ...prev,
-          curp: ["El CURP es obligatorio"],
-        }));
-        return false;
-      }
-    }
-
-    // Validación adicional: si estamos en el paso 3 y hay errores de contraseña, no permitir continuar
-    if (currentStep === 3) {
-      // Validar que la contraseña exista y sea válida
-      if (!formData.password || passwordError) {
-        if (!formData.password) {
-          setPasswordError("La contraseña es obligatoria");
-        }
-        return false;
-      }
-
-      // Validar que confirmPassword exista y coincida
-      if (!formData.confirmPassword || confirmPasswordError) {
-        if (!formData.confirmPassword) {
-          setConfirmPasswordError("Debes confirmar tu contraseña");
-        } else if (formData.password !== formData.confirmPassword) {
-          setConfirmPasswordError("Las contraseñas no coinciden");
-        }
-        return false;
-      }
     }
 
     setErrors({});
@@ -341,6 +367,11 @@ export default function RegistroForm() {
   };
 
   const handleSubmit = async () => {
+    // Validar el paso actual antes de enviar
+    if (!validateCurrentStep()) {
+      return;
+    }
+
     const result = registroAdoptanteSchema.safeParse(formData);
     if (!result.success) {
       return;
@@ -513,7 +544,9 @@ export default function RegistroForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="telefono">Teléfono</Label>
+        <Label htmlFor="telefono">
+          Teléfono <span className="text-red-500">*</span>
+        </Label>
         <div className="relative">
           <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -544,12 +577,14 @@ export default function RegistroForm() {
       <div className="text-center mb-6">
         <h2 className="text-xl font-semibold">Información Adicional</h2>
         <p className="text-sm text-gray-600">
-          Datos complementarios (opcionales)
+          Datos complementarios requeridos
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento</Label>
+        <Label htmlFor="fecha_nacimiento">
+          Fecha de Nacimiento <span className="text-red-500">*</span>
+        </Label>
         <div className="relative">
           <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none" />
           <DatePicker
@@ -634,7 +669,9 @@ export default function RegistroForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ocupacion">Ocupación</Label>
+        <Label htmlFor="ocupacion">
+          Ocupación <span className="text-red-500">*</span>
+        </Label>
         <div className="relative">
           <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none" />
           <select
