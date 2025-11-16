@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   Eye,
   EyeOff,
@@ -54,13 +56,14 @@ export default function RegistroForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Nuevos estados para validación de email
+
+  // Estados para validaciones
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
-  
-  // Estado para validación de contraseña
+  const [isCheckingCurp, setIsCheckingCurp] = useState(false);
+  const [curpExists, setCurpExists] = useState(false);
   const [passwordError, setPasswordError] = useState<string>("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
 
   const totalSteps = 3;
 
@@ -88,7 +91,6 @@ export default function RegistroForm() {
         }));
       } else {
         setEmailExists(false);
-        // Solo limpiar el error de email si no hay otros errores
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors.email;
@@ -102,11 +104,48 @@ export default function RegistroForm() {
     }
   };
 
+  // Función para verificar si el CURP existe
+  const checkCurpExists = async (curp: string) => {
+    if (!curp || curp.length < 18) return;
+
+    setIsCheckingCurp(true);
+    setCurpExists(false);
+
+    try {
+      const response = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ curp, action: "check-curp" }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.exists) {
+        setCurpExists(true);
+        setErrors((prev) => ({
+          ...prev,
+          curp: ["Este CURP ya está registrado"],
+        }));
+      } else {
+        setCurpExists(false);
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.curp;
+          return newErrors;
+        });
+      }
+    } catch (error) {
+      console.error("Error verificando CURP:", error);
+    } finally {
+      setIsCheckingCurp(false);
+    }
+  };
+
   // Función para validar contraseña
   const validatePassword = (password: string) => {
     if (!password) {
-      setPasswordError("");
-      return;
+      setPasswordError("La contraseña es obligatoria");
+      return false;
     }
 
     const hasMinLength = password.length >= 8;
@@ -123,13 +162,29 @@ export default function RegistroForm() {
     return true;
   };
 
+  // Función para validar que las contraseñas coincidan
+  const validateConfirmPassword = (confirmPass: string) => {
+    if (!confirmPass) {
+      setConfirmPasswordError("Debes confirmar tu contraseña");
+      return false;
+    }
+
+    if (confirmPass !== formData.password) {
+      setConfirmPasswordError("Las contraseñas no coinciden");
+      return false;
+    }
+
+    setConfirmPasswordError("");
+    return true;
+  };
+
   // Manejador de cambios en inputs
   const handleInputChange = (
     field: keyof RegistroAdoptanteData,
     value: string | boolean
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    
+
     // Limpiar errores del campo cuando se modifica
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: [] }));
@@ -140,9 +195,31 @@ export default function RegistroForm() {
       setEmailExists(false);
     }
 
+    // Si es el campo curp, resetear el estado de curpExists
+    if (field === "curp") {
+      setCurpExists(false);
+    }
+
     // Si es el campo password, limpiar el error de contraseña
     if (field === "password") {
       setPasswordError("");
+      // Si hay confirmPassword, revalidar que coincidan
+      if (formData.confirmPassword) {
+        if (typeof value === 'string' && value !== formData.confirmPassword) {
+          setConfirmPasswordError("Las contraseñas no coinciden");
+        } else {
+          setConfirmPasswordError("");
+        }
+      }
+    }
+
+    // Si es el campo confirmPassword, limpiar el error y verificar que coincidan
+    if (field === "confirmPassword") {
+      setConfirmPasswordError("");
+      // Verificar si coincide con password
+      if (typeof value === 'string' && formData.password && value !== formData.password) {
+        setConfirmPasswordError("Las contraseñas no coinciden");
+      }
     }
   };
 
@@ -160,7 +237,7 @@ export default function RegistroForm() {
       case 2:
         return {
           fecha_nacimiento: formData.fecha_nacimiento,
-          curp: formData.curp,
+          curp: formData.curp, // Ahora es obligatorio
           ocupacion: formData.ocupacion,
         };
       case 3:
@@ -210,9 +287,40 @@ export default function RegistroForm() {
       return false;
     }
 
-    // Validación adicional: si estamos en el paso 3 y la contraseña es inválida, no permitir continuar
-    if (currentStep === 3 && passwordError) {
-      return false;
+    // Validación adicional: si estamos en el paso 2 y el CURP ya existe o está vacío, no permitir avanzar
+    if (currentStep === 2) {
+      if (curpExists) {
+        return false;
+      }
+      // Verificar que el CURP no esté vacío (es obligatorio)
+      if (!formData.curp || formData.curp.trim() === "") {
+        setErrors((prev) => ({
+          ...prev,
+          curp: ["El CURP es obligatorio"],
+        }));
+        return false;
+      }
+    }
+
+    // Validación adicional: si estamos en el paso 3 y hay errores de contraseña, no permitir continuar
+    if (currentStep === 3) {
+      // Validar que la contraseña exista y sea válida
+      if (!formData.password || passwordError) {
+        if (!formData.password) {
+          setPasswordError("La contraseña es obligatoria");
+        }
+        return false;
+      }
+
+      // Validar que confirmPassword exista y coincida
+      if (!formData.confirmPassword || confirmPasswordError) {
+        if (!formData.confirmPassword) {
+          setConfirmPasswordError("Debes confirmar tu contraseña");
+        } else if (formData.password !== formData.confirmPassword) {
+          setConfirmPasswordError("Las contraseñas no coinciden");
+        }
+        return false;
+      }
     }
 
     setErrors({});
@@ -242,6 +350,14 @@ export default function RegistroForm() {
     if (emailExists) {
       setErrors({
         general: ["El correo electrónico ya está registrado"],
+      });
+      return;
+    }
+
+    // Verificación final del CURP antes de enviar
+    if (curpExists) {
+      setErrors({
+        general: ["El CURP ya está registrado"],
       });
       return;
     }
@@ -382,20 +498,18 @@ export default function RegistroForm() {
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <p className="text-sm">
               Este correo electrónico ya está registrado.{" "}
-              <a
-                href="/login"
-                className="underline hover:text-red-700"
-              >
+              <a href="/login" className="underline hover:text-red-700">
                 Inicia sesión aquí
               </a>
             </p>
           </div>
         )}
-        {!emailExists && errors.email?.map((error, index) => (
-          <p key={index} className="text-sm text-red-600">
-            {error}
-          </p>
-        ))}
+        {!emailExists &&
+          errors.email?.map((error, index) => (
+            <p key={index} className="text-sm text-red-600">
+              {error}
+            </p>
+          ))}
       </div>
 
       <div className="space-y-2">
@@ -437,21 +551,40 @@ export default function RegistroForm() {
       <div className="space-y-2">
         <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento</Label>
         <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            id="fecha_nacimiento"
-            type="date"
-            value={formData.fecha_nacimiento || ""}
-            onChange={(e) =>
-              handleInputChange("fecha_nacimiento", e.target.value)
-            }
+          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none" />
+          <DatePicker
+            selected={formData.fecha_nacimiento ? new Date(formData.fecha_nacimiento) : null}
+            onChange={(date: Date | null) => {
+              if (date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                handleInputChange("fecha_nacimiento", `${year}-${month}-${day}`);
+              } else {
+                handleInputChange("fecha_nacimiento", "");
+              }
+            }}
+            dateFormat="dd/MM/yyyy"
+            maxDate={new Date()}
+            showYearDropdown
+            showMonthDropdown
+            dropdownMode="select"
+            placeholderText="Selecciona tu fecha de nacimiento"
             className={cn(
-              "pl-10",
-              errors.fecha_nacimiento?.length > 0 && "border-red-500"
+              "w-full pl-10 pr-10 py-2 border rounded-md cursor-pointer",
+              "hover:border-[#8B5E34] focus:border-[#8B5E34] focus:ring-2 focus:ring-[#8B5E34]/20 focus:outline-none",
+              errors.fecha_nacimiento?.length > 0 ? "border-red-500" : "border-gray-300"
             )}
+            wrapperClassName="w-full"
             disabled={isLoading}
           />
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <Calendar className="h-4 w-4 text-[#8B5E34] opacity-60" />
+          </div>
         </div>
+        <p className="text-xs text-gray-500">
+          Selecciona tu fecha de nacimiento del calendario
+        </p>
         {errors.fecha_nacimiento?.map((error, index) => (
           <p key={index} className="text-sm text-red-600">
             {error}
@@ -460,7 +593,9 @@ export default function RegistroForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="curp">CURP</Label>
+        <Label htmlFor="curp">
+          CURP <span className="text-red-500">*</span>
+        </Label>
         <div className="relative">
           <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -469,33 +604,68 @@ export default function RegistroForm() {
             onChange={(e) =>
               handleInputChange("curp", e.target.value.toUpperCase())
             }
-            className={cn("pl-10", errors.curp?.length > 0 && "border-red-500")}
+            onBlur={(e) => checkCurpExists(e.target.value)}
+            className={cn(
+              "pl-10",
+              (errors.curp?.length > 0 || curpExists) && "border-red-500"
+            )}
             placeholder="GABC800101HDFRRR01"
+            maxLength={18}
             disabled={isLoading}
           />
+          {isCheckingCurp && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-[#8B5E34] rounded-full" />
+            </div>
+          )}
         </div>
-        {errors.curp?.map((error, index) => (
-          <p key={index} className="text-sm text-red-600">
-            {error}
-          </p>
-        ))}
+        {curpExists && (
+          <div className="flex items-start space-x-2 text-red-600">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <p className="text-sm">Este CURP ya está registrado</p>
+          </div>
+        )}
+        {!curpExists &&
+          errors.curp?.map((error, index) => (
+            <p key={index} className="text-sm text-red-600">
+              {error}
+            </p>
+          ))}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="ocupacion">Ocupación</Label>
         <div className="relative">
-          <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
+          <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none" />
+          <select
             id="ocupacion"
             value={formData.ocupacion || ""}
             onChange={(e) => handleInputChange("ocupacion", e.target.value)}
             className={cn(
-              "pl-10",
-              errors.ocupacion?.length > 0 && "border-red-500"
+              "w-full pl-10 pr-10 py-2 border rounded-md appearance-none cursor-pointer",
+              "bg-white transition-all",
+              "hover:border-[#8B5E34] focus:border-[#8B5E34] focus:ring-2 focus:ring-[#8B5E34]/20 focus:outline-none",
+              "text-sm",
+              errors.ocupacion?.length > 0 ? "border-red-500" : "border-gray-300",
+              isLoading && "opacity-50 cursor-not-allowed"
             )}
-            placeholder="Ej: Ingeniero"
             disabled={isLoading}
-          />
+          >
+            <option value="" disabled>Selecciona una ocupación</option>
+            <option value="Estudiante">Estudiante</option>
+            <option value="Empleado">Empleado</option>
+            <option value="Emprendedor">Emprendedor</option>
+            <option value="Freelancer">Freelancer</option>
+            <option value="Jubilado">Jubilado</option>
+            <option value="Desempleado">Desempleado</option>
+            <option value="Otro">Otro</option>
+          </select>
+          {/* Flecha personalizada */}
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <svg className="h-4 w-4 text-[#8B5E34]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
         {errors.ocupacion?.map((error, index) => (
           <p key={index} className="text-sm text-red-600">
@@ -528,7 +698,9 @@ export default function RegistroForm() {
             onChange={(e) => handleInputChange("password", e.target.value)}
             onBlur={(e) => validatePassword(e.target.value)}
             className={cn(
-              errors.password?.length > 0 || passwordError ? "border-red-500" : ""
+              errors.password?.length > 0 || passwordError
+                ? "border-red-500"
+                : ""
             )}
             placeholder="Mínimo 8 caracteres"
             disabled={isLoading}
@@ -549,7 +721,8 @@ export default function RegistroForm() {
         </div>
         {!passwordError && !errors.password && (
           <p className="text-xs text-gray-500">
-            Debe incluir: mínimo 8 caracteres, una mayúscula, una minúscula y un número
+            Debe incluir: mínimo 8 caracteres, una mayúscula, una minúscula y
+            un número
           </p>
         )}
         {passwordError && (
@@ -558,11 +731,12 @@ export default function RegistroForm() {
             <p className="text-sm">{passwordError}</p>
           </div>
         )}
-        {!passwordError && errors.password?.map((error, index) => (
-          <p key={index} className="text-sm text-red-600">
-            {error}
-          </p>
-        ))}
+        {!passwordError &&
+          errors.password?.map((error, index) => (
+            <p key={index} className="text-sm text-red-600">
+              {error}
+            </p>
+          ))}
       </div>
 
       <div className="space-y-2">
@@ -577,8 +751,11 @@ export default function RegistroForm() {
             onChange={(e) =>
               handleInputChange("confirmPassword", e.target.value)
             }
+            onBlur={(e) => validateConfirmPassword(e.target.value)}
             className={cn(
-              errors.confirmPassword?.length > 0 && "border-red-500"
+              errors.confirmPassword?.length > 0 || confirmPasswordError
+                ? "border-red-500"
+                : ""
             )}
             placeholder="Repite tu contraseña"
             disabled={isLoading}
@@ -597,11 +774,18 @@ export default function RegistroForm() {
             )}
           </Button>
         </div>
-        {errors.confirmPassword?.map((error, index) => (
-          <p key={index} className="text-sm text-red-600">
-            {error}
-          </p>
-        ))}
+        {confirmPasswordError && (
+          <div className="flex items-start space-x-2 text-red-600">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <p className="text-sm">{confirmPasswordError}</p>
+          </div>
+        )}
+        {!confirmPasswordError &&
+          errors.confirmPassword?.map((error, index) => (
+            <p key={index} className="text-sm text-red-600">
+              {error}
+            </p>
+          ))}
       </div>
 
       <div className="space-y-3 pt-4">
@@ -717,7 +901,13 @@ export default function RegistroForm() {
             {currentStep < totalSteps ? (
               <Button
                 onClick={handleNextStep}
-                disabled={isLoading || isCheckingEmail || emailExists}
+                disabled={
+                  isLoading ||
+                  isCheckingEmail ||
+                  emailExists ||
+                  isCheckingCurp ||
+                  curpExists
+                }
                 className="bg-[#8B5E34] hover:bg-[#734C29] text-white font-semibold"
               >
                 Siguiente
@@ -726,7 +916,7 @@ export default function RegistroForm() {
             ) : (
               <Button
                 onClick={handleSubmit}
-                disabled={isLoading || !!passwordError}
+                disabled={isLoading || !!passwordError || !!confirmPasswordError}
                 className="bg-[#8B5E34] hover:bg-[#734C29] text-white font-semibold"
               >
                 {isLoading ? "Registrando..." : "Crear Cuenta"}

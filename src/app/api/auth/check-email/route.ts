@@ -7,8 +7,45 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email } = body;
+    const { email, curp, action } = body;
 
+    // Si la acción es verificar CURP
+    if (action === "check-curp") {
+      if (!curp) {
+        return NextResponse.json(
+          { error: "CURP es requerido" },
+          { status: 400 }
+        );
+      }
+
+      // Verificar si el CURP ya existe en la tabla perfiles
+      const { data: perfiles, error: perfilesError } = await supabaseAdmin
+        .from("perfiles")
+        .select("curp")
+        .eq("curp", curp.toUpperCase())
+        .limit(1);
+
+      if (perfilesError) {
+        return NextResponse.json(
+          { error: "Error al verificar CURP" },
+          { status: 500 }
+        );
+      }
+
+      const curpExists = perfiles && perfiles.length > 0;
+
+      return NextResponse.json({ 
+        exists: curpExists,
+        available: !curpExists 
+      }, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
+    // Si no, verificar email (comportamiento por defecto)
     if (!email) {
       return NextResponse.json(
         { error: "Email es requerido" },
@@ -55,6 +92,6 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({ 
     message: "API check-email funcionando",
-    method: "Use POST con {email: 'tu@email.com'}"
+    method: "Use POST con {email: 'tu@email.com'} o {curp: 'CURP...', action: 'check-curp'}"
   });
 }
