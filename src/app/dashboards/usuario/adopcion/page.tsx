@@ -22,6 +22,7 @@ import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { showSoftToast } from "@/lib/showSoftToast";
 import ConfirmCancelSolicitudModal from "@/components/adopciones/ConfirmCancelSolicitudModal";
+import MascotaSeleccionadaCard from "@/components/adopciones/MascotaSeleccionadaCard";
 const StepperAdopcion = dynamic(() => import("./StepperAdopcion"), {
   ssr: false,
 });
@@ -40,7 +41,7 @@ export default function ProcesoAdopcionPage() {
   const from = qs.get("from");
   const [solicitudActiva, setSolicitudActiva] = useState<any | null>(null);
   const [yaTieneAdopcion, setYaTieneAdopcion] = useState(false);
-  const [estado, setEstado] = useState<Estado>("sin_documentos");
+  const [estado, setEstado] = useState<Estado | "cargando">("cargando");
   const [docs, setDocs] = useState<
     {
       id: string;
@@ -54,6 +55,11 @@ export default function ProcesoAdopcionPage() {
   const [showCancelSolicitudModal, setShowCancelSolicitudModal] =
     useState(false);
   const [adopcionEstado, setAdopcionEstado] = useState<string | null>(null);
+
+  function capitalize(value?: string | null) {
+    if (!value || typeof value !== "string") return "";
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -91,11 +97,23 @@ export default function ProcesoAdopcionPage() {
           .from("solicitudes_adopcion")
           .select(
             `
-                    id,
-                    estado,
-                    mascota_id,
-                    mascota:mascotas (nombre, imagen_url)
-                `
+    id,
+    estado,
+    mascota_id,
+    mascota:mascotas (
+      nombre,
+      imagen_url,
+      edad,
+      tamano,
+      personalidad,
+      sexo,
+      peso_kg,
+      altura_cm,
+      descripcion_fisica,
+      raza_id,
+      raza:raza_id (nombre)
+    )
+  `
           )
           .eq("usuario_id", perfil.id)
           .in("estado", ["pendiente", "en_proceso"])
@@ -398,12 +416,15 @@ export default function ProcesoAdopcionPage() {
     }
   }, [archivos, uploadDocumento]);
 
-  if (loadingDocs) {
-    return (
-      <div className="rounded-2xl border border-[#eadacb] bg-white p-8 text-center text-[#7a5c49] shadow-sm">
-        <p className="animate-pulse text-sm font-medium">
-          Cargando tus documentos...
-        </p>
+  {
+    /* ====== Placeholder mientras carga estado de documentos ====== */
+  }
+  {
+    estado === "cargando" && (
+      <div className="animate-pulse mt-4 rounded-xl border border-[#eadacb] bg-[#fff9f3] p-5 shadow-sm">
+        <div className="h-4 w-32 bg-[#eadacb]/50 rounded mb-3"></div>
+        <div className="h-3 w-full bg-[#eadacb]/40 rounded mb-2"></div>
+        <div className="h-3 w-5/6 bg-[#eadacb]/40 rounded"></div>
       </div>
     );
   }
@@ -480,23 +501,49 @@ export default function ProcesoAdopcionPage() {
         {/* -------- Vista Aprobado -------- */}
         {estado === "aprobado" && (
           <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
-            {/* 🟢 Panel principal */}
-            <div className="rounded-xl border border-green-200 bg-green-50 p-4 mb-4">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 rounded-2xl border border-green-200 border-b-2 border-b-green-300 bg-green-50 p-3 mb-4 shadow-sm animate-fade-in">
+              {/* Ícono redondo */}
+              <div className="h-9 w-9 flex items-center justify-center rounded-full bg-green-100 shadow-sm">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <h3 className="text-sm font-extrabold text-green-800">
-                  ¡Tus documentos fueron aprobados!
-                </h3>
               </div>
-              <p className="mt-1 text-sm text-green-700">
-                Todo está en orden. Ya puedes continuar con el proceso de
-                adopción.
-              </p>
+
+              {/* Texto */}
+              <div className="flex flex-col">
+                <span className="text-sm font-extrabold text-green-800">
+                  Documentos validados
+                </span>
+                <span className="text-xs text-green-700 mt-0.5">
+                  Todo está en orden. Puedes continuar con tu proceso de
+                  adopción.
+                </span>
+              </div>
             </div>
 
             {/* 🔹 Stepper dinámico */}
             <StepperAdopcion
               activeStep={citaActiva ? 3 : solicitudActiva ? 2 : 1}
+              onStepClick={(step) => {
+                if (step === 1) {
+                  router.push("/dashboards/usuario/mascotas");
+                }
+
+                if (step === 2) {
+                  router.push("/dashboards/usuario/citas");
+                }
+
+                if (step === 3) {
+                  if (citaActiva?.solicitud_id) {
+                    router.push(
+                      `/dashboards/usuario/form-adopcion/${citaActiva.solicitud_id}`
+                    );
+                  } else {
+                    router.push("/dashboards/usuario/adopcion");
+                  }
+                }
+
+                // Paso 4 y 5 por ahora pueden solo quedarse informativos,
+                // o más adelante los mandas a un panel de "seguimiento" / "historial".
+              }}
             />
 
             {/* 🔸 Bloque según estado */}
@@ -607,57 +654,216 @@ export default function ProcesoAdopcionPage() {
                   <strong>tu mascota seleccionada</strong>.
                 </p>
 
+                {/* Bloque: ¿Qué sigue después? */}
+
                 {solicitudActiva?.mascota_id && (
-                  <div className="mt-4 flex items-center gap-3 rounded-lg border border-[#eadacb] bg-white/60 p-3">
-                    <img
-                      src={
-                        solicitudActiva.mascota?.imagen_url ||
-                        "/img/placeholder-mascota.jpg"
-                      }
-                      alt={
-                        solicitudActiva.mascota?.nombre ||
-                        "Mascota seleccionada"
-                      }
-                      className="h-14 w-14 rounded-full object-cover border border-[#eadacb]"
-                    />
-                    <div>
-                      <p className="font-semibold text-[#2b1b12] text-sm">
-                        {solicitudActiva.mascota?.nombre ||
-                          "Mascota sin nombre"}
-                      </p>
-                      <p className="text-xs text-[#7a5c49]">
-                        Esta es la mascota que seleccionaste para adoptar 💕
-                      </p>
+                  <div
+                    className="
+      mt-10 
+      grid grid-cols-1 
+      lg:grid-cols-[500px_1fr] 
+      gap-6 
+      lg:gap-10
+      items-start
+    "
+                  >
+
+                    <div className="hidden lg:block lg:col-span-2 mb-0">
                       <button
-                        onClick={() => setShowCancelSolicitudModal(true)}
+                        onClick={() => router.push("/dashboards/usuario/citas")}
                         className="
-    text-xs 
-    font-semibold
-    text-[#BC5F36] 
-    bg-[#fff5f3]
-    border border-[#e8c9b8]
-    px-3 py-1.5
-    rounded-lg
-    hover:bg-[#ffe7e2]
-    hover:text-[#8b4513]
-    cursor-pointer
-    transition-all
-  "
+          w-full 
+          bg-[#BC5F36] text-white 
+          py-3.5 
+          rounded-xl 
+          text-base font-semibold 
+          shadow-md shadow-[#bc5f36]/30
+          hover:bg-[#a64f2b]
+          hover:shadow-lg hover:shadow-[#bc5f36]/40
+          hover:-translate-y-[2px]
+          active:scale-95
+          transition-all duration-200
+        "
                       >
-                        Cancelar solicitud
+                        <span className="text-lg mr-2">📅</span>
+                        Agendar visita
                       </button>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+
+
+                      <div
+                        className="
+          rounded-xl 
+          bg-white/80 
+          backdrop-blur-md 
+          border border-[#eadacb] 
+          p-5 
+          shadow-lg shadow-[#c7b39b]/30
+          w-full
+        "
+                      >
+                        <MascotaSeleccionadaCard
+                          mascota={solicitudActiva.mascota}
+                          onCancelar={() => setShowCancelSolicitudModal(true)}
+                        />
+                      </div>
+
+                      {/* ======== BOTÓN MÓVIL ======== */}
+                      <div className="lg:hidden mt-4">
+                        <button
+                          onClick={() => setMostrarAgendar(!mostrarAgendar)}
+                          className="
+            w-full 
+            bg-[#BC5F36] text-white 
+            py-3 rounded-xl 
+            shadow-md 
+            font-semibold 
+            text-sm
+            hover:bg-[#a64f2b]
+            hover:-translate-y-[2px]
+            active:scale-95
+            transition-all duration-200
+          "
+                        >
+                          {mostrarAgendar
+                            ? "Ocultar detalles"
+                            : "Ver información de la visita"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative space-y-6">
+                      {/* Línea separadora (solo PC) */}
+                      <div className="hidden lg:block absolute left-2 top-0 bottom-0 w-px bg-gradient-to-b from-[#e5d8c9] to-transparent" />
+
+                      <div className="pl-0 lg:pl-8 space-y-6">
+                        {(mostrarAgendar ||
+                          typeof window === "undefined" ||
+                          window.innerWidth >= 1024) && (
+                          <div className="space-y-6">
+                            <div className="rounded-xl bg-white/80 backdrop-blur-md border border-[#eadacb] p-5 shadow-lg shadow-[#c7b39b]/30">
+                              <h3 className="text-sm font-extrabold text-[#2b1b12] mb-2 flex items-center gap-2">
+                                <span className="text-[#BC5F36] text-lg">
+                                  📅
+                                </span>
+                                ¿Qué sigue ahora?
+                              </h3>
+
+                              <ul className="text-xs text-[#7a5c49] space-y-2 leading-relaxed">
+                                <li>
+                                  • Agenda tu visita para convivir con tu
+                                  mascota.
+                                </li>
+                                <li>• El CAAM evaluará cómo interactúan.</li>
+                                <li>
+                                  • Si es aprobada, llenarás el formulario
+                                  final.
+                                </li>
+                                <li>
+                                  • Luego un administrador revisará tu
+                                  información.
+                                </li>
+                              </ul>
+                            </div>
+
+                            {/* 2. Estado del proceso */}
+                            <div className="rounded-xl bg-white/80 backdrop-blur-md border border-[#eadacb] p-5 shadow-lg shadow-[#c7b39b]/30">
+                              <h4 className="text-sm font-extrabold text-[#2b1b12] mb-3 flex items-center gap-2">
+                                <span className="text-[#3B82F6] text-lg">
+                                  📘
+                                </span>
+                                Estado de tu proceso
+                              </h4>
+
+                              <div className="grid gap-2 text-xs text-[#7a5c49]">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-green-600">✓</span>{" "}
+                                  Mascota seleccionada
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[#BC5F36]">→</span>{" "}
+                                  Pendiente agendar visita
+                                </div>
+                                <div className="flex items-center gap-2 opacity-70">
+                                  <span>⏳</span> Formulario (después de la
+                                  visita)
+                                </div>
+                                <div className="flex items-center gap-2 opacity-70">
+                                  <span>⏳</span> Aprobación final
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 3. Consejos */}
+                            <div
+                              className="
+                relative overflow-visible rounded-2xl border border-[#ebd8c7] p-6 
+                shadow-xl 
+                bg-gradient-to-br from-[#fff4e6] via-[#ffe8cf] to-[#ffd8b0] 
+                transition-all 
+              "
+                            >
+                              <h4 className="relative text-sm font-extrabold text-[#2b1b12] mb-4 flex items-center gap-2">
+                                <span className="text-[#F59E0B] text-xl">
+                                  💡
+                                </span>
+                                Consejos para tu visita
+                              </h4>
+
+                              <ul className="relative text-xs text-[#7a5c49] space-y-3 leading-relaxed">
+                                <li className="flex gap-2">
+                                  <span className="text-[#F59E0B]">•</span>
+                                  Llega 10–15 minutos antes para evitar
+                                  retrasos.
+                                </li>
+                                <li className="flex gap-2">
+                                  <span className="text-[#F59E0B]">•</span>
+                                  Puedes traer fotos del hogar donde vivirá.
+                                </li>
+                                <li className="flex gap-2">
+                                  <span className="text-[#F59E0B]">•</span>
+                                  Si tienes mascotas, procura mantener sus
+                                  vacunas al día.
+                                </li>
+                                <li className="flex gap-2">
+                                  <span className="text-[#F59E0B]">•</span>
+                                  Sé tú mismo, la convivencia natural es lo más
+                                  importante.
+                                </li>
+                              </ul>
+                            </div>
+
+                            {/* BOTÓN MÓVIL */}
+                            {estado === "aprobado" && !citaActiva && (
+                              <button
+                                onClick={() =>
+                                  router.push("/dashboards/usuario/citas")
+                                }
+                                className="
+                  lg:hidden 
+                  w-full 
+                  bg-[#BC5F36] text-white 
+                  py-3 rounded-xl 
+                  text-sm font-semibold
+                  shadow-md shadow-[#bc5f36]/40 
+                  hover:bg-[#a64f2b]
+                  hover:-translate-y-[2px]
+                  active:scale-95
+                  transition-all duration-200
+                  mt-1
+                "
+                              >
+                                📅 Agendar visita
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
-
-                <div className="mt-4 text-right">
-                  <Button
-                    className="bg-[#BC5F36] hover:bg-[#a64d2e]"
-                    onClick={() => router.push("/dashboards/usuario/citas")}
-                  >
-                    <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
-                  </Button>
-                </div>
               </div>
             ) : (
               /* ⚪ CASO 1: Aún sin solicitud ni cita */
@@ -730,14 +936,22 @@ export default function ProcesoAdopcionPage() {
                     Programa una cita para conocer a tu mascota seleccionada.
                   </p>
 
-                  <Button
-                    className="mt-3 w-full text-[#BC5F36]"
-                    variant={solicitudActiva?.mascota_id ? "default" : "ghost"}
-                    disabled={!solicitudActiva?.mascota_id}
-                    onClick={() => router.push("/dashboards/usuario/citas")}
-                  >
-                    <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
-                  </Button>
+                  {!(
+                    estado === "aprobado" &&
+                    solicitudActiva &&
+                    !citaActiva
+                  ) && (
+                    <Button
+                      className="mt-3 w-full text-[#BC5F36]"
+                      variant={
+                        solicitudActiva?.mascota_id ? "default" : "ghost"
+                      }
+                      disabled={!solicitudActiva?.mascota_id}
+                      onClick={() => router.push("/dashboards/usuario/citas")}
+                    >
+                      <CalendarCheck className="h-4 w-4 mr-1" /> Agendar visita
+                    </Button>
+                  )}
 
                   {!solicitudActiva?.mascota_id && (
                     <p className="text-xs text-[#a88b77] mt-2 italic">
@@ -768,6 +982,7 @@ export default function ProcesoAdopcionPage() {
           </section>
         )}
       </div>
+
       <ConfirmCancelSolicitudModal
         open={showCancelSolicitudModal}
         onClose={() => setShowCancelSolicitudModal(false)}

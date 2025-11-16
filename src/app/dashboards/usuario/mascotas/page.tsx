@@ -368,28 +368,6 @@ export default function MascotasPage() {
     });
   }, [items, q, especie, sexo]);
 
-  // --------------------------------------------------------
-  // Modal
-
-  {
-    adopcionEnProgreso && (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-sm mx-auto animate-fade-in">
-          <div className="animate-bounce text-4xl mb-3">🐶</div>
-          <h2 className="text-lg font-extrabold text-[#2b1b12] mb-2">
-            {mensajeExito}
-          </h2>
-          <p className="text-sm text-[#7a5c49]">
-            Espera un momento mientras preparamos el siguiente paso...
-          </p>
-          <div className="mt-4 flex justify-center">
-            <div className="w-6 h-6 border-4 border-[#BC5F36] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // 💅 Render principal
   return (
     <>
@@ -397,39 +375,37 @@ export default function MascotasPage() {
         title="Mascotas"
         subtitle="Encuentra a tu nuevo mejor amigo 🐾"
       />
-
-      {/* Banner de estado */}
-      <div
-        className={`mb-4 rounded-xl border px-4 py-3 ${
-          toneClasses[estadoText[docEstado].tone]
-        } text-sm`}
-      >
-        <p className="font-extrabold text-[#2b1b12]">
-          {estadoText[docEstado].title}
-        </p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[#7a5c49]">
-          <span>{estadoText[docEstado].desc}</span>
-          {docEstado !== "aprobado" && (
+      {docEstado !== "aprobado" && (
+        <div
+          className={`mb-4 rounded-xl border px-4 py-3 ${
+            toneClasses[estadoText[docEstado].tone]
+          } text-sm`}
+        >
+          <p className="font-extrabold text-[#2b1b12]">
+            {estadoText[docEstado].title}
+          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[#7a5c49]">
+            <span>{estadoText[docEstado].desc}</span>
             <Button
               className="px-3 py-2"
               onClick={() => router.push("/dashboards/usuario/adopcion")}
             >
               Completar verificación
             </Button>
-          )}
+          </div>
         </div>
+      )}
+      <div className="sticky top-[5.5rem] z-20 bg-white/80 backdrop-blur-md py-2 rounded-xl shadow-sm">
+        <Filters
+          q={q}
+          onQ={setQ}
+          especie={especie}
+          onEspecie={setEspecie}
+          sexo={sexo}
+          onSexo={setSexo}
+          ESPECIES={ESPECIES}
+        />
       </div>
-
-      <Filters
-        q={q}
-        onQ={setQ}
-        especie={especie}
-        onEspecie={setEspecie}
-        sexo={sexo}
-        onSexo={setSexo}
-        ESPECIES={ESPECIES}
-      />
-
       {/* Filtrado de mascotas */}
       {loading ? (
         <div className="py-10 text-center text-[#7a5c49]">
@@ -450,12 +426,38 @@ export default function MascotasPage() {
           ))}
           {data.length === 0 && (
             <div className="col-span-full py-10 text-center text-[#7a5c49]">
-              No hay resultados con esos filtros
+              <div className="text-4xl mb-2 opacity-80">🔎</div>
+              <p className="font-semibold mb-3">
+                No encontramos mascotas con esos filtros
+              </p>
+
+              <button
+                onClick={() => {
+                  setQ("");
+                  setEspecie("Todas");
+                  setSexo("Todos");
+                }}
+                className="
+      px-4 py-2 
+      bg-[#BC5F36] 
+      text-white 
+      rounded-full 
+      text-sm 
+      font-semibold 
+      shadow-md 
+      hover:bg-[#a24f2d] 
+      hover:shadow-lg 
+      transition-all 
+      duration-200
+      cursor-pointer
+    "
+              >
+                Limpiar filtros
+              </button>
             </div>
           )}
         </section>
       )}
-
       {/* Modal bloqueo adopción */}
       <Modal
         open={gateOpen}
@@ -491,7 +493,6 @@ export default function MascotasPage() {
           </div>
         </div>
       </Modal>
-
       {/* Overlay de adopción en progreso */}
       {adopcionEnProgreso && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -509,7 +510,6 @@ export default function MascotasPage() {
           </div>
         </div>
       )}
-
       {/* 🧡 Modal info mascota a pantalla completa (portal) */}
       {openCard &&
         typeof window !== "undefined" &&
@@ -532,7 +532,7 @@ export default function MascotasPage() {
                   open={true}
                   onClose={() => setOpenCard(false)}
                   onAdopt={() => {
-                    if (selectedMascota) handleAdopt(selectedMascota); // ✅ botón Adoptar dentro del modal
+                    if (selectedMascota) handleAdopt(selectedMascota);
                   }}
                 />
               </div>
@@ -540,6 +540,28 @@ export default function MascotasPage() {
           </div>,
           document.body
         )}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className="
+    fixed 
+    bottom-5 
+    right-5 
+    bg-[#BC5F36] 
+    text-white 
+    p-3 
+    rounded-full 
+    shadow-lg 
+    hover:bg-[#a24f2d] 
+    hover:shadow-xl 
+    transition-all 
+    duration-200 
+    cursor-pointer 
+    z-50
+  "
+        aria-label="Volver arriba"
+      >
+        ↑
+      </button>
     </>
   );
 }

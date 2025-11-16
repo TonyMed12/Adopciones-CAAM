@@ -89,7 +89,8 @@ export default function MascotaCard({
           <span>
             <strong>Tamaño:</strong>{" "}
             {m.tamano
-              ? m.tamano.charAt(0).toUpperCase() + m.tamano.slice(1).toLowerCase()
+              ? m.tamano.charAt(0).toUpperCase() +
+                m.tamano.slice(1).toLowerCase()
               : "—"}
           </span>
           <span>
@@ -100,13 +101,16 @@ export default function MascotaCard({
           </span>
         </div>
 
-        
-
         <footer className="actions">
           <Button variant="ghost" size="md" onClick={onView}>
             Ver más
           </Button>
-          <Button variant="primary" size="md" onClick={onAdopt} disabled={disabled}>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={onAdopt}
+            disabled={disabled}
+          >
             {botonTexto}
           </Button>
         </footer>
@@ -123,16 +127,16 @@ export default function MascotaCard({
           display: flex;
           flex-direction: column;
           transition: all 0.3s ease;
-          font-family: 'Inter', sans-serif;
+          font-family: "Inter", sans-serif;
         }
 
         .masc-card * {
-          font-family: 'Inter', sans-serif !important;
+          font-family: "Inter", sans-serif !important;
         }
 
         .masc-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 20px rgba(43, 27, 18, 0.15);
+          transform: translateY(-6px) scale(1.015);
+          box-shadow: 0 8px 30px rgba(43, 27, 18, 0.18);
         }
 
         .media {
