@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
   "/api/auth/register",
   "/api/auth/login",
   "/api/auth/recover",
+   "/api/auth/check-email", //nueva ruta del check-email
   "/mascota",
 ];
 
