@@ -133,7 +133,7 @@ export async function reprogramarCita(
 ) {
 
   const supabase = await createClient();
-   const { data, error } = await supabase
+  const { data, error } = await supabase
     .from("citas_adopcion")
     .update({
       fecha_cita,
@@ -154,7 +154,7 @@ export async function reprogramarCita(
 
   if (error) throw new Error(error.message);
 
- // Obtener también el usuario
+  // Obtener también el usuario
   const { data: perfil, error: perfilError } = await supabase
     .from("perfiles")
     .select("id, nombres, email")
@@ -205,14 +205,44 @@ export async function actualizarEstadoCita(
 
 export async function evaluarCita(
   id: string,
-  nuevoEstado: "programada" | "completada" | "cancelada",
+  _nuevoEstado: "programada" | "completada" | "cancelada",
   evaluacion: EvaluacionCita
 ) {
   const supabase = await createClient();
 
-  // Normalizamos campos opcionales a null cuando no vengan
+  const { data: cita, error: errCita } = await supabase
+    .from("citas_adopcion")
+    .select("id, solicitud_id")
+    .eq("id", id)
+    .single();
+
+  if (errCita) throw new Error(errCita.message);
+
+  const solicitudId = cita?.solicitud_id ?? null;
+
+  const asistencia = evaluacion.asistencia;
+  const interaccion = evaluacion.interaccion;
+
+  let estadoCita: "completada" | "cancelada" = "cancelada";
+  let estadoSolicitud: string | null = null;
+
+  if (asistencia === "asistio" && interaccion === "buena_aprobada") {
+    estadoCita = "completada";
+    estadoSolicitud = "en_proceso";
+  }
+
+  if (asistencia === "asistio" && interaccion === "no_apta") {
+    estadoCita = "cancelada";
+    estadoSolicitud = "rechazada";
+  }
+
+  if (asistencia === "no_asistio_no_apto") {
+    estadoCita = "cancelada";
+    estadoSolicitud = "pendiente";
+  }
+
   const payload = {
-    estado: nuevoEstado,
+    estado: estadoCita,
     asistencia: evaluacion.asistencia ?? null,
     interaccion: evaluacion.interaccion ?? null,
     nota: evaluacion.nota ?? null,
@@ -239,7 +269,36 @@ export async function evaluarCita(
 
   if (error) throw new Error(error.message);
 
-  // Enriquecer con usuario, igual que en las demás acciones
+  if (solicitudId && estadoSolicitud !== null) {
+    // 1. Actualizar solicitud
+    const { error: errSol } = await supabase
+      .from("solicitudes_adopcion")
+      .update({
+        estado: estadoSolicitud,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", solicitudId);
+
+    if (errSol) throw new Error(errSol.message);
+
+    // 2. Si asistió pero NO fue apto → liberar mascota
+    if (
+      evaluacion.asistencia === "asistio" &&
+      evaluacion.interaccion === "no_apta"
+    ) {
+      const { error: errMascota } = await supabase
+        .from("mascotas")
+        .update({
+          estado: "disponible",
+          disponible_adopcion: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.mascota_id);
+
+      if (errMascota) throw new Error(errMascota.message);
+    }
+  }
+
   const { data: perfil, error: perfilError } = await supabase
     .from("perfiles")
     .select("id, nombres, email")
@@ -250,3 +309,4 @@ export async function evaluarCita(
 
   return { ...data, usuario: perfil || null };
 }
+

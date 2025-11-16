@@ -7,6 +7,10 @@ import { Calendar } from "@/components/ui/Calendar";
 import { isWeekend } from "date-fns";
 import PageHead from "@/components/layout/PageHead";
 import { Button } from "@/components/ui/Button";
+import ConfirmCancelModal from "@/components/adopciones/ConfirmCancelModal";
+import ConfirmCancelSolicitudModal from "@/components/adopciones/ConfirmCancelSolicitudModal";
+import { FileText } from "lucide-react";
+import { XCircle } from "lucide-react";
 
 type Mascota = {
   id: string;
@@ -32,7 +36,15 @@ type Cita = {
 
 export default function MisCitasPage() {
   const supabase = createClient();
-
+  const [loadingForm, setLoadingForm] = useState(false);
+  const [adopcionEstado, setAdopcionEstado] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [citaAEliminar, setCitaAEliminar] = useState<string | null>(null);
+  const [showCancelSolicitudModal, setShowCancelSolicitudModal] =
+    useState(false);
+  const [solicitudAEliminar, setSolicitudAEliminar] = useState<string | null>(
+    null
+  );
   const [perfil, setPerfil] = useState<any>(null);
   const [solicitudActiva, setSolicitudActiva] = useState<Solicitud | null>(
     null
@@ -43,6 +55,7 @@ export default function MisCitasPage() {
     "inicio"
   );
   const [fecha, setFecha] = useState("");
+  const [fechaDate, setFechaDate] = useState<Date | undefined>(undefined);
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
   const [nuevaCita, setNuevaCita] = useState<Cita | null>(null);
   const diasRestantes =
@@ -50,8 +63,55 @@ export default function MisCitasPage() {
     Math.ceil(
       (new Date().getTime() -
         new Date(solicitudActiva?.created_at || "").getTime()) /
-      (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24)
     );
+
+  function showSoftToast(message: string) {
+    const alerta = document.createElement("div");
+
+    alerta.textContent = message;
+
+    alerta.className = `
+    fixed bottom-6 left-1/2 -translate-x-1/2
+    bg-[#fffaf4] text-[#8b4513]
+    border border-[#e8c9b8]
+    font-semibold px-6 py-3
+    rounded-xl shadow-lg
+    z-[99999] animate-fadeIn
+  `;
+
+    document.body.appendChild(alerta);
+
+    setTimeout(() => {
+      alerta.classList.add("opacity-0", "transition-opacity", "duration-500");
+      setTimeout(() => alerta.remove(), 600);
+    }, 2500);
+  }
+
+  function horaEsPasada(hora: string, fechaSeleccionada?: Date) {
+    if (!fechaSeleccionada) return false;
+
+    const hoy = new Date();
+    const esHoy =
+      fechaSeleccionada.getFullYear() === hoy.getFullYear() &&
+      fechaSeleccionada.getMonth() === hoy.getMonth() &&
+      fechaSeleccionada.getDate() === hoy.getDate();
+
+    if (!esHoy) return false;
+
+    // Convertir "HH:mm" a fecha real
+    const [h, m] = hora.split(":").map(Number);
+    const fechaHora = new Date(
+      hoy.getFullYear(),
+      hoy.getMonth(),
+      hoy.getDate(),
+      h,
+      m,
+      0
+    );
+
+    return fechaHora < hoy; // true si ya pasó
+  }
 
   // ------------------------------------------------------------
   // 📋 Cargar perfil, solicitud activa y citas
@@ -93,7 +153,7 @@ export default function MisCitasPage() {
       `
         )
         .eq("usuario_id", perfilData.id)
-        .in("estado", ["pendiente", "en_proceso", "aprobada"]) // 👈 solo relevantes
+        .in("estado", ["pendiente", "en_proceso"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -103,6 +163,7 @@ export default function MisCitasPage() {
       if (!solicitud) {
         setSolicitudActiva(null);
         setCitas([]);
+        setAdopcionEstado(null);
         setLoading(false);
         return;
       }
@@ -117,6 +178,27 @@ export default function MisCitasPage() {
       };
 
       setSolicitudActiva(solicitudObj);
+
+      // 🔍 Verificar si ya existe una adopción enviada para esta solicitud
+      try {
+        const { data: adopcionExistente, error: adopcionError } = await supabase
+          .from("adopciones")
+          .select("id, estado")
+          .eq("solicitud_id", solicitud.id)
+          .maybeSingle();
+
+        if (adopcionError) {
+          console.error("❌ Error buscando adopción:", adopcionError);
+          setAdopcionEstado(null);
+        } else if (adopcionExistente) {
+          setAdopcionEstado(adopcionExistente.estado);
+        } else {
+          setAdopcionEstado(null);
+        }
+      } catch (e) {
+        console.error("💥 Error general verificando adopción:", e);
+        setAdopcionEstado(null);
+      }
 
       // 🔹 Buscar citas vinculadas a esta solicitud
       const { data: citasData, error: citasError } = await supabase
@@ -141,29 +223,19 @@ export default function MisCitasPage() {
       const citaProgramada =
         citasData?.find((c) => c.estado === "programada") ?? null;
 
-      if (
-        solicitudObj.estado === "aprobada" &&
-        !citaProgramada // si está aprobada pero no hay cita programada
-      ) {
-        // no mostrar nada
-        setSolicitudActiva(null);
-        setCitas([]);
-        return;
-      }
-
       // 🔹 Formatear la cita si existe
       const citasFormateadas = citaProgramada
         ? [
-          {
-            id: citaProgramada.id,
-            fecha_cita: citaProgramada.fecha_cita,
-            hora_cita: citaProgramada.hora_cita,
-            estado: citaProgramada.estado,
-            mascota: Array.isArray(citaProgramada.mascota)
-              ? citaProgramada.mascota[0]
-              : citaProgramada.mascota ?? null,
-          },
-        ]
+            {
+              id: citaProgramada.id,
+              fecha_cita: citaProgramada.fecha_cita,
+              hora_cita: citaProgramada.hora_cita,
+              estado: citaProgramada.estado,
+              mascota: Array.isArray(citaProgramada.mascota)
+                ? citaProgramada.mascota[0]
+                : citaProgramada.mascota ?? null,
+            },
+          ]
         : [];
 
       setCitas(citasFormateadas);
@@ -187,7 +259,7 @@ export default function MisCitasPage() {
       return;
     }
 
-    // 🔹 1. Insertar la nueva cita
+    // Crear cita
     const nueva = {
       usuario_id: perfil.id,
       solicitud_id: solicitudActiva.id,
@@ -205,94 +277,98 @@ export default function MisCitasPage() {
     `);
 
     if (error) {
-      console.error("Error al agendar cita:", error);
-      alert("No se pudo registrar la cita.");
+      alert("No se pudo registrar la cita 😕");
       return;
     }
 
-    // 🔹 2. Actualizar el estado de la solicitud a "aprobada"
+    // Cambiar solicitud → en_proceso
     const { error: updateError } = await supabase
       .from("solicitudes_adopcion")
-      .update({ estado: "aprobada" })
+      .update({ estado: "en_proceso" })
       .eq("id", solicitudActiva.id);
 
     if (updateError) {
-      console.error("Error actualizando estado de solicitud:", updateError);
-    } else {
-      console.log("✅ Estado de solicitud cambiado a 'aprobada'");
+      console.error(updateError);
     }
 
-    // 🔹 3. Actualizar el estado local y mostrar confirmación
-    const citaCreada = data
-      ? {
-        id: data[0].id,
-        fecha_cita: data[0].fecha_cita,
-        hora_cita: data[0].hora_cita,
-        estado: data[0].estado,
-        mascota: Array.isArray(data[0].mascota)
-          ? data[0].mascota[0]
-          : data[0].mascota ?? null,
-      }
-      : {
-        id: crypto.randomUUID(),
-        fecha_cita: fecha,
-        hora_cita: horaSeleccionada,
-        estado: "programada",
-        mascota: solicitudActiva.mascota,
-      };
+    // Toast bonito
+    const alerta = document.createElement("div");
+    document.body.appendChild(alerta);
+    setTimeout(() => alerta.remove(), 2500);
+
+    // Actualizar UI local
+    const citaCreada = {
+      id: data![0].id,
+      fecha_cita: data![0].fecha_cita,
+      hora_cita: data![0].hora_cita,
+      estado: data![0].estado,
+      mascota: Array.isArray(data![0].mascota)
+        ? data![0].mascota[0]
+        : data![0].mascota,
+    };
 
     setNuevaCita(citaCreada);
-    setCitas((prev) => [...prev, citaCreada]);
-    setSolicitudActiva({ ...solicitudActiva, estado: "aprobada" }); // ✅ actualiza localmente
+    setCitas([citaCreada]);
+
+    // Aquí NO ponemos aprobada
+    setSolicitudActiva({ ...solicitudActiva, estado: "en_proceso" });
+
     setPaso("confirmacion");
   }
 
   async function cancelarSolicitud(id: string) {
-    const confirmar = window.confirm(
-      "¿Seguro que deseas cancelar tu solicitud de adopción? 🐾"
-    );
-    if (!confirmar) return;
+    if (!solicitudActiva?.mascota?.id) {
+      console.error("❌ No hay mascota vinculada a la solicitud.");
+      return;
+    }
 
     try {
-      // 🧩 Elimina primero cualquier cita relacionada
-      await supabase.from("citas_adopcion").delete().eq("solicitud_id", id);
+      const mascotaId = solicitudActiva.mascota.id;
 
-      // 🧩 Luego elimina la solicitud
-      console.log("Intentando eliminar solicitud:", id);
+      // 1️⃣ Cancelar todas las citas de esta solicitud
+      await supabase
+        .from("citas_adopcion")
+        .update({ estado: "cancelada" })
+        .eq("solicitud_id", id);
 
-      const { error } = await supabase
+      // 2️⃣ Cambiar estado de la solicitud a "rechazada"
+      const { error: solicitudError } = await supabase
         .from("solicitudes_adopcion")
-
-        .delete()
+        .update({ estado: "rechazada" })
         .eq("id", id);
 
-      if (error) {
-        console.error("Error al eliminar solicitud:", error);
-        alert("Hubo un problema al cancelar la solicitud 😕");
+      if (solicitudError) {
+        console.error("❌ Error actualizando solicitud:", solicitudError);
+        showSoftToast("Ocurrió un problema al cancelar la solicitud 😕");
         return;
       }
 
-      // 🐶 Libera mascota
-      if (solicitudActiva?.mascota?.id) {
-        await supabase
-          .from("mascotas")
-          .update({ estado: "disponible" })
-          .eq("id", solicitudActiva.mascota.id);
+      // 3️⃣ Liberar mascota
+      const { error: mascotaError } = await supabase
+        .from("mascotas")
+        .update({
+          estado: "disponible",
+          disponible_adopcion: true,
+        })
+        .eq("id", mascotaId);
+
+      if (mascotaError) {
+        console.error("❌ Error actualizando mascota:", mascotaError);
+        showSoftToast("No se pudo liberar la mascota 😕");
+        return;
       }
 
-      // 🟢 Alerta visual
-      const alerta = document.createElement("div");
-      alerta.textContent = "Solicitud cancelada correctamente 🐾";
-      alerta.className =
-        "fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#BC5F36] text-white font-semibold px-6 py-3 rounded-xl shadow-lg animate-fadeIn z-50";
-      document.body.appendChild(alerta);
-      setTimeout(() => alerta.remove(), 2500);
+      // 4️⃣ Mostrar toast suave
+      showSoftToast("Solicitud cancelada y mascota liberada correctamente 🐾");
 
-      // 🌀 Refrescar vista
+      // 5️⃣ Limpiar UI
       setSolicitudActiva(null);
+      setCitas([]);
+
       await fetchData();
     } catch (err) {
-      console.error("Error general en cancelarSolicitud:", err);
+      console.error("💥 Error general en cancelarSolicitud:", err);
+      showSoftToast("Error al cancelar la solicitud 😕");
     }
   }
 
@@ -300,9 +376,6 @@ export default function MisCitasPage() {
   // ❌ Cancelar cita
   // ------------------------------------------------------------
   async function cancelarCita(id: string) {
-    const confirmar = window.confirm("¿Seguro que deseas cancelar tu cita? 🐾");
-    if (!confirmar) return;
-
     const { error } = await supabase
       .from("citas_adopcion")
       .update({ estado: "cancelada" })
@@ -313,18 +386,16 @@ export default function MisCitasPage() {
       return;
     }
 
-    const alerta = document.createElement("div");
-    alerta.textContent = "Tu cita fue cancelada correctamente 🐾";
-    alerta.className =
-      "fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#BC5F36] text-white font-semibold px-6 py-3 rounded-xl shadow-lg animate-fadeIn z-50";
-    document.body.appendChild(alerta);
+    // 1️⃣ Regresar solicitud a "pendiente"
+    await supabase
+      .from("solicitudes_adopcion")
+      .update({ estado: "pendiente" })
+      .eq("id", solicitudActiva?.id);
 
-    setTimeout(() => {
-      alerta.classList.add("opacity-0", "transition-opacity", "duration-500");
-      setTimeout(() => alerta.remove(), 600);
-    }, 2500);
+    // 2️⃣ Mostrar toast elegante
+    showSoftToast("Tu cita fue cancelada correctamente 🐾");
 
-    // 🔄 Refresca citas
+    // 3️⃣ Refrescar data
     await fetchData();
   }
 
@@ -407,8 +478,11 @@ export default function MisCitasPage() {
                   {/* Cancelar cita */}
                   <div className="mt-6">
                     <Button
-                      className="bg-[#fff5f3] border border-[#e8c9b8] text-[#BC5F36] hover:bg-[#ffe7e2] transition-all"
-                      onClick={() => cancelarCita(citas[0].id)}
+                      className="bg-[#fff5f3] border border-[#e8c9b8] text-[#BC5F36] hover:bg-[#ffe7e2] transition-all duration-200 cursor-pointer rounded-lg"
+                      onClick={() => {
+                        setCitaAEliminar(citas[0].id);
+                        setShowCancelModal(true);
+                      }}
                     >
                       Cancelar cita
                     </Button>
@@ -416,64 +490,443 @@ export default function MisCitasPage() {
                 </div>
               </div>
             </div>
-          ) : solicitudActiva ? (
-            // 🐾 Si hay solicitud activa pero aún no hay cita
-            <div className="text-center p-10 border border-[#eadacb] bg-[#fffaf4] rounded-xl shadow-sm">
-              <CheckCircle2 className="mx-auto h-10 w-10 text-[#BC5F36]" />
-              <h3 className="mt-3 font-bold text-[#8b4513]">
-                Solicitud activa detectada 🐾
-              </h3>
-              <p className="mt-2 text-sm text-[#7a5c49]">
-                Puedes agendar una cita para conocer a{" "}
-                <strong>{solicitudActiva.mascota?.nombre}</strong>.
-              </p>
-
-              {/* 🕒 Días restantes */}
-              {(() => {
-                if (!solicitudActiva?.created_at) return null;
-
-                const fechaCreacion = new Date(solicitudActiva.created_at);
-                const diferenciaMs =
-                  new Date().getTime() - fechaCreacion.getTime();
-                const diasTranscurridos = Math.floor(
-                  diferenciaMs / (1000 * 60 * 60 * 24)
-                );
-                const diasRestantes = 3 - diasTranscurridos;
-
-                if (diasRestantes > 0) {
-                  return (
-                    <p className="mt-3 text-sm text-[#BC5F36] font-semibold">
-                      ⏳ Tu solicitud vencerá en {diasRestantes}{" "}
-                      {diasRestantes === 1 ? "día" : "días"} si no agendas una
-                      cita.
-                    </p>
-                  );
-                } else {
-                  return (
-                    <p className="mt-3 text-sm text-[#BC5F36] font-semibold">
-                      ⚠️ Tu solicitud ha expirado. Cancélala para liberar a la
-                      mascota.
-                    </p>
-                  );
-                }
-              })()}
-
-              {/* Botones */}
-              <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
-                <Button
-                  className="bg-[#BC5F36] hover:bg-[#a64d2e]"
-                  onClick={() => setPaso("formulario")}
+          ) : solicitudActiva && adopcionEstado === "pendiente" ? (
+            // 🟡 YA MANDÓ EL FORMULARIO → MENSAJE DE REVISIÓN
+            <div
+              className="
+          mt-8
+          rounded-2xl 
+          border border-[#f2d4b7] 
+          bg-gradient-to-br from-[#fff7f1] via-white to-[#ffe9d6]
+          p-8 
+          shadow-[0_4px_18px_rgba(188,95,54,0.15)]
+          animate-fade-in
+        "
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="
+              h-14 w-14 
+              rounded-full 
+              bg-[#BC5F36] 
+              text-white 
+              flex items-center justify-center 
+              shadow-md
+            "
                 >
-                  <CalendarCheck className="h-4 w-4 mr-2" /> Agendar cita
-                </Button>
-                <Button
-                  className="bg-transparent text-[#BC5F36] border border-[#e8c9b8] hover:bg-[#fff3ee]"
-                  onClick={() => cancelarSolicitud(solicitudActiva.id)}
-                >
-                  Cancelar solicitud
-                </Button>
+                  <FileText className="h-7 w-7" />
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-extrabold text-[#8b4513]">
+                    Tu formulario está en revisión
+                  </h3>
+                  <p className="text-sm text-[#7a5c49] mt-1">
+                    Ya completaste el formulario de adopción. El equipo del CAAM
+                    está revisando tu información. Por favor espera la
+                    confirmación final.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 text-sm text-[#7a5c49] leading-relaxed">
+                Te avisaremos cuando tu proceso avance al siguiente paso.
               </div>
             </div>
+          ) : solicitudActiva && adopcionEstado === "aprobada" ? (
+            // 💚 ADOPCIÓN APROBADA
+            <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-6 shadow-sm">
+              <h3 className="text-lg font-extrabold text-green-800 flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                ¡Adopción aprobada! 🎉
+              </h3>
+              <p className="mt-2 text-sm text-green-700">
+                ¡Felicidades! El proceso de adopción ha sido aprobado. El CAAM
+                se pondrá en contacto contigo para coordinar los pasos finales.
+              </p>
+            </div>
+          ) : solicitudActiva && adopcionEstado === "rechazada" ? (
+            // 🔴 ADOPCIÓN RECHAZADA
+            <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 shadow-sm">
+              <h3 className="text-lg font-extrabold text-red-800 flex items-center gap-2">
+                <XCircle className="h-5 w-5" />
+                Adopción no aprobada
+              </h3>
+              <p className="mt-2 text-sm text-red-700">
+                En esta ocasión tu proceso de adopción no fue aprobado. Puedes
+                iniciar una nueva solicitud con otra mascota cuando lo desees.
+              </p>
+            </div>
+          ) : solicitudActiva ? (
+            solicitudActiva.estado === "en_proceso" ? (
+              // ⭐ YA NO SE PUEDE AGENDAR CITA: TIENE QUE LLENAR FORMULARIO FINAL
+              <div
+                className="
+    mt-8
+    rounded-2xl 
+    border border-[#eadacb] 
+    bg-gradient-to-br from-[#fff7f1] via-white to-[#fff2e3]
+    p-8 
+    shadow-[0_4px_18px_rgba(188,95,54,0.15)]
+    animate-fade-in
+  "
+              >
+                {/* Encabezado */}
+                <div className="flex items-center gap-4">
+                  <div
+                    className="
+        h-14 w-14 
+        rounded-full 
+        bg-[#BC5F36] 
+        text-white 
+        flex items-center justify-center 
+        shadow-md
+      "
+                  >
+                    <CheckCircle2 className="h-7 w-7" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-extrabold text-[#8b4513]">
+                      ¡Estás a un paso de adoptar! 🐾
+                    </h3>
+                    <p className="text-sm text-[#7a5c49] mt-1">
+                      Ya realizaste tu cita y tu solicitud está en proceso.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cuerpo */}
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm sm:text-base text-[#5d4636] leading-relaxed">
+                    Solo falta completar el
+                    <strong className="text-[#BC5F36]">
+                      {" "}
+                      formulario final de adopción
+                    </strong>
+                    . Esto permitirá al equipo del CAAM continuar con la
+                    evaluación.
+                  </p>
+
+                  <p className="text-sm text-[#a4836b] italic">
+                    “Un paso más para darle un hogar lleno de cariño.”
+                  </p>
+                </div>
+
+                {/* CTA */}
+                <div className="mt-6 flex justify-end">
+                  <Button
+                    onClick={() => {
+                      setLoadingForm(true);
+                      window.location.href = `/dashboards/usuario/form-adopcion/${solicitudActiva.id}`;
+                    }}
+                    disabled={loadingForm}
+                    className="
+    bg-[#BC5F36] 
+    text-white 
+    px-6 py-3 
+    rounded-xl 
+    shadow-md 
+    transition-all 
+    cursor-pointer
+    flex items-center gap-2
+    hover:bg-[#a64d2e] hover:shadow-lg hover:shadow-[#bc5f36]/40
+    active:scale-95
+    disabled:opacity-70 disabled:cursor-not-allowed
+  "
+                  >
+                    {loadingForm ? (
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+                        ></path>
+                      </svg>
+                    ) : (
+                      <>
+                        <FileText className="h-5 w-5" />
+                        Completar formulario
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // 🐾 SOLICITUD PENDIENTE → SÍ PUEDE AGENDAR CITA
+              <div className="rounded-2xl border border-[#eadacb] bg-[#fffdf9] shadow-md p-8 space-y-6">
+                {/* Encabezado */}
+                <div className="text-center">
+                  <h3 className="text-xl font-extrabold text-[#8b4513]">
+                    Agenda tu visita 🐾
+                  </h3>
+
+                  <p className="mt-2 text-sm text-[#7a5c49] max-w-md mx-auto leading-relaxed">
+                    Estás a un paso de convivir con{" "}
+                    <span className="font-semibold text-[#BC5F36]">
+                      {solicitudActiva.mascota?.nombre}
+                    </span>
+                    . Elige un día y horario para tu visita al CAAM.
+                  </p>
+
+                  <p className="mt-3 text-xs text-[#a4836b] italic">
+                    “La conexión empieza con un primer encuentro.”
+                  </p>
+                </div>
+
+                {/* BARRA DECORATIVA */}
+                <div
+                  className="
+      h-2 w-full rounded-full 
+      bg-gradient-to-r from-[#BC5F36] to-[#d9a48f]
+      lg:hidden
+    "
+                />
+                <div
+                  className="
+      hidden lg:block 
+      w-2 
+      rounded-full 
+      bg-gradient-to-b 
+      from-[#BC5F36] 
+      to-[#d9a48f]
+      opacity-80
+      shadow-sm
+    "
+                />
+
+                {/* CONTENIDO PRINCIPAL */}
+                {/* 🏢 Información del CAAM — CARD MÁS ESTRECHO */}
+                <div
+                  className="
+    w-full 
+    max-w-[820px]           /* 🔥 límite máximo de ancho */
+    mx-auto                 /* centrar */
+    rounded-2xl 
+    border border-[#eadacb] 
+    bg-[#fffaf4] 
+    shadow-md 
+    p-4 sm:p-5
+    flex flex-col lg:flex-row
+    gap-5
+    scale-[0.92] sm:scale-[0.94] lg:scale-[0.88]   /* más compacto */
+    origin-top
+  "
+                >
+                  {/* BARRA DECORATIVA */}
+                  <div
+                    className="
+      h-1.5 w-full rounded-full
+      bg-gradient-to-r from-[#BC5F36] to-[#d9a48f]
+      lg:hidden
+    "
+                  />
+
+                  <div
+                    className="
+      hidden lg:block 
+      w-1.5
+      rounded-full 
+      bg-gradient-to-b 
+      from-[#BC5F36] 
+      to-[#d9a48f]
+      opacity-80
+      shadow-sm
+    "
+                  />
+
+                  {/* 🏢 CARD COMPACTO — DIRECCIÓN + MAPA */}
+                  <div
+                    className="
+    w-full 
+    max-w-[760px]        /* ancho controlado */
+    mx-auto
+    rounded-2xl 
+    border border-[#eadacb] 
+    bg-[#fffaf4] 
+    shadow-md 
+    p-4 sm:p-5
+    flex flex-col lg:flex-row
+    gap-4
+  "
+                  >
+                    {/* COLUMNA IZQUIERDA — INFORMACIÓN */}
+                    <div className="flex-1 text-center lg:text-left space-y-2">
+                      <h4 className="text-base sm:text-lg font-extrabold text-[#8b4513] flex items-center justify-center lg:justify-start gap-2">
+                        <MapPin className="h-4 w-4 text-[#BC5F36]" />
+                        Centro de Atención Animal de Morelia (CAAM)
+                      </h4>
+
+                      <p className="text-xs sm:text-sm text-[#7a5c49] leading-relaxed max-w-[360px] mx-auto lg:mx-0">
+                        Elige una fecha y horario para tu visita.
+                      </p>
+
+                      <div className="space-y-1.5 text-xs sm:text-sm">
+                        <div className="flex items-start lg:items-center gap-2 justify-center lg:justify-start">
+                          <span className="text-base">📍</span>
+                          <p className="font-semibold leading-tight">
+                            Álamos No. 395, Col. Centenario,
+                            <br />
+                            C.P. 58128, Morelia, Mich.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 justify-center lg:justify-start">
+                          <span className="text-base">📞</span>
+                          <p className="font-semibold">
+                            443 321 4731 / 443 321 1392
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 justify-center lg:justify-start">
+                          🕒{" "}
+                          <p>
+                            <strong>Horario:</strong> 8:30 AM – 3:00 PM
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 justify-center lg:justify-start">
+                          📅{" "}
+                          <p>
+                            <strong>Días hábiles:</strong> Lunes a Viernes
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* COLUMNA DERECHA — MAPA */}
+                    <div
+                      className="
+      w-full 
+      lg:w-56 xl:w-52        /* estrecho */
+      rounded-xl 
+      bg-[#fffaf4]
+      border border-[#eadacb]
+      shadow-md 
+      overflow-hidden
+      flex flex-col
+    "
+                    >
+                      <div className="w-full h-32 sm:h-36 relative">
+                        <iframe
+                          title="CAAM Mapa"
+                          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3762.2406524803994!2d-101.1734343!3d19.7266529!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86a28e98ea321735%3A0x191bd93c0bd16085!2sCentro%20de%20Atenci%C3%B3n%20Animal!5e0!3m2!1ses!2smx!4v1700000000000!5m2!1ses!2smx"
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          allowFullScreen
+                          referrerPolicy="no-referrer-when-downgrade"
+                        />
+
+                        {/* CLIC EN TODO EL MAPA → ABRIR GOOGLE MAPS */}
+                        <a
+                          href="https://www.google.com/maps/place/Centro+de+Atenci%C3%B3n+Animal/@19.7266529,-101.1734343,17z/data=!3m1!4b1!4m6!3m5!1s0x86a28e98ea321735:0x191bd93c0bd16085!8m2!3d19.7266479!4d-101.1708594!16s%2Fg%2F1td65n44"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute inset-0 cursor-pointer bg-transparent"
+                          title="Abrir en Google Maps"
+                        />
+                      </div>
+
+                      <div className="p-3 text-center">
+                        <h5 className="text-xs font-bold text-[#8b4513]">
+                          Ubicación del CAAM
+                        </h5>
+                        <p className="text-[11px] text-[#7a5c49] mt-1 leading-relaxed">
+                          Haz clic en el mapa para abrir la ubicación en Google
+                          Maps.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botones */}
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  {/* BOTÓN PRINCIPAL */}
+                  <Button
+                    className="
+        w-full sm:w-auto
+        bg-[#BC5F36]
+        hover:bg-[#a64d2e]
+        text-white font-semibold
+        px-8 py-4 
+        rounded-xl
+        shadow-md shadow-[#d9b19d]/40
+        transition-all duration-200
+        cursor-pointer
+        hover:-translate-y-[2px]
+        active:scale-95
+        flex items-center justify-center gap-2
+      "
+                    onClick={() => setPaso("formulario")}
+                  >
+                    <CalendarCheck className="h-5 w-5" />
+                    Agendar cita
+                  </Button>
+
+                  {/* BOTÓN CANCELAR */}
+                  <Button
+                    className="
+        w-full sm:w-auto
+        bg-[#fff5f3]
+        border border-[#e8c9b8]
+        text-[#BC5F36]
+        hover:bg-[#ffe7e2]
+        px-8 py-4 
+        rounded-xl
+        font-semibold
+        transition-all duration-200
+        cursor-pointer
+        hover:-translate-y-[2px]
+        active:scale-95
+      "
+                    onClick={() => {
+                      setSolicitudAEliminar(solicitudActiva.id);
+                      setShowCancelSolicitudModal(true);
+                    }}
+                  >
+                    Cancelar solicitud
+                  </Button>
+                </div>
+
+                {/* Días restantes */}
+                {(() => {
+                  if (!solicitudActiva?.created_at) return null;
+
+                  const fechaCreacion = new Date(solicitudActiva.created_at);
+                  const diferenciaMs =
+                    new Date().getTime() - fechaCreacion.getTime();
+                  const diasTranscurridos = Math.floor(
+                    diferenciaMs / (1000 * 60 * 60 * 24)
+                  );
+                  const diasRestantes = 3 - diasTranscurridos;
+
+                  return (
+                    <p className="text-center text-xs font-semibold text-[#BC5F36]">
+                      ⏳ Tu solicitud expira en{" "}
+                      {diasRestantes > 0
+                        ? `${diasRestantes} días`
+                        : "0 días (expirada)"}
+                    </p>
+                  );
+                })()}
+              </div>
+            )
           ) : (
             // 💤 Si no hay ni cita ni solicitud
             <p className="text-center text-[#7a5c49] py-10">
@@ -487,11 +940,31 @@ export default function MisCitasPage() {
       {paso === "formulario" && solicitudActiva && (
         <section className="rounded-2xl border border-[#eadacb] bg-white p-5 sm:p-8 shadow-sm text-[#2b1b12]">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-extrabold flex items-center gap-2">
+            <h3 className="text-2xl sm:text-3xl font-extrabold flex items-center gap-3 text-[#8b4513]">
               <PawPrint className="h-5 w-5 text-[#BC5F36]" />
               Cita para {solicitudActiva.mascota?.nombre}
             </h3>
-            <Button variant="ghost" onClick={() => setPaso("inicio")}>
+
+            <p className="mt-3 text-sm sm:text-base text-[#7a5c49] max-w-xl leading-relaxed">
+              Estás a un paso de convivir con {solicitudActiva.mascota?.nombre}.
+              Elige un día y horario para tu visita al CAAM.
+              <br />
+              <span className="italic text-[#BC5F36] text-sm sm:text-base">
+                “La conexión empieza con un primer encuentro.”
+              </span>
+            </p>
+            <Button
+              variant="ghost"
+              onClick={() => setPaso("inicio")}
+              className="
+    text-[#BC5F36] 
+    hover:text-[#8b4513] 
+    hover:bg-[#fff3ee] 
+    transition-all 
+    duration-200 
+    cursor-pointer
+  "
+            >
               ← Regresar
             </Button>
           </div>
@@ -537,12 +1010,28 @@ export default function MisCitasPage() {
                   <div className="min-w-[320px] sm:min-w-[380px]">
                     <Calendar
                       mode="single"
-                      selected={fecha ? new Date(fecha) : undefined}
-                      onSelect={(day: Date | undefined) =>
-                        setFecha(day ? day.toISOString().split("T")[0] : "")
-                      }
+                      selected={fechaDate}
+                      onSelect={(day: Date | undefined) => {
+                        setFechaDate(day || undefined);
+
+                        if (!day) {
+                          setFecha("");
+                          return;
+                        }
+
+                        // Formatear manualmente a "YYYY-MM-DD" en hora local
+                        const year = day.getFullYear();
+                        const month = String(day.getMonth() + 1).padStart(
+                          2,
+                          "0"
+                        );
+                        const dayNum = String(day.getDate()).padStart(2, "0");
+
+                        setFecha(`${year}-${month}-${dayNum}`);
+                      }}
                       disabled={(date: Date) =>
-                        isWeekend(date) || date < new Date(new Date().setHours(0, 0, 0, 0))
+                        isWeekend(date) ||
+                        date < new Date(new Date().setHours(0, 0, 0, 0))
                       }
                       className="rounded-md border-0 shadow-none"
                     />
@@ -572,26 +1061,64 @@ export default function MisCitasPage() {
                     "13:00",
                     "13:30",
                     "14:00",
-                  ].map((hora) => (
-                    <button
-                      key={hora}
-                      onClick={() => setHoraSeleccionada(hora)}
-                      className={`rounded-lg border px-3 py-2 text-sm sm:text-base font-semibold transition-all text-center
-                        ${horaSeleccionada === hora
-                          ? "border-[#BC5F36] bg-[#BC5F36] text-white"
-                          : "border-[#eadacb] bg-[#fffaf4] text-[#2b1b12] hover:border-[#BC5F36]"
-                        }`}
-                    >
-                      {hora}
-                    </button>
-                  ))}
+                  ].map((hora) => {
+                    const deshabilitada = horaEsPasada(hora, fechaDate);
+
+                    return (
+                      <div key={hora} className="relative group">
+                        <button
+                          disabled={deshabilitada}
+                          onClick={() =>
+                            !deshabilitada && setHoraSeleccionada(hora)
+                          }
+                          className={`
+          rounded-lg border px-3 py-2 text-sm sm:text-base font-semibold 
+          transition-all text-center select-none w-full
+
+          ${
+            deshabilitada
+              ? "cursor-not-allowed opacity-40 bg-[#f5e9e4] border-[#e0cfc5]"
+              : horaSeleccionada === hora
+              ? "bg-[#BC5F36] border-[#BC5F36] text-white shadow-md cursor-pointer"
+              : "bg-[#fffaf4] border-[#eadacb] text-[#2b1b12] cursor-pointer hover:bg-[#ffe8df] hover:border-[#BC5F36]"
+          }
+        `}
+                        >
+                          {hora}
+                        </button>
+
+                        {/* TOOLTIP */}
+                        {deshabilitada && (
+                          <div
+                            className="
+            absolute -top-10 left-1/2 -translate-x-1/2
+            bg-[#2b1b12] text-[#fffaf4] text-xs
+            px-3 py-1 rounded-lg shadow-lg border border-[#eadacb]
+            opacity-0 group-hover:opacity-100 transition-opacity duration-200
+            pointer-events-none whitespace-nowrap
+          "
+                          >
+                            Esta hora ya pasó hoy ⏳
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* CONFIRMAR */}
               <div className="pt-6 text-center sticky bottom-4 bg-white/80 backdrop-blur-sm py-3 rounded-xl shadow-md sm:static sm:shadow-none sm:bg-transparent">
                 <Button
-                  className="px-8 py-3"
+                  className={`
+    px-8 py-3 transition-all duration-200 
+    cursor-pointer select-none
+    ${
+      !fecha || !horaSeleccionada
+        ? "opacity-60 cursor-not-allowed"
+        : "hover:bg-[#a64d2e] hover:shadow-md"
+    }
+  `}
                   disabled={!fecha || !horaSeleccionada}
                   onClick={confirmarCita}
                 >
@@ -696,7 +1223,21 @@ export default function MisCitasPage() {
           {/* BOTÓN FINALIZAR */}
           <div className="mt-10 flex justify-center">
             <Button
-              className="bg-[#BC5F36] hover:bg-[#a64d2e] text-white text-base px-12 py-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200"
+              className="
+    bg-[#BC5F36] 
+    hover:bg-[#a64d2e] 
+    text-white 
+    text-base 
+    px-12 
+    py-4 
+    rounded-xl 
+    shadow-md 
+    transition-all 
+    duration-200 
+    cursor-pointer 
+    hover:shadow-lg 
+    select-none
+  "
               onClick={handleFinalizar}
             >
               Finalizar
@@ -704,6 +1245,19 @@ export default function MisCitasPage() {
           </div>
         </section>
       )}
+      <ConfirmCancelModal
+        open={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={() => citaAEliminar && cancelarCita(citaAEliminar)}
+      />
+
+      <ConfirmCancelSolicitudModal
+        open={showCancelSolicitudModal}
+        onClose={() => setShowCancelSolicitudModal(false)}
+        onConfirm={() =>
+          solicitudAEliminar && cancelarSolicitud(solicitudAEliminar)
+        }
+      />
     </div>
   );
 }

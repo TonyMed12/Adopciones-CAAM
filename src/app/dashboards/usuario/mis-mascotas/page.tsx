@@ -9,6 +9,10 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import Link from "next/link";
 import Image from "next/image";
 import dayjs from "dayjs";
+import CertificadoModal from "@/components/certificados/CertificadoModal";
+import { useState } from "react";
+import PageHead from "@/components/layout/PageHead";
+import { Page } from "@/stories/Page";
 
 const fetcher = async () => {
   try {
@@ -22,6 +26,10 @@ const fetcher = async () => {
 };
 
 export default function MisMascotasPage() {
+  const [certificadoAbierto, setCertificadoAbierto] = useState(false);
+  const [mascotaSeleccionada, setMascotaSeleccionada] = useState(null);
+  const adoptante = "Nombre del usuario"; // luego lo jalamos de supabase
+
   const {
     data: mascotas,
     error,
@@ -52,9 +60,7 @@ export default function MisMascotasPage() {
   if (!mascotas || mascotas.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-        <p className="text-lg mb-4">
-          Aún no has adoptado ninguna mascota 🐾
-        </p>
+        <p className="text-lg mb-4">Aún no has adoptado ninguna mascota 🐾</p>
         <Link href="/usuario/mascotas">
           <Button>Ir a adoptar</Button>
         </Link>
@@ -65,15 +71,19 @@ export default function MisMascotasPage() {
   // 🔹 Filtrar duplicados y asegurar keys únicas
   const mascotasUnicas = [
     ...new Map(
-      mascotas.map((m: any) => [m.id ?? m.adopcion_id ?? crypto.randomUUID(), m])
+      mascotas.map((m: any) => [
+        m.id ?? m.adopcion_id ?? crypto.randomUUID(),
+        m,
+      ])
     ).values(),
   ];
 
   return (
     <div className="max-w-7xl mx-auto py-12 px-6">
-      <h1 className="text-3xl font-bold mb-10 text-center text-[#8b4513] tracking-tight">
-        Mis Mascotas Adoptadas
-      </h1>
+      <PageHead
+        title="Mis Mascotas Adoptadas"
+        subtitle="Consulta el seguimiento de las mascotas que has adoptado."
+      />
 
       <div className="grid gap-6 lg:grid-cols-1">
         {mascotasUnicas.map((m: any) => {
@@ -88,8 +98,12 @@ export default function MisMascotasPage() {
             >
               {/* Imagen de la mascota */}
               <div className="relative w-full md:w-[45%] h-64 md:h-auto flex-shrink-0">
-               <img
-                  src={m.imagen_url?.startsWith("http") ? m.imagen_url : "/placeholder.png"}
+                <img
+                  src={
+                    m.imagen_url?.startsWith("http")
+                      ? m.imagen_url
+                      : "/placeholder.png"
+                  }
                   alt={m.nombre}
                   className="object-cover w-full h-full"
                 />
@@ -141,24 +155,24 @@ export default function MisMascotasPage() {
                   </ButtonLink>
 
                   <Button
-                    variant="primary"
-                    size="md"
-                    className="sm:w-auto w-full cursor-pointer"
-                    onClick={() =>
-                      alert(
-                        `📋 Crear cita veterinaria para ${
-                          m.nombre
-                        } (Adopción: ${m.numero_adopcion || "N/A"})`
-                      )
-                    }
+                    onClick={() => {
+                      setMascotaSeleccionada(m);
+                      setCertificadoAbierto(true);
+                    }}
                   >
-                    Crear cita veterinaria
+                    Ver mi certificado de adopción
                   </Button>
                 </div>
               </div>
             </Card>
           );
         })}
+        <CertificadoModal
+          open={certificadoAbierto}
+          onClose={() => setCertificadoAbierto(false)}
+          mascota={mascotaSeleccionada}
+          adoptante={adoptante}
+        />
       </div>
     </div>
   );

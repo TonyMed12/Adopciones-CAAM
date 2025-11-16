@@ -1,6 +1,6 @@
 "use client";
-import React, {useState} from "react";
-import {Button} from "@/components/ui/Button";
+import React, { useState } from "react";
+import { Button } from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import FormMascota from "@/components/masc/FormMascota";
 
@@ -33,7 +33,7 @@ function getFotoSrc(m: RowMascota) {
     return m.foto || null;
 }
 
-export default function MascotasTable({data, actions, deleteDisabledForId}: Props) {
+export default function MascotasTable({ data, actions, deleteDisabledForId }: Props) {
     const [editOpen, setEditOpen] = useState(false);
     const [selected, setSelected] = useState<RowMascota | null>(null);
 
@@ -76,7 +76,7 @@ export default function MascotasTable({data, actions, deleteDisabledForId}: Prop
                             <Th>Raza</Th>
                             <Th>Tamaño</Th>
                             <Th>Edad</Th>
-                            <Th>Descripción</Th>
+                            <Th>Personalidad</Th>
                             <Th className="text-right">Acciones</Th>
                         </tr>
                     </thead>
@@ -143,7 +143,11 @@ export default function MascotasTable({data, actions, deleteDisabledForId}: Prop
                                     <Td>{m.edadMeses || "—"}</Td>
 
                                     <Td className="max-w-[320px]">
-                                        <p className="line-clamp-2 text-slate-700">{m.descripcion || "—"}</p>
+                                        <p className="line-clamp-2 text-slate-700">
+                                            {m.descripcion
+                                                ? m.descripcion.charAt(0).toUpperCase() + m.descripcion.slice(1)
+                                                : "—"}
+                                        </p>
                                     </Td>
 
                                     <Td className="text-right">

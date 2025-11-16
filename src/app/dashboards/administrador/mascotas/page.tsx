@@ -119,7 +119,11 @@ export default function MascotasPage() {
   return (
     <>
       {/* Modal para agregar mascota */}
-      <Modal open={openForm} onClose={() => setOpenForm(false)} title="Agregar Mascota">
+      <Modal
+        open={openForm}
+        onClose={() => setOpenForm(false)}
+        title="Agregar Mascota"
+      >
         <FormMascota
           onCancel={() => setOpenForm(false)}
           onSubmit={async (saved) => {
@@ -144,7 +148,9 @@ export default function MascotasPage() {
             <Button onClick={() => setOpenForm(true)}>
               <Plus size={18} /> Agregar
             </Button>
-            <Button onClick={() => setOpenRazas(true)}>🐶 Gestionar Razas</Button>
+            <Button onClick={() => setOpenRazas(true)}>
+              🐶 Gestionar Razas
+            </Button>
           </div>
         }
       />
@@ -185,17 +191,41 @@ export default function MascotasPage() {
                   return;
                 }
 
-                const confirmar = await toastConfirm("¿Estás seguro de que deseas eliminar esta mascota?");
+                const confirmar = await toastConfirm(
+                  "¿Estás seguro de que deseas eliminar esta mascota?"
+                );
                 if (!confirmar) return;
 
-                try {
-                  await eliminarMascota(id);
-                  toast.success("Mascota eliminada correctamente 🗑️");
-                  await fetchMascotas();
-                } catch (err: any) {
-                  console.error("Error eliminando mascota:", err);
-                  toast.error(err.message || "No se pudo eliminar la mascota");
+                const res = await eliminarMascota(id);
+
+                if (!res.success) {
+                  // Mostrar mensajes según el motivo
+                  switch (res.reason) {
+                    case "no_eliminable":
+                      toast.error(
+                        "La mascota no se puede eliminar porque está en proceso o adoptada."
+                      );
+                      break;
+
+                    case "no_existe":
+                      toast.error("La mascota ya no existe.");
+                      break;
+
+                    case "error_estado":
+                      toast.error(
+                        "No se pudo verificar el estado de la mascota."
+                      );
+                      break;
+
+                    default:
+                      toast.error("No se pudo eliminar la mascota.");
+                  }
+                  return; // detener flujo, no refrescar tabla
                 }
+
+                // Si sí se eliminó
+                toast.success("Mascota eliminada correctamente 🗑️");
+                await fetchMascotas();
               },
             }}
             deleteDisabledForId={() => false}
@@ -227,7 +257,9 @@ export default function MascotasPage() {
                   onDelete={async () => {
                     if (!selectedMascota) return;
 
-                    const confirm = await toastConfirm(":¿Seguro que deseas eliminar esta mascota?");
+                    const confirm = await toastConfirm(
+                      ":¿Seguro que deseas eliminar esta mascota?"
+                    );
                     if (!confirm) return;
 
                     try {
