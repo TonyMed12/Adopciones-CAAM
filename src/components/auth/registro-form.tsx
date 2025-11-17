@@ -90,6 +90,14 @@ export default function RegistroForm() {
   const [showRequirements, setShowRequirements] = useState(false);
 
   const totalSteps = 3;
+  //Otra funcion para fecha
+  const formatFecha = (value: string) => {
+    const digits = value.replace(/\D/g, ""); // Solo números
+
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+  };
 
   //Funcion para completar fecha de nacimiento
   const FechaInput = forwardRef<HTMLInputElement, any>(
@@ -739,48 +747,46 @@ export default function RegistroForm() {
           <DatePicker
             selected={
               formData.fecha_nacimiento
-                ? parseLocalDate(formData.fecha_nacimiento)
+                ? parseLocalDate(formData.fecha_nacimiento) // La función que ya te di
                 : null
             }
             onChange={(date: Date | null) => {
               if (date) {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, "0");
-                const day = String(date.getDate()).padStart(2, "0");
-                handleInputChange(
-                  "fecha_nacimiento",
-                  `${day}/${month}/${year}`
-                );
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, "0");
+                const d = String(date.getDate()).padStart(2, "0");
+
+                handleInputChange("fecha_nacimiento", `${y}-${m}-${d}`);
               } else {
                 handleInputChange("fecha_nacimiento", "");
               }
             }}
+            onChangeRaw={(e: any) => {
+              const input = e.target as HTMLInputElement;
+              if (!input) return;
+
+              const formatted = formatFecha(input.value);
+              input.value = formatted;
+
+              if (formatted.length === 10) {
+                const [dd, mm, yyyy] = formatted.split("/");
+                handleInputChange("fecha_nacimiento", `${yyyy}-${mm}-${dd}`);
+              }
+            }}
             dateFormat="dd/MM/yyyy"
+            placeholderText="Selecciona o escribe tu fecha de nacimiento"
+            className={cn(
+              "w-full pl-10 pr-10 py-2 border rounded-md cursor-pointer",
+              "hover:border-[#8B5E34] focus:border-[#8B5E34] focus:ring-2 focus:ring-[#8B5E34]/20 focus:outline-none",
+              errors.fecha_nacimiento?.length > 0
+                ? "border-red-500"
+                : "border-gray-300"
+            )}
+            wrapperClassName="w-full"
             maxDate={new Date()}
             showYearDropdown
             showMonthDropdown
             dropdownMode="select"
-            placeholderText="Selecciona o escribe tu fecha de nacimiento"
-            customInput={
-              <FechaInput
-                placeholder="Selecciona o escribe tu fecha de nacimiento"
-                value={
-                  formData.fecha_nacimiento
-                    ? formData.fecha_nacimiento.replace(/-/g, "/")
-                    : ""
-                }
-                onChange={(v: string) => {
-                  // Convertir dd/mm/yyyy → yyyy-mm-dd
-                  const parts = v.split("/");
-                  if (parts.length === 3 && parts[2].length === 4) {
-                    handleInputChange(
-                      "fecha_nacimiento",
-                      `${parts[2]}-${parts[1]}-${parts[0]}`
-                    );
-                  }
-                }}
-              />
-            }
           />
 
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
