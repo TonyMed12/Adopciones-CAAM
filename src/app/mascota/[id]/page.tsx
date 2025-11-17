@@ -303,7 +303,9 @@ export default async function MascotaPublicPage({
           </div>
         </article>
 
-        <MascotaPublicAdoptButton mascota={mascota} />
+        {mascota.disponible_adopcion && (
+          <MascotaPublicAdoptButton mascota={mascota} />
+        )}
       </main>
     </>
   );
