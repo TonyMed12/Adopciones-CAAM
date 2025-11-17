@@ -118,7 +118,6 @@ Gracias por abrir tu corazón.
         await navigator.share({
           title: `Conoce a ${m.nombre}`,
           text: mensaje,
-          url: linkQR,
         });
         return;
       } catch (err) {
@@ -127,7 +126,6 @@ Gracias por abrir tu corazón.
       }
     }
 
-    // 💻 PC — Copiar enlace al portapapeles (mismo mensaje)
     try {
       await navigator.clipboard.writeText(mensaje);
 
