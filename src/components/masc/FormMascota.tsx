@@ -35,7 +35,7 @@ function validarRangoPeso(valor: number, especie: string) {
   }
 
   if (esp === "gato") {
-    return valor >= 1 && valor <= 12;
+    return valor >= 1 && valor <= 40;
   }
 
   if (esp === "ave") {
@@ -299,6 +299,13 @@ export default function FormMascota({
 
     if (!pesoKg || isNaN(Number(pesoKg)) || Number(pesoKg) <= 0) {
       toast.error("Ingresa un peso válido en kilogramos.");
+      return;
+    }
+
+    const edadNum = Number(edadMeses);
+
+    if (edadNum < 1 || edadNum > 240) {
+      toast.error("La edad debe estar entre 1 y 240 meses.");
       return;
     }
 
@@ -683,6 +690,7 @@ export default function FormMascota({
         <textarea
           rows={4}
           value={descripcion}
+          placeholder="Escribe al menos 10 caracteres..."
           onChange={(e) => setDescripcion(e.target.value)}
         />
       </div>
@@ -733,6 +741,7 @@ export default function FormMascota({
         <textarea
           rows={3}
           value={observacionesMedicas}
+          placeholder="Escribe al menos 10 caracteres..."
           onChange={(e) => setObservacionesMedicas(e.target.value)}
         />
       </div>
