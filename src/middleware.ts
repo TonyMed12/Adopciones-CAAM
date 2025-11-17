@@ -26,7 +26,8 @@ const PUBLIC_PATHS = [
   "/api/auth/recover",
   "/api/auth/check-email",
   "/api/auth/reset-password",   
-  "/api/email/send",            
+  "/api/email/send",      
+  "/api/email/registro",      
 ];
 
 export async function middleware(request: NextRequest) {
@@ -41,6 +42,12 @@ export async function middleware(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
+
+// PERMITIR CUALQUIER PUTISIMO CORREO
+if (pathname.startsWith("/api/email/")) {
+  return NextResponse.next();
+}
+
 
   // Permitir rutas públicas
   if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) {
