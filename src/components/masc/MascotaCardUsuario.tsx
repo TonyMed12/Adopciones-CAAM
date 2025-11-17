@@ -32,6 +32,8 @@ export default function MascotaCardUsuario({
   adoptDisabled?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+
   if (!m) return null;
 
   const fotoSrc = getFotoSrc(m);
@@ -65,7 +67,83 @@ export default function MascotaCardUsuario({
       ? m.colores.map((c) => c.charAt(0).toUpperCase() + c.slice(1)).join(", ")
       : null;
 
-  const handleVerQR = () => qrUrl && window.open(qrUrl, "_blank");
+  const handleVerQR = () => {
+    if (!qrUrl) return;
+    setShowQrModal(true);
+  };
+
+  // Descargar QR (PC y la mayoría de Android)
+  const handleDescargarQR = async () => {
+    if (!qrUrl) return;
+
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${m.nombre}-qr.png`;
+      a.click();
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error al descargar QR", err);
+    }
+  };
+
+  // Compartir QR (PC compatible + Android + iOS)
+  const handleCompartirQR = async () => {
+    const linkQR = `https://caamorelia.vercel.app/mascota/${m.id}`;
+
+    // 📱 ANDROID / iOS — con archivo adjunto
+    if (navigator.share) {
+      try {
+        const response = await fetch(qrUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `${m.nombre}-qr.png`, {
+          type: "image/png",
+        });
+
+        await navigator.share({
+          title: `Conoce a ${m.nombre}`,
+          text: `🐾 *Conoce a ${m.nombre}\n\nAquí tienes su código QR y su enlace directo:\n${linkQR}\n\nSi deseas adoptarla o ver más información, abre el enlace o escanea el QR.`,
+          files: [file],
+        });
+
+        return;
+      } catch (err) {
+        console.warn("El usuario canceló compartir:", err);
+      }
+    }
+
+    // 💻 PC — Copiar enlace al portapapeles
+    try {
+      const mensajePC = `🐾 Conoce a ${m.nombre}\n\nAquí está su enlace directo:\n${linkQR}\n\nDesde este link puedes ver toda su información y adoptarla.`;
+
+      await navigator.clipboard.writeText(mensajePC);
+      console.log("🔗 Link copiado:", linkQR);
+
+      // Pequeño toast visual
+      const t = document.createElement("div");
+      t.innerHTML = `Información copiada al portapapeles`;
+      t.className = `
+      fixed bottom-6 left-1/2 -translate-x-1/2 
+      bg-black text-white px-4 py-2 
+      rounded-xl shadow-lg text-sm opacity-0
+      transition-all duration-300 z-[99999]
+    `;
+      document.body.appendChild(t);
+
+      requestAnimationFrame(() => (t.style.opacity = "1"));
+      setTimeout(() => {
+        t.style.opacity = "0";
+        setTimeout(() => t.remove(), 300);
+      }, 2000);
+    } catch (err) {
+      console.error("No se pudo copiar:", err);
+    }
+  };
 
   // 🎨 Títulos de sección suaves
   const tituloSuave = {
@@ -138,7 +216,6 @@ export default function MascotaCardUsuario({
 
             {/* Info con SCROLL */}
             <div className="flex flex-col p-6 md:p-8 overflow-y-auto max-h-[90vh] text-[#2B1B12] text-base">
-
               {/* ⭐ SECCIÓN 1 */}
               <h3 style={tituloSuave}>Información general</h3>
 
@@ -153,11 +230,15 @@ export default function MascotaCardUsuario({
                 </div>
                 <div>
                   <dt className="font-semibold text-slate-700">Peso</dt>
-                  <dd className="mt-1">{m.peso_kg ? `${m.peso_kg} kg` : "—"}</dd>
+                  <dd className="mt-1">
+                    {m.peso_kg ? `${m.peso_kg} kg` : "—"}
+                  </dd>
                 </div>
                 <div>
                   <dt className="font-semibold text-slate-700">Altura</dt>
-                  <dd className="mt-1">{m.altura_cm ? `${m.altura_cm} cm` : "—"}</dd>
+                  <dd className="mt-1">
+                    {m.altura_cm ? `${m.altura_cm} cm` : "—"}
+                  </dd>
                 </div>
               </dl>
 
@@ -181,7 +262,9 @@ export default function MascotaCardUsuario({
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-slate-700">Descripción física</h4>
+                  <h4 className="font-semibold text-slate-700">
+                    Descripción física
+                  </h4>
                   <p className="mt-1">{m.descripcion_fisica || "—"}</p>
                 </div>
               </div>
@@ -196,14 +279,18 @@ export default function MascotaCardUsuario({
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
                     {m.lugar_rescate && (
                       <div>
-                        <dt className="font-semibold text-slate-700">Lugar de rescate</dt>
+                        <dt className="font-semibold text-slate-700">
+                          Lugar de rescate
+                        </dt>
                         <dd className="mt-1">{m.lugar_rescate}</dd>
                       </div>
                     )}
 
                     {m.condicion_ingreso && (
                       <div>
-                        <dt className="font-semibold text-slate-700">Condición al ingreso</dt>
+                        <dt className="font-semibold text-slate-700">
+                          Condición al ingreso
+                        </dt>
                         <dd className="mt-1">{m.condicion_ingreso}</dd>
                       </div>
                     )}
@@ -211,7 +298,9 @@ export default function MascotaCardUsuario({
 
                   {m.observaciones_medicas && (
                     <p className="mt-2">
-                      <strong className="font-semibold text-slate-700">Observaciones:</strong>{" "}
+                      <strong className="font-semibold text-slate-700">
+                        Observaciones:
+                      </strong>{" "}
                       {m.observaciones_medicas}
                     </p>
                   )}
@@ -220,7 +309,8 @@ export default function MascotaCardUsuario({
 
               {m.fecha_ingreso && (
                 <p className="text-xs text-slate-500 mt-4">
-                  Fecha de ingreso: {new Date(m.fecha_ingreso).toLocaleDateString("es-MX")}
+                  Fecha de ingreso:{" "}
+                  {new Date(m.fecha_ingreso).toLocaleDateString("es-MX")}
                 </p>
               )}
 
@@ -231,9 +321,31 @@ export default function MascotaCardUsuario({
                     src={qrUrl}
                     className="w-28 h-28 sm:w-32 sm:h-32 object-contain border rounded-xl p-2 bg-white shadow-md mt-2"
                   />
-                  <Button variant="ghost" className="mt-2 text-[#FF8414]" onClick={handleVerQR}>
+                  <Button
+                    variant="ghost"
+                    className="mt-2 text-[#FF8414]"
+                    onClick={handleVerQR}
+                  >
                     Ver QR
                   </Button>
+
+                  <div className="flex items-center gap-3 mt-2">
+                    <Button
+                      variant="ghost"
+                      className="text-[#FF8414]"
+                      onClick={handleDescargarQR}
+                    >
+                      Descargar
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="text-[#FF8414]"
+                      onClick={handleCompartirQR}
+                    >
+                      Compartir
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -251,6 +363,44 @@ export default function MascotaCardUsuario({
                 </Button>
               </div>
             </div>
+            <AnimatePresence>
+              {showQrModal && qrUrl && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 px-4"
+                  onClick={() => setShowQrModal(false)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 10 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full flex flex-col items-center"
+                  >
+                    <div className="w-full flex justify-between items-center mb-4">
+                      <h4 className="text-sm font-extrabold text-[#2B1B12]">
+                        Código QR de {m.nombre}
+                      </h4>
+                      <button
+                        onClick={() => setShowQrModal(false)}
+                        className="p-1 rounded-full hover:bg-slate-100 transition"
+                      >
+                        <X className="w-4 h-4 text-slate-600" />
+                      </button>
+                    </div>
+
+                    <img
+                      src={qrUrl}
+                      alt={`QR de ${m.nombre}`}
+                      className="w-48 h-48 object-contain border rounded-xl p-3 bg-white shadow-md"
+                    />
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.article>
         </motion.div>
       )}

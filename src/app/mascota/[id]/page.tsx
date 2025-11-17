@@ -1,9 +1,14 @@
-
 import { obtenerMascotaPorId } from "@/mascotas/mascotas-actions";
 import HeaderSmart from "@/components/layout/HeaderSmart";
+import MascotaPublicAdoptButton from "@/components/masc/MascotaPublicAdoptButton";
 
-export default async function MascotaPublicPage({ params }: { params: { id: string } }) {
-  const mascota = await obtenerMascotaPorId(params.id);
+export default async function MascotaPublicPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const mascota = await obtenerMascotaPorId(id);
 
   if (!mascota) {
     return (
@@ -145,6 +150,7 @@ export default async function MascotaPublicPage({ params }: { params: { id: stri
             </p>
           </div>
         </article>
+        <MascotaPublicAdoptButton mascota={mascota} />
       </main>
     </>
   );

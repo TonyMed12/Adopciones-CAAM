@@ -11,6 +11,7 @@ export function showSoftToast(message: string) {
     text-sm font-medium
     opacity-0 transition-all duration-300
     z-[99999]
+    text-center flex justify-center
   `;
 
     document.body.appendChild(toast);
