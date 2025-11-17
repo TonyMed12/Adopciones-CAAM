@@ -35,6 +35,26 @@ export default function NuevaContrasenaPage() {
 
   const router = useRouter();
 
+  // 🟢 1. Capturar el token del hash y crear sesión
+  useEffect(() => {
+    const supabase = createClient();
+    const hash = window.location.hash;
+
+    if (hash && hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.replace("#", ""));
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+
+      if (access_token && refresh_token) {
+        supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+      }
+    }
+  }, []);
+
+  // 🟢 2. Validar requisitos al escribir contraseña
   useEffect(() => {
     const reqs = {
       minLength: password.length >= 8,
@@ -46,12 +66,12 @@ export default function NuevaContrasenaPage() {
     setPasswordRequirements(reqs);
   }, [password]);
 
+  // 🟢 3. Enviar y cambiar contraseña
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setMensaje("");
 
-    // Validación antes de enviar
     if (
       !passwordRequirements.minLength ||
       !passwordRequirements.hasUpperCase ||
@@ -89,7 +109,6 @@ export default function NuevaContrasenaPage() {
       }}
     >
       <div className="w-full max-w-md">
-        {/* Encabezado */}
         <div className="text-center mb-6 mt-10">
           <Link href="/(marketing)">
             <Image
@@ -109,22 +128,15 @@ export default function NuevaContrasenaPage() {
           </p>
         </div>
 
-        {/* Tarjeta */}
         <div className="bg-white rounded-2xl shadow-lg border border-[var(--brand-purple)]/15 p-6">
           {error && (
-            <div
-              role="alert"
-              className="mb-4 rounded-lg border border-red-200/70 bg-red-50 px-3 py-2 text-sm text-red-700"
-            >
+            <div className="mb-4 rounded-lg border border-red-200/70 bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
             </div>
           )}
 
           {mensaje && (
-            <div
-              role="alert"
-              className="mb-4 rounded-lg border border-green-200/70 bg-green-50 px-3 py-2 text-sm text-green-700"
-            >
+            <div className="mb-4 rounded-lg border border-green-200/70 bg-green-50 px-3 py-2 text-sm text-green-700">
               {mensaje}
             </div>
           )}
@@ -141,12 +153,11 @@ export default function NuevaContrasenaPage() {
                 onBlur={() => password === "" && setShowRequirements(false)}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[var(--brand-dark)] placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[var(--brand-purple)]/20 focus:border-[var(--brand-purple)] transition"
+                className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5"
                 required
               />
             </label>
 
-            {/* Bloque de Requisitos */}
             {showRequirements && (
               <div className="mt-3 p-3 bg-gray-50 rounded-md space-y-2 border border-gray-200">
                 <p className="text-xs font-semibold text-gray-700 mb-2">
@@ -177,7 +188,7 @@ export default function NuevaContrasenaPage() {
               full
               variant="primary"
               disabled={loading}
-              className="flex items-center justify-center gap-2 cursor-pointer"
+              className="flex items-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -191,7 +202,7 @@ export default function NuevaContrasenaPage() {
           <div className="text-center mt-6">
             <Link
               href="/login"
-              className="text-[var(--brand-purple)] hover:text-[var(--brand-pink)] text-sm font-medium transition-colors cursor-pointer"
+              className="text-[var(--brand-purple)] hover:text-[var(--brand-pink)] text-sm font-medium"
             >
               ← Volver al inicio de sesión
             </Link>
