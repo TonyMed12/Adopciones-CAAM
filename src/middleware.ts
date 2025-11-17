@@ -28,7 +28,8 @@ const PUBLIC_PATHS = [
   "/api/auth/reset-password",   
   "/api/email/send",      
   "/api/email/registro",     
-  "/mascota/[id]",
+  "/api/email/reenviar",       
+  "/mascota",
 ];
 
 export async function middleware(request: NextRequest) {
