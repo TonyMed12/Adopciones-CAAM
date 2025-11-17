@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  Check,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +44,13 @@ interface FormErrors {
   [key: string]: string[];
 }
 
+interface PasswordRequirements {
+  minLength: boolean;
+  hasUpperCase: boolean;
+  hasLowerCase: boolean;
+  hasNumber: boolean;
+}
+
 export default function RegistroForm() {
   const router = useRouter();
   const supabase = createClient();
@@ -64,8 +73,27 @@ export default function RegistroForm() {
   const [curpExists, setCurpExists] = useState(false);
   const [passwordError, setPasswordError] = useState<string>("");
   const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
+  
+  // Estado para requisitos de contraseña en tiempo real
+  const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirements>({
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+  });
+  const [showRequirements, setShowRequirements] = useState(false);
 
   const totalSteps = 3;
+
+  // Función para verificar requisitos de contraseña en tiempo real
+  const checkPasswordRequirements = (password: string) => {
+    setPasswordRequirements({
+      minLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+    });
+  };
 
   // Función para verificar si el email existe
   const checkEmailExists = async (email: string) => {
@@ -148,13 +176,10 @@ export default function RegistroForm() {
       return false;
     }
 
-    const hasMinLength = password.length >= 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
+    const { minLength, hasUpperCase, hasLowerCase, hasNumber } = passwordRequirements;
 
-    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber) {
-      setPasswordError("La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número");
+    if (!minLength || !hasUpperCase || !hasLowerCase || !hasNumber) {
+      setPasswordError("La contraseña debe cumplir todos los requisitos");
       return false;
     }
 
@@ -200,12 +225,15 @@ export default function RegistroForm() {
       setCurpExists(false);
     }
 
-    // Si es el campo password, limpiar el error de contraseña
-    if (field === "password") {
+    // Si es el campo password, verificar requisitos en tiempo real
+    if (field === "password" && typeof value === 'string') {
+      checkPasswordRequirements(value);
+      setShowRequirements(value.length > 0);
       setPasswordError("");
+      
       // Si hay confirmPassword, revalidar que coincidan
       if (formData.confirmPassword) {
-        if (typeof value === 'string' && value !== formData.confirmPassword) {
+        if (value !== formData.confirmPassword) {
           setConfirmPasswordError("Las contraseñas no coinciden");
         } else {
           setConfirmPasswordError("");
@@ -311,15 +339,18 @@ export default function RegistroForm() {
       if (!formData.password || formData.password.trim() === "") {
         newErrors.password = ["Campo requerido"];
         setPasswordError("Campo requerido");
-      } else if (passwordError) {
-        newErrors.password = [passwordError];
+      } else if (!passwordRequirements.minLength || !passwordRequirements.hasUpperCase || 
+                 !passwordRequirements.hasLowerCase || !passwordRequirements.hasNumber) {
+        newErrors.password = ["La contraseña debe cumplir todos los requisitos"];
+        setPasswordError("La contraseña debe cumplir todos los requisitos");
       }
 
       if (!formData.confirmPassword || formData.confirmPassword.trim() === "") {
         newErrors.confirmPassword = ["Campo requerido"];
         setConfirmPasswordError("Campo requerido");
-      } else if (confirmPasswordError) {
-        newErrors.confirmPassword = [confirmPasswordError];
+      } else if (formData.confirmPassword !== formData.password) {
+        newErrors.confirmPassword = ["Las contraseñas no coinciden"];
+        setConfirmPasswordError("Las contraseñas no coinciden");
       }
 
       if (!formData.acceptTerms) {
@@ -333,19 +364,6 @@ export default function RegistroForm() {
     // Si hay errores, mostrarlos y retornar false
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      return false;
-    }
-
-    // Validación con schema de Zod
-    const result = getStepSchema(currentStep).safeParse(stepData);
-    if (!result.success) {
-      const schemaErrors: FormErrors = {};
-      result.error.issues.forEach((issue) => {
-        const field = issue.path[0] as string;
-        if (!schemaErrors[field]) schemaErrors[field] = [];
-        schemaErrors[field].push(issue.message);
-      });
-      setErrors(schemaErrors);
       return false;
     }
 
@@ -419,6 +437,23 @@ export default function RegistroForm() {
       setIsLoading(false);
     }
   };
+
+  // Componente para mostrar un requisito de contraseña
+  const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
+    <div className="flex items-center space-x-2">
+      {met ? (
+        <Check className="h-4 w-4 text-green-600" />
+      ) : (
+        <X className="h-4 w-4 text-red-600" />
+      )}
+      <span className={cn(
+        "text-sm",
+        met ? "text-green-600" : "text-red-600"
+      )}>
+        {text}
+      </span>
+    </div>
+  );
 
   // Paso 1: Datos personales
   const renderStep1 = () => (
@@ -697,7 +732,6 @@ export default function RegistroForm() {
             <option value="Desempleado">Desempleado</option>
             <option value="Otro">Otro</option>
           </select>
-          {/* Flecha personalizada */}
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
             <svg className="h-4 w-4 text-[#8B5E34]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -756,12 +790,18 @@ export default function RegistroForm() {
             )}
           </Button>
         </div>
-        {!passwordError && !errors.password && (
-          <p className="text-xs text-gray-500">
-            Debe incluir: mínimo 8 caracteres, una mayúscula, una minúscula y
-            un número
-          </p>
+        
+        {/* Indicadores de requisitos en tiempo real */}
+        {showRequirements && (
+          <div className="mt-3 p-3 bg-gray-50 rounded-md space-y-2 border border-gray-200">
+            <p className="text-xs font-semibold text-gray-700 mb-2">Requisitos de la contraseña:</p>
+            <RequirementItem met={passwordRequirements.minLength} text="Mínimo 8 caracteres" />
+            <RequirementItem met={passwordRequirements.hasUpperCase} text="Al menos una letra mayúscula" />
+            <RequirementItem met={passwordRequirements.hasLowerCase} text="Al menos una letra minúscula" />
+            <RequirementItem met={passwordRequirements.hasNumber} text="Al menos un número" />
+          </div>
         )}
+        
         {passwordError && (
           <div className="flex items-start space-x-2 text-red-600">
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
