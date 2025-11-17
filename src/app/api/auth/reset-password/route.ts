@@ -40,7 +40,10 @@ export async function POST(req: Request) {
     const nombre = data?.user?.user_metadata?.nombre || "Usuario";
 
     // 2️⃣ Enviar el correo usando tu sistema
-    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/email/send`, {
+const baseUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://caamorelia.vercel.app";
+
+await fetch(`${baseUrl}/api/email/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
