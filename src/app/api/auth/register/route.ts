@@ -7,14 +7,17 @@ export async function POST(req: Request) {
 
     console.log("📝 Iniciando registro para:", formData.email);
 
-    // ✅ Usar admin.createUser en lugar de signUp
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: formData.email,
-      password: formData.password,
-      user_metadata: {
-        nombre: formData.nombres,
-      },
-    });
+    // =======================================
+    // 1️⃣ CREAR USUARIO EN SUPABASE
+    // =======================================
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: formData.email,
+        password: formData.password,
+        user_metadata: {
+          nombre: formData.nombres,
+        },
+      });
 
     console.log("👤 Resultado creación usuario:", {
       userId: authData?.user?.id,
@@ -29,14 +32,18 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("💾 Creando perfil para usuario:", authData.user.id);
+    const userId = authData.user.id;
 
-    // Crear perfil
+    // =======================================
+    // 2️⃣ CREAR PERFIL EN TABLA perfiles
+    // =======================================
+    console.log("💾 Creando perfil para usuario:", userId);
+
     const { error: perfilError } = await supabaseAdmin
       .from("perfiles")
       .insert([
         {
-          id: authData.user.id,
+          id: userId,
           nombres: formData.nombres,
           apellido_paterno: formData.apellido_paterno,
           apellido_materno: formData.apellido_materno || null,
@@ -51,22 +58,68 @@ export async function POST(req: Request) {
 
     if (perfilError) {
       console.error("❌ Error creando perfil:", perfilError);
-      
-      // ✅ Si falla el perfil, elimina el usuario para evitar inconsistencias
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      
+
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+
       return NextResponse.json(
         { error: `Error creando perfil: ${perfilError.message}` },
         { status: 400 }
       );
     }
 
-    console.log("✅ Usuario y perfil creados exitosamente");
-    return NextResponse.json({ success: true }, { status: 200 });
+    // =======================================
+    // 3️⃣ GENERAR LINK DE CONFIRMACIÓN
+    // =======================================
+    console.log("🔗 Generando link de verificación…");
 
+    const { data: linkData, error: linkError } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "signup",
+        email: formData.email,
+        password: formData.password, // requerido por Supabase
+      });
+
+    if (linkError) {
+      console.error("❌ Error generando link de verificación:", linkError);
+      return NextResponse.json(
+        {
+          error:
+            linkError.message ||
+            "No se pudo generar el link de verificación.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const confirmationUrl = linkData?.properties?.action_link;
+
+    console.log("✅ Link de confirmación generado:", confirmationUrl);
+
+    if (!confirmationUrl) {
+      return NextResponse.json(
+        { error: "Supabase no devolvió el link de confirmación" },
+        { status: 500 }
+      );
+    }
+
+    console.log("🎉 Usuario, perfil y link generados con éxito.");
+
+    // =======================================
+    // 4️⃣ RESPUESTA FINAL PARA handleSubmit
+    // =======================================
+    return NextResponse.json(
+      {
+        success: true,
+        confirmationUrl,
+      },
+      { status: 200 }
+    );
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Error desconocido";
+    const errorMessage =
+      err instanceof Error ? err.message : "Error desconocido";
+
     console.error("❌ Error general en registro:", errorMessage);
+
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

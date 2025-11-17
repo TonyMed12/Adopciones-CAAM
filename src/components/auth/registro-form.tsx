@@ -79,12 +79,13 @@ export default function RegistroForm() {
   const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
 
   // Estado para requisitos de contraseña en tiempo real
-  const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirements>({
-    minLength: false,
-    hasUpperCase: false,
-    hasLowerCase: false,
-    hasNumber: false,
-  });
+  const [passwordRequirements, setPasswordRequirements] =
+    useState<PasswordRequirements>({
+      minLength: false,
+      hasUpperCase: false,
+      hasLowerCase: false,
+      hasNumber: false,
+    });
   const [showRequirements, setShowRequirements] = useState(false);
 
   const totalSteps = 3;
@@ -180,7 +181,8 @@ export default function RegistroForm() {
       return false;
     }
 
-    const { minLength, hasUpperCase, hasLowerCase, hasNumber } = passwordRequirements;
+    const { minLength, hasUpperCase, hasLowerCase, hasNumber } =
+      passwordRequirements;
 
     if (!minLength || !hasUpperCase || !hasLowerCase || !hasNumber) {
       setPasswordError("La contraseña debe cumplir todos los requisitos");
@@ -230,7 +232,7 @@ export default function RegistroForm() {
     }
 
     // Si es el campo password, verificar requisitos en tiempo real
-    if (field === "password" && typeof value === 'string') {
+    if (field === "password" && typeof value === "string") {
       checkPasswordRequirements(value);
       setShowRequirements(value.length > 0);
       setPasswordError("");
@@ -249,7 +251,11 @@ export default function RegistroForm() {
     if (field === "confirmPassword") {
       setConfirmPasswordError("");
       // Verificar si coincide con password
-      if (typeof value === 'string' && formData.password && value !== formData.password) {
+      if (
+        typeof value === "string" &&
+        formData.password &&
+        value !== formData.password
+      ) {
         setConfirmPasswordError("Las contraseñas no coinciden");
       }
     }
@@ -308,10 +314,16 @@ export default function RegistroForm() {
       if (!formData.nombres || formData.nombres.trim() === "") {
         newErrors.nombres = ["Por favor ingresa tu nombre(es)"];
       }
-      if (!formData.apellido_paterno || formData.apellido_paterno.trim() === "") {
+      if (
+        !formData.apellido_paterno ||
+        formData.apellido_paterno.trim() === ""
+      ) {
         newErrors.apellido_paterno = ["Por favor ingresa tu apellido paterno"];
       }
-      if (!formData.apellido_materno || formData.apellido_materno.trim() === "") {
+      if (
+        !formData.apellido_materno ||
+        formData.apellido_materno.trim() === ""
+      ) {
         newErrors.apellido_materno = ["Por favor ingresa tu apellido materno"];
       }
       if (!formData.email || formData.email.trim() === "") {
@@ -327,7 +339,9 @@ export default function RegistroForm() {
     // Validación del Paso 2
     if (currentStep === 2) {
       if (!formData.fecha_nacimiento) {
-        newErrors.fecha_nacimiento = ["Por favor selecciona tu fecha de nacimiento (mayor de edad)"];
+        newErrors.fecha_nacimiento = [
+          "Por favor selecciona tu fecha de nacimiento (mayor de edad)",
+        ];
       }
       if (!formData.curp || formData.curp.trim() === "") {
         newErrors.curp = ["Por favor ingresa tu CURP"];
@@ -346,14 +360,22 @@ export default function RegistroForm() {
       if (!formData.password || formData.password.trim() === "") {
         newErrors.password = ["Ingresa una contraseña"];
         setPasswordError("Ingresa una contraseña valida");
-      } else if (!passwordRequirements.minLength || !passwordRequirements.hasUpperCase ||
-        !passwordRequirements.hasLowerCase || !passwordRequirements.hasNumber) {
-        newErrors.password = ["La contraseña debe cumplir todos los requisitos"];
+      } else if (
+        !passwordRequirements.minLength ||
+        !passwordRequirements.hasUpperCase ||
+        !passwordRequirements.hasLowerCase ||
+        !passwordRequirements.hasNumber
+      ) {
+        newErrors.password = [
+          "La contraseña debe cumplir todos los requisitos",
+        ];
         setPasswordError("La contraseña debe cumplir todos los requisitos");
       }
 
       if (!formData.confirmPassword || formData.confirmPassword.trim() === "") {
-        newErrors.confirmPassword = ["Ingresa la confirmación de la contraseña"];
+        newErrors.confirmPassword = [
+          "Ingresa la confirmación de la contraseña",
+        ];
         setConfirmPasswordError("Ingresa la confirmación de la contraseña");
       } else if (formData.confirmPassword !== formData.password) {
         newErrors.confirmPassword = ["Las contraseñas no coinciden"];
@@ -419,7 +441,11 @@ export default function RegistroForm() {
     }
 
     setIsLoading(true);
+
     try {
+      // ==========================================================
+      // 1️⃣ REGISTRAR USUARIO (Tu endpoint /api/auth/register)
+      // ==========================================================
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -430,16 +456,38 @@ export default function RegistroForm() {
 
       if (!res.ok) throw new Error(data.error || "Error en el registro");
 
+      // ==========================================================
+      // 2️⃣ ENVIAR CORREO DESPUÉS DEL REGISTRO (NO bloquear si falla)
+      // ==========================================================
+      try {
+        await fetch("/api/email/registro", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email || "",
+            nombre: formData.nombres || "",
+            confirmationUrl: data?.confirmationUrl || "",
+          }),
+        });
+      } catch (emailError) {
+        console.error("No se pudo enviar el correo:", emailError);
+        // 🔥 Importante: NO hacemos return
+        // El registro no debe fallar por el correo
+      }
+
+      // ==========================================================
+      // 3️⃣ REDIRECCIÓN FINAL
+      // ==========================================================
       router.push("/pendiente");
     } catch (error: unknown) {
       console.error("Error en registro:", error);
+
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Ocurrió un error durante el registro";
-      setErrors({
-        general: [errorMessage],
-      });
+
+      setErrors({ general: [errorMessage] });
     } finally {
       setIsLoading(false);
     }
@@ -453,10 +501,7 @@ export default function RegistroForm() {
       ) : (
         <X className="h-4 w-4 text-red-600" />
       )}
-      <span className={cn(
-        "text-sm",
-        met ? "text-green-600" : "text-red-600"
-      )}>
+      <span className={cn("text-sm", met ? "text-green-600" : "text-red-600")}>
         {text}
       </span>
     </div>
@@ -630,13 +675,20 @@ export default function RegistroForm() {
         <div className="relative">
           <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none" />
           <DatePicker
-            selected={formData.fecha_nacimiento ? new Date(formData.fecha_nacimiento) : null}
+            selected={
+              formData.fecha_nacimiento
+                ? new Date(formData.fecha_nacimiento)
+                : null
+            }
             onChange={(date: Date | null) => {
               if (date) {
                 const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                handleInputChange("fecha_nacimiento", `${year}-${month}-${day}`);
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                handleInputChange(
+                  "fecha_nacimiento",
+                  `${year}-${month}-${day}`
+                );
               } else {
                 handleInputChange("fecha_nacimiento", "");
               }
@@ -650,7 +702,9 @@ export default function RegistroForm() {
             className={cn(
               "w-full pl-10 pr-10 py-2 border rounded-md cursor-pointer",
               "hover:border-[#8B5E34] focus:border-[#8B5E34] focus:ring-2 focus:ring-[#8B5E34]/20 focus:outline-none",
-              errors.fecha_nacimiento?.length > 0 ? "border-red-500" : "border-gray-300"
+              errors.fecha_nacimiento?.length > 0
+                ? "border-red-500"
+                : "border-gray-300"
             )}
             wrapperClassName="w-full"
             disabled={isLoading}
@@ -725,12 +779,16 @@ export default function RegistroForm() {
               "bg-white transition-all",
               "hover:border-[#8B5E34] focus:border-[#8B5E34] focus:ring-2 focus:ring-[#8B5E34]/20 focus:outline-none",
               "text-sm",
-              errors.ocupacion?.length > 0 ? "border-red-500" : "border-gray-300",
+              errors.ocupacion?.length > 0
+                ? "border-red-500"
+                : "border-gray-300",
               isLoading && "opacity-50 cursor-not-allowed"
             )}
             disabled={isLoading}
           >
-            <option value="" disabled>Selecciona una ocupación</option>
+            <option value="" disabled>
+              Selecciona una ocupación
+            </option>
             <option value="Estudiante">Estudiante</option>
             <option value="Empleado">Empleado</option>
             <option value="Emprendedor">Emprendedor</option>
@@ -740,8 +798,18 @@ export default function RegistroForm() {
             <option value="Otro">Otro</option>
           </select>
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-            <svg className="h-4 w-4 text-[#8B5E34]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="h-4 w-4 text-[#8B5E34]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </div>
@@ -801,11 +869,25 @@ export default function RegistroForm() {
         {/* Indicadores de requisitos en tiempo real */}
         {showRequirements && (
           <div className="mt-3 p-3 bg-gray-50 rounded-md space-y-2 border border-gray-200">
-            <p className="text-xs font-semibold text-gray-700 mb-2">Requisitos de la contraseña:</p>
-            <RequirementItem met={passwordRequirements.minLength} text="Mínimo 8 caracteres" />
-            <RequirementItem met={passwordRequirements.hasUpperCase} text="Al menos una letra mayúscula" />
-            <RequirementItem met={passwordRequirements.hasLowerCase} text="Al menos una letra minúscula" />
-            <RequirementItem met={passwordRequirements.hasNumber} text="Al menos un número" />
+            <p className="text-xs font-semibold text-gray-700 mb-2">
+              Requisitos de la contraseña:
+            </p>
+            <RequirementItem
+              met={passwordRequirements.minLength}
+              text="Mínimo 8 caracteres"
+            />
+            <RequirementItem
+              met={passwordRequirements.hasUpperCase}
+              text="Al menos una letra mayúscula"
+            />
+            <RequirementItem
+              met={passwordRequirements.hasLowerCase}
+              text="Al menos una letra minúscula"
+            />
+            <RequirementItem
+              met={passwordRequirements.hasNumber}
+              text="Al menos un número"
+            />
           </div>
         )}
 
@@ -1010,7 +1092,9 @@ export default function RegistroForm() {
             ) : (
               <Button
                 onClick={handleSubmit}
-                disabled={isLoading || !!passwordError || !!confirmPasswordError}
+                disabled={
+                  isLoading || !!passwordError || !!confirmPasswordError
+                }
                 className="bg-[#8B5E34] hover:bg-[#734C29] text-white font-semibold"
               >
                 {isLoading ? "Registrando..." : "Crear Cuenta"}

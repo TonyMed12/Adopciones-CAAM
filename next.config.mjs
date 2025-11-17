@@ -8,6 +8,9 @@ const nextConfig = {
     // ✅ Evita que ESLint bloquee el build
     ignoreDuringBuilds: true,
   },
+  images: {
+    domains: ["images.unsplash.com"],
+  },
 };
 
 export default nextConfig;

@@ -5,34 +5,35 @@ import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_PATHS = [
-  "/", 
-  "/adopciones", 
-  "/quienes-somos", 
+  "/",
+  "/adopciones",
+  "/quienes-somos",
   "/contacto",
-  "/login", 
-  "/registro", 
-  "/recuperacion", 
-  "/recuperacion/reestablecer_contrasena", 
-  "/verificar-email", 
-  "/confirmado", 
+  "/login",
+  "/registro",
+  "/recuperacion",
+  "/recuperacion/reestablecer_contrasena",
+  "/verificar-email",
+  "/confirmado",
   "/pendiente",
   "/dashboards/usuario/mascotas",
   "/dashboards/mascotas",
   "/dashboards/usuarios",
   "/nosotros",
-  "usuario/adopcion",
+  "/usuario/adopcion",
   "/api/auth/register",
   "/api/auth/login",
   "/api/auth/recover",
-   "/api/auth/check-email", //nueva ruta del check-email
-  "/mascota",
+  "/api/auth/check-email",
+  "/api/auth/reset-password",   
+  "/api/email/send",            
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  console.log("Middleware activao papito:", request.nextUrl.pathname);
+  console.log("Middleware activao papito:", pathname);
 
-  // archivos estáticos
+  // Permitir archivos estáticos
   if (
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
@@ -46,11 +47,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 🔒 Verificar sesión Supabase
+  // Resto de rutas requieren sesión
   return updateSession(request);
 }
 
-export const config = { //todo a 5 varos, csm
+export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],

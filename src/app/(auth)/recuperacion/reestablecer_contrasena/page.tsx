@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,21 +8,65 @@ import { Loader2, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 
+function RequirementItem({ met, text }: { met: boolean; text: string }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className={met ? "text-green-600" : "text-red-500"}>
+        {met ? "✔" : "✘"}
+      </span>
+      <span className={met ? "text-green-600" : "text-red-500"}>{text}</span>
+    </div>
+  );
+}
+
 export default function NuevaContrasenaPage() {
   const [password, setPassword] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [showRequirements, setShowRequirements] = useState(false);
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+  });
+
   const router = useRouter();
+
+  useEffect(() => {
+    const reqs = {
+      minLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+    };
+
+    setPasswordRequirements(reqs);
+  }, [password]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setMensaje("");
+
+    // Validación antes de enviar
+    if (
+      !passwordRequirements.minLength ||
+      !passwordRequirements.hasUpperCase ||
+      !passwordRequirements.hasLowerCase ||
+      !passwordRequirements.hasNumber
+    ) {
+      setError("La contraseña no cumple con los requisitos.");
+      return;
+    }
+
     setLoading(true);
 
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password });
+
     setLoading(false);
 
     if (error) {
@@ -75,6 +119,7 @@ export default function NuevaContrasenaPage() {
               {error}
             </div>
           )}
+
           {mensaje && (
             <div
               role="alert"
@@ -92,12 +137,40 @@ export default function NuevaContrasenaPage() {
               <input
                 type="password"
                 value={password}
+                onFocus={() => setShowRequirements(true)}
+                onBlur={() => password === "" && setShowRequirements(false)}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[var(--brand-dark)] placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[var(--brand-purple)]/20 focus:border-[var(--brand-purple)] transition"
                 required
               />
             </label>
+
+            {/* Bloque de Requisitos */}
+            {showRequirements && (
+              <div className="mt-3 p-3 bg-gray-50 rounded-md space-y-2 border border-gray-200">
+                <p className="text-xs font-semibold text-gray-700 mb-2">
+                  Requisitos de la contraseña:
+                </p>
+
+                <RequirementItem
+                  met={passwordRequirements.minLength}
+                  text="Mínimo 8 caracteres"
+                />
+                <RequirementItem
+                  met={passwordRequirements.hasUpperCase}
+                  text="Al menos una letra mayúscula"
+                />
+                <RequirementItem
+                  met={passwordRequirements.hasLowerCase}
+                  text="Al menos una letra minúscula"
+                />
+                <RequirementItem
+                  met={passwordRequirements.hasNumber}
+                  text="Al menos un número"
+                />
+              </div>
+            )}
 
             <Button
               type="submit"
