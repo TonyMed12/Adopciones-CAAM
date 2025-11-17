@@ -27,12 +27,13 @@ const PUBLIC_PATHS = [
   "/api/auth/check-email",
   "/api/auth/reset-password",   
   "/api/email/send",      
-  "/api/email/registro",      
+  "/api/email/registro",     
+  "/mascota/[id]",
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  console.log("Middleware activao papito:", pathname);
+  console.log("Middleware activado para:", pathname);
 
   // Permitir archivos estáticos
   if (
