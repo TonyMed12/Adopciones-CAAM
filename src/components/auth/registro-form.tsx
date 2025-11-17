@@ -41,6 +41,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import TerminosModal from "../terminos/TerminosModal";
 import PoliticaPrivacidadModal from "../terminos/PoliticaPrivacidadModal";
+import React, { forwardRef } from "react";
 
 interface FormErrors {
   [key: string]: string[];
@@ -89,6 +90,49 @@ export default function RegistroForm() {
   const [showRequirements, setShowRequirements] = useState(false);
 
   const totalSteps = 3;
+
+  //Funcion para completar fecha de nacimiento
+  const FechaInput = forwardRef<HTMLInputElement, any>(
+    ({ value, onClick, onChange, placeholder }, ref) => {
+      // Autoformatear: dd/mm/yyyy
+      const formatInput = (val: string) => {
+        const digits = val.replace(/\D/g, ""); // remover letras
+        let formatted = digits;
+
+        if (digits.length >= 3) {
+          formatted = digits.slice(0, 2) + "/" + digits.slice(2);
+        }
+        if (digits.length >= 5) {
+          formatted =
+            digits.slice(0, 2) +
+            "/" +
+            digits.slice(2, 4) +
+            "/" +
+            digits.slice(4, 8);
+        }
+
+        return formatted;
+      };
+
+      const handleChange = (e: any) => {
+        const newValue = formatInput(e.target.value);
+        onChange(newValue);
+      };
+
+      return (
+        <input
+          ref={ref}
+          value={value}
+          onClick={onClick}
+          onChange={handleChange}
+          placeholder={placeholder}
+          className="w-full pl-10 pr-10 py-2 border rounded-md hover:border-[#8B5E34] 
+        focus:border-[#8B5E34] focus:ring-2 focus:ring-[#8B5E34]/20 focus:outline-none"
+        />
+      );
+    }
+  );
+  FechaInput.displayName = "FechaInput";
 
   // Función para verificar requisitos de contraseña en tiempo real
   const checkPasswordRequirements = (password: string) => {
@@ -400,6 +444,12 @@ export default function RegistroForm() {
     return true;
   };
 
+  // Fecha en calendario sin que se regrese
+  const parseLocalDate = (dateString: string) => {
+    const [year, month, day] = dateString.split("-");
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  };
+
   // Ir al siguiente paso
   const handleNextStep = () => {
     if (validateCurrentStep()) {
@@ -484,6 +534,10 @@ export default function RegistroForm() {
       // ==========================================================
       // 3️⃣ REDIRECCIÓN FINAL
       // ==========================================================
+      localStorage.setItem("registro_email", formData.email || "");
+      localStorage.setItem("registro_nombre", formData.nombres || "");
+      localStorage.setItem("registro_confirmationUrl", data.confirmationUrl);
+
       router.push("/pendiente");
     } catch (error: unknown) {
       console.error("Error en registro:", error);
@@ -576,7 +630,9 @@ export default function RegistroForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="apellido_materno">Apellido Materno</Label>
+        <Label htmlFor="apellido_paterno">
+          Apellido Materno <span className="text-red-500">*</span>
+        </Label>
         <div className="relative">
           <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -683,7 +739,7 @@ export default function RegistroForm() {
           <DatePicker
             selected={
               formData.fecha_nacimiento
-                ? new Date(formData.fecha_nacimiento)
+                ? parseLocalDate(formData.fecha_nacimiento)
                 : null
             }
             onChange={(date: Date | null) => {
@@ -693,7 +749,7 @@ export default function RegistroForm() {
                 const day = String(date.getDate()).padStart(2, "0");
                 handleInputChange(
                   "fecha_nacimiento",
-                  `${year}-${month}-${day}`
+                  `${day}/${month}/${year}`
                 );
               } else {
                 handleInputChange("fecha_nacimiento", "");
@@ -704,17 +760,29 @@ export default function RegistroForm() {
             showYearDropdown
             showMonthDropdown
             dropdownMode="select"
-            placeholderText="Selecciona tu fecha de nacimiento"
-            className={cn(
-              "w-full pl-10 pr-10 py-2 border rounded-md cursor-pointer",
-              "hover:border-[#8B5E34] focus:border-[#8B5E34] focus:ring-2 focus:ring-[#8B5E34]/20 focus:outline-none",
-              errors.fecha_nacimiento?.length > 0
-                ? "border-red-500"
-                : "border-gray-300"
-            )}
-            wrapperClassName="w-full"
-            disabled={isLoading}
+            placeholderText="Selecciona o escribe tu fecha de nacimiento"
+            customInput={
+              <FechaInput
+                placeholder="Selecciona o escribe tu fecha de nacimiento"
+                value={
+                  formData.fecha_nacimiento
+                    ? formData.fecha_nacimiento.replace(/-/g, "/")
+                    : ""
+                }
+                onChange={(v: string) => {
+                  // Convertir dd/mm/yyyy → yyyy-mm-dd
+                  const parts = v.split("/");
+                  if (parts.length === 3 && parts[2].length === 4) {
+                    handleInputChange(
+                      "fecha_nacimiento",
+                      `${parts[2]}-${parts[1]}-${parts[0]}`
+                    );
+                  }
+                }}
+              />
+            }
           />
+
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
             <Calendar className="h-4 w-4 text-[#8B5E34] opacity-60" />
           </div>
