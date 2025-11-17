@@ -2,8 +2,18 @@ import nodemailer from "nodemailer";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
+  
+   // 🟢 1. CONFIRMAR QUE EL ENDPOINT SE EJECUTA
+  console.log("📩 Llegó petición a /api/email/registro");
   try {
     const { email, nombre, confirmationUrl } = await req.json();
+
+// 🟢 2. VERIFICAR LOS DATOS QUE RECIBES DEL FRONT
+    console.log("📝 Datos recibidos en correo registro:", {
+      email,
+      nombre,
+      confirmationUrl,
+    });
 
     // Validaciones básicas
     if (!email || !confirmationUrl) {
@@ -23,6 +33,12 @@ export async function POST(req: Request) {
       tls: {
         rejectUnauthorized: false, // Evita errores TLS en Vercel/local
       },
+    });
+
+    console.log("🔐 Variables SMTP cargadas:", {
+      EMAIL_USER: process.env.EMAIL_USER,
+      EMAIL_PASS: process.env.EMAIL_PASS ? "✔️ cargada" : "❌ vacía",
+      EMAIL_FROM: process.env.EMAIL_FROM,
     });
 
     // ============================
@@ -98,6 +114,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
 
   } catch (error) {
+        console.error("❌ Error completo nodemailer:", JSON.stringify(error, null, 2));
+
     console.error("❌ Error al enviar correo:", error);
     return NextResponse.json(
       { ok: false, error: "Error al enviar el correo." },

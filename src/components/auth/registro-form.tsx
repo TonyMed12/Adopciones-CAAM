@@ -459,6 +459,12 @@ export default function RegistroForm() {
       // ==========================================================
       // 2️⃣ ENVIAR CORREO DESPUÉS DEL REGISTRO (NO bloquear si falla)
       // ==========================================================
+      console.log("📤 Enviando datos al correo:", {
+        email: formData.email,
+        nombre: formData.nombres,
+        confirmationUrl: data?.confirmationUrl,
+      });
+
       try {
         await fetch("/api/email/registro", {
           method: "POST",
