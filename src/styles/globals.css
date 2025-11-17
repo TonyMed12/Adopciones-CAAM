@@ -341,3 +341,20 @@ body {
 .animate-floating {
   animation: floating 3s ease-in-out infinite;
 }
+
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #c8b39c;
+  border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #aa957d;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}

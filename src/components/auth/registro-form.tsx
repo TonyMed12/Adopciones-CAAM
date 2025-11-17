@@ -39,6 +39,8 @@ import {
 } from "@/lib/validations/auth";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import TerminosModal from "../terminos/TerminosModal";
+import PoliticaPrivacidadModal from "../terminos/PoliticaPrivacidadModal";
 
 interface FormErrors {
   [key: string]: string[];
@@ -54,6 +56,8 @@ interface PasswordRequirements {
 export default function RegistroForm() {
   const router = useRouter();
   const supabase = createClient();
+  const [showTerminosModal, setShowTerminosModal] = useState(false);
+  const [showPrivacidadModal, setShowPrivacidadModal] = useState(false);
 
   // Estados del formulario
   const [currentStep, setCurrentStep] = useState(1);
@@ -73,7 +77,7 @@ export default function RegistroForm() {
   const [curpExists, setCurpExists] = useState(false);
   const [passwordError, setPasswordError] = useState<string>("");
   const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
-  
+
   // Estado para requisitos de contraseña en tiempo real
   const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirements>({
     minLength: false,
@@ -230,7 +234,7 @@ export default function RegistroForm() {
       checkPasswordRequirements(value);
       setShowRequirements(value.length > 0);
       setPasswordError("");
-      
+
       // Si hay confirmPassword, revalidar que coincidan
       if (formData.confirmPassword) {
         if (value !== formData.confirmPassword) {
@@ -302,52 +306,55 @@ export default function RegistroForm() {
     // Validación del Paso 1
     if (currentStep === 1) {
       if (!formData.nombres || formData.nombres.trim() === "") {
-        newErrors.nombres = ["Campo requerido"];
+        newErrors.nombres = ["Por favor ingresa tu nombre(es)"];
       }
       if (!formData.apellido_paterno || formData.apellido_paterno.trim() === "") {
-        newErrors.apellido_paterno = ["Campo requerido"];
+        newErrors.apellido_paterno = ["Por favor ingresa tu apellido paterno"];
+      }
+      if (!formData.apellido_materno || formData.apellido_materno.trim() === "") {
+        newErrors.apellido_materno = ["Por favor ingresa tu apellido materno"];
       }
       if (!formData.email || formData.email.trim() === "") {
-        newErrors.email = ["Campo requerido"];
+        newErrors.email = ["Por favor ingresa tu correo electrónico"];
       } else if (emailExists) {
         newErrors.email = ["Este correo electrónico ya está registrado"];
       }
       if (!formData.telefono || formData.telefono.trim() === "") {
-        newErrors.telefono = ["Campo requerido"];
+        newErrors.telefono = ["Por favor ingresa tu número de teléfono"];
       }
     }
 
     // Validación del Paso 2
     if (currentStep === 2) {
       if (!formData.fecha_nacimiento) {
-        newErrors.fecha_nacimiento = ["Campo requerido"];
+        newErrors.fecha_nacimiento = ["Por favor selecciona tu fecha de nacimiento (mayor de edad)"];
       }
       if (!formData.curp || formData.curp.trim() === "") {
-        newErrors.curp = ["Campo requerido"];
+        newErrors.curp = ["Por favor ingresa tu CURP"];
       } else if (curpExists) {
         newErrors.curp = ["Este CURP ya está registrado"];
       } else if (formData.curp.length !== 18) {
         newErrors.curp = ["El CURP debe tener 18 caracteres"];
       }
       if (!formData.ocupacion || formData.ocupacion.trim() === "") {
-        newErrors.ocupacion = ["Campo requerido"];
+        newErrors.ocupacion = ["Por favor selecciona tu ocupación"];
       }
     }
 
     // Validación del Paso 3
     if (currentStep === 3) {
       if (!formData.password || formData.password.trim() === "") {
-        newErrors.password = ["Campo requerido"];
-        setPasswordError("Campo requerido");
-      } else if (!passwordRequirements.minLength || !passwordRequirements.hasUpperCase || 
-                 !passwordRequirements.hasLowerCase || !passwordRequirements.hasNumber) {
+        newErrors.password = ["Ingresa una contraseña"];
+        setPasswordError("Ingresa una contraseña valida");
+      } else if (!passwordRequirements.minLength || !passwordRequirements.hasUpperCase ||
+        !passwordRequirements.hasLowerCase || !passwordRequirements.hasNumber) {
         newErrors.password = ["La contraseña debe cumplir todos los requisitos"];
         setPasswordError("La contraseña debe cumplir todos los requisitos");
       }
 
       if (!formData.confirmPassword || formData.confirmPassword.trim() === "") {
-        newErrors.confirmPassword = ["Campo requerido"];
-        setConfirmPasswordError("Campo requerido");
+        newErrors.confirmPassword = ["Ingresa la confirmación de la contraseña"];
+        setConfirmPasswordError("Ingresa la confirmación de la contraseña");
       } else if (formData.confirmPassword !== formData.password) {
         newErrors.confirmPassword = ["Las contraseñas no coinciden"];
         setConfirmPasswordError("Las contraseñas no coinciden");
@@ -790,7 +797,7 @@ export default function RegistroForm() {
             )}
           </Button>
         </div>
-        
+
         {/* Indicadores de requisitos en tiempo real */}
         {showRequirements && (
           <div className="mt-3 p-3 bg-gray-50 rounded-md space-y-2 border border-gray-200">
@@ -801,7 +808,7 @@ export default function RegistroForm() {
             <RequirementItem met={passwordRequirements.hasNumber} text="Al menos un número" />
           </div>
         )}
-        
+
         {passwordError && (
           <div className="flex items-start space-x-2 text-red-600">
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -876,13 +883,13 @@ export default function RegistroForm() {
           <div className="text-sm">
             <Label htmlFor="acceptTerms" className="cursor-pointer">
               Acepto los{" "}
-              <a
-                href="/terminos"
+              <button
+                type="button"
                 className="text-blue-600 hover:underline"
-                target="_blank"
+                onClick={() => setShowTerminosModal(true)}
               >
                 términos y condiciones
-              </a>
+              </button>
               <span className="text-red-500 ml-1">*</span>
             </Label>
           </div>
@@ -905,17 +912,27 @@ export default function RegistroForm() {
           <div className="text-sm">
             <Label htmlFor="acceptPrivacy" className="cursor-pointer">
               Acepto la{" "}
-              <a
-                href="/privacidad"
+              <button
+                type="button"
                 className="text-blue-600 hover:underline"
-                target="_blank"
+                onClick={() => setShowPrivacidadModal(true)}
               >
                 política de privacidad
-              </a>
+              </button>
               <span className="text-red-500 ml-1">*</span>
             </Label>
           </div>
         </div>
+        <TerminosModal
+          open={showTerminosModal}
+          onClose={() => setShowTerminosModal(false)}
+        />
+
+        <PoliticaPrivacidadModal
+          open={showPrivacidadModal}
+          onClose={() => setShowPrivacidadModal(false)}
+        />
+
         {errors.acceptPrivacy?.map((error, index) => (
           <p key={index} className="text-sm text-red-600 ml-7">
             {error}

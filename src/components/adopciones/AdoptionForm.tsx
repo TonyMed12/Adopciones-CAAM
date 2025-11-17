@@ -3,9 +3,9 @@ import { useState } from "react";
 import { subirFotosEvidencia } from "@/lib/supabase/upload-adopciones";
 import "@/styles/form-mascota.css";
 import { toast } from "sonner";
-import { toastConfirm } from "../ui/toastConfirm";
-import { NuevaAdopcionSchema } from "@/adopciones/adopciones-schemas";
-import { z } from "zod";
+import { Info } from "lucide-react";
+import ModalSeguimiento from "@/components/terminos/ModalSeguimiento";
+import ModalBienestar from "@/components/terminos/ModalBienestar";
 
 /* ====================== MenuSelect (reutilizado del FormMascota) ====================== */
 function MenuSelect({
@@ -56,9 +56,8 @@ function MenuSelect({
               key={opt.value}
               role="option"
               aria-selected={opt.value === value}
-              className={`mselect-item ${
-                opt.value === value ? "is-active" : ""
-              }`}
+              className={`mselect-item ${opt.value === value ? "is-active" : ""
+                }`}
               onClick={() => {
                 onChange(opt.value);
                 setOpen(false);
@@ -117,9 +116,11 @@ export default function AdoptionForm({ defaultValues, onSubmit }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const set = (k: keyof AdoptionPayload, v: any) =>
     setForm((p) => ({ ...p, [k]: v }));
-
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-
+  const [openSeguimiento, setOpenSeguimiento] = useState(false);
+  const [openBienestar, setOpenBienestar] = useState(false);
+  const linkClasses =
+    "text-[#B87333] hover:text-[#8B5E34] underline underline-offset-2 cursor-pointer font-medium";
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (selectedFiles.length + files.length > 3) {
@@ -334,7 +335,7 @@ export default function AdoptionForm({ defaultValues, onSubmit }: Props) {
 
         {/* Previews (aún no subidos) */}
         {selectedFiles.length > 0 ||
-        (form.evidenciaHogarUrls?.length ?? 0) > 0 ? (
+          (form.evidenciaHogarUrls?.length ?? 0) > 0 ? (
           <div className="flex flex-wrap gap-2 mb-2">
             {selectedFiles.map((file, i) => (
               <div key={i} className="relative">
@@ -391,32 +392,69 @@ export default function AdoptionForm({ defaultValues, onSubmit }: Props) {
       <div className="field">
         <label className="mb-2 text-[#8B4513] font-semibold">Compromisos</label>
 
-        <div className="flex flex-col gap-3 mt-2">
-          <label className="inline-flex items-center gap-2 text-sm text-[#4A2C1E]">
-            <input
-              type="checkbox"
-              checked={form.compromisoSeguimiento}
-              onChange={(e) => set("compromisoSeguimiento", e.target.checked)}
-              className="h-4 w-4 accent-[#FF8414] cursor-pointer"
-            />
-            <span>
-              Acepto <b>visitas o llamadas de seguimiento</b> del CAAM.
-            </span>
-          </label>
+        <>
+          <ModalSeguimiento open={openSeguimiento} onClose={() => setOpenSeguimiento(false)} />
+          <ModalBienestar open={openBienestar} onClose={() => setOpenBienestar(false)} />
 
-          <label className="inline-flex items-center gap-2 text-sm text-[#4A2C1E]">
-            <input
-              type="checkbox"
-              checked={form.compromisoCuidado}
-              onChange={(e) => set("compromisoCuidado", e.target.checked)}
-              className="h-4 w-4 accent-[#FF8414] cursor-pointer"
-            />
-            <span>
-              Me comprometo a <b>mantener el bienestar de la mascota</b>{" "}
-              (alimentación, atención veterinaria, no abandono, etc.).
-            </span>
-          </label>
-        </div>
+          <div className="flex flex-col gap-4 mt-2">
+
+            {/* SEGUIMIENTO */}
+            <label className="inline-flex items-start gap-2 text-sm text-[#4A2C1E] leading-snug select-none">
+              <input
+                type="checkbox"
+                checked={form.compromisoSeguimiento}
+                onChange={(e) => set("compromisoSeguimiento", e.target.checked)}
+                className="h-4 w-4 accent-[#FF8414] cursor-pointer mt-0.5"
+              />
+
+              <span className="flex flex-wrap items-center gap-1">
+                Acepto{" "}
+                <span
+                  onClick={() => setOpenSeguimiento(true)}
+                  className="font-semibold cursor-pointer hover:text-[#8B5E34]"
+                >
+                  <b>visitas o llamadas de seguimiento</b>
+                </span>{" "}
+                del CAAM.
+
+                <span
+                  onClick={() => setOpenSeguimiento(true)}
+                  className="text-[#B87333] hover:text-[#8B5E34] underline underline-offset-2 cursor-pointer flex items-center gap-1 ml-2"
+                >
+                  Leer más <Info size={14} />
+                </span>
+              </span>
+            </label>
+            
+            {/* BIENESTAR */}
+            <label className="inline-flex items-start gap-2 text-sm text-[#4A2C1E] leading-snug select-none">
+              <input
+                type="checkbox"
+                checked={form.compromisoCuidado}
+                onChange={(e) => set("compromisoCuidado", e.target.checked)}
+                className="h-4 w-4 accent-[#FF8414] cursor-pointer mt-0.5"
+              />
+
+              <span className="flex flex-wrap items-center gap-1">
+                Me comprometo a{" "}
+                <span
+                  onClick={() => setOpenBienestar(true)}
+                  className="font-semibold cursor-pointer hover:text-[#8B5E34]"
+                >
+                  <b>mantener el bienestar de la mascota</b>
+                </span>{" "}
+                (alimentación, atención veterinaria, no abandono, etc.).
+
+                <span
+                  onClick={() => setOpenBienestar(true)}
+                  className="text-[#B87333] hover:text-[#8B5E34] underline underline-offset-2 cursor-pointer flex items-center gap-1 ml-2"
+                >
+                  Leer más <Info size={14} />
+                </span>
+              </span>
+            </label>
+          </div>
+        </>
       </div>
 
       {/* OBSERVACIONES */}
