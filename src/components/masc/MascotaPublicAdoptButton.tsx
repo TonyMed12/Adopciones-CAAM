@@ -80,7 +80,7 @@ export default function MascotaPublicAdoptButton({
   const handleAdopt = async () => {
     // 1️⃣ Sesión
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return router.push("/auth/login");
+    if (!userData.user) return router.push("/login");
 
     const user = userData.user;
 

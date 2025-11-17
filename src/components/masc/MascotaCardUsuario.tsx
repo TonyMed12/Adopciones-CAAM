@@ -92,39 +92,44 @@ export default function MascotaCardUsuario({
     }
   };
 
-  // Compartir QR (PC compatible + Android + iOS)
   const handleCompartirQR = async () => {
     const linkQR = `https://caamorelia.vercel.app/mascota/${m.id}`;
 
-    // 📱 ANDROID / iOS — con archivo adjunto
+    // 🌟 Mensaje emocional + profesional
+    const mensaje = `🐾 *CAAM Morelia – Adopta, cambia vidas*  
+
+Hoy queremos presentarte a *${m.nombre}*.  
+Es una vida rescatada que ha pasado por mucho… pero aún conserva una enorme capacidad de amar. 💛🐶  
+
+Cada día espera la oportunidad de conocer a alguien que le brinde un hogar, una familia y una segunda oportunidad.  
+Quizá ese alguien puedas ser tú. 💚  
+
+✨ Aquí puedes ver su información, fotos y el proceso de adopción:
+${linkQR}
+
+Desde este link puedes ver toda su información y adoptarla.  
+
+Gracias por abrir tu corazón.  
+— *CAAM Morelia* 🧡`;
+
+    // 📱 ANDROID / iOS — Compartir usando Web Share API
     if (navigator.share) {
       try {
-        const response = await fetch(qrUrl);
-        const blob = await response.blob();
-        const file = new File([blob], `${m.nombre}-qr.png`, {
-          type: "image/png",
-        });
-
         await navigator.share({
           title: `Conoce a ${m.nombre}`,
-          text: `🐾 *Conoce a ${m.nombre}\n\nAquí tienes su código QR y su enlace directo:\n${linkQR}\n\nSi deseas adoptarla o ver más información, abre el enlace o escanea el QR.`,
-          files: [file],
+          text: mensaje,
         });
-
         return;
       } catch (err) {
         console.warn("El usuario canceló compartir:", err);
+        // Si falla, seguimos al fallback
       }
     }
 
-    // 💻 PC — Copiar enlace al portapapeles
     try {
-      const mensajePC = `🐾 Conoce a ${m.nombre}\n\nAquí está su enlace directo:\n${linkQR}\n\nDesde este link puedes ver toda su información y adoptarla.`;
+      await navigator.clipboard.writeText(mensaje);
 
-      await navigator.clipboard.writeText(mensajePC);
-      console.log("🔗 Link copiado:", linkQR);
-
-      // Pequeño toast visual
+      // Toast visual
       const t = document.createElement("div");
       t.innerHTML = `Información copiada al portapapeles`;
       t.className = `
