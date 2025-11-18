@@ -16,7 +16,7 @@ export async function obtenerMascotasAdoptadas() {
 
   // Leer desde la VISTA
   const { data, error } = await supabase
-    .from("mascotas_adoptadas")
+    .from("mascotas_adoptadas_detalle")
     .select("*")
     .order("fecha_adopcion", { ascending: false });
 

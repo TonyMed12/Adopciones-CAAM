@@ -2,17 +2,14 @@
 
 import useSWR from "swr";
 import { obtenerMascotasAdoptadas } from "@/usuarios/usuario-mascotas-actions";
-import HeaderUsr from "@/components/layout/HeaderUsr";
 import { Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import Link from "next/link";
-import Image from "next/image";
 import dayjs from "dayjs";
 import CertificadoModal from "@/components/certificados/CertificadoModal";
 import { useState } from "react";
 import PageHead from "@/components/layout/PageHead";
-import { Page } from "@/stories/Page";
 
 const fetcher = async () => {
   try {
@@ -27,8 +24,9 @@ const fetcher = async () => {
 
 export default function MisMascotasPage() {
   const [certificadoAbierto, setCertificadoAbierto] = useState(false);
-  const [mascotaSeleccionada, setMascotaSeleccionada] = useState(null);
-  const adoptante = "Nombre del usuario"; // luego lo jalamos de supabase
+  const [mascotaSeleccionada, setMascotaSeleccionada] = useState<any | null>(
+    null
+  );
 
   const {
     data: mascotas,
@@ -82,7 +80,7 @@ export default function MisMascotasPage() {
     <div className="max-w-7xl mx-auto py-12 px-6">
       <PageHead
         title="Mis Mascotas Adoptadas"
-        subtitle="Consulta el seguimiento de las mascotas que has adoptado."
+        subtitle="Consulta el seguimiento y la información de las mascotas que has adoptado."
       />
 
       <div className="grid gap-6 lg:grid-cols-1">
@@ -90,6 +88,21 @@ export default function MisMascotasPage() {
           const fechaAdopcion = dayjs(m.fecha_adopcion);
           const seguimientos = generarFechasSeguimiento(fechaAdopcion);
           const keyId = m.id ?? m.adopcion_id ?? crypto.randomUUID();
+
+          // Línea secundaria: raza · sexo · tamaño · personalidad
+          const lineaSecundaria = [
+            m.raza_nombre,
+            m.sexo,
+            m.tamano,
+            m.personalidad,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+
+          // Colores (si vienen como array)
+          const coloresTexto = Array.isArray(m.colores)
+            ? m.colores.join(", ")
+            : m.colores || "";
 
           return (
             <Card
@@ -104,7 +117,7 @@ export default function MisMascotasPage() {
                       ? m.imagen_url
                       : "/placeholder.png"
                   }
-                  alt={m.nombre}
+                  alt={m.mascota_nombre || "Mascota adoptada"}
                   className="object-cover w-full h-full"
                 />
               </div>
@@ -112,13 +125,17 @@ export default function MisMascotasPage() {
               {/* Contenido */}
               <div className="flex flex-col justify-between w-full md:w-[55%] p-6">
                 <div>
+                  {/* Nombre */}
                   <h2 className="text-2xl font-semibold text-[#5a3d1e]">
                     {m.mascota_nombre || "Sin nombre"}
                   </h2>
+
+                  {/* Raza / sexo / tamaño / personalidad */}
                   <p className="text-sm text-gray-500 italic mb-3">
-                    {m.raza_nombre || m.tamano || "Sin datos"} · {m.sexo}
+                    {lineaSecundaria || "Sin datos"}
                   </p>
 
+                  {/* Datos principales */}
                   <div className="text-sm space-y-1">
                     <p>
                       <strong>Adoptada el:</strong>{" "}
@@ -129,9 +146,58 @@ export default function MisMascotasPage() {
                     <p>
                       <strong>Edad:</strong> {m.edad || "Sin datos"}
                     </p>
+
+                    {m.peso_kg && (
+                      <p>
+                        <strong>Peso:</strong> {m.peso_kg} kg
+                      </p>
+                    )}
+
+                    {m.altura_cm && (
+                      <p>
+                        <strong>Altura:</strong> {m.altura_cm} cm
+                      </p>
+                    )}
+
+                    {coloresTexto && (
+                      <p>
+                        <strong>Colores:</strong> {coloresTexto}
+                      </p>
+                    )}
+
+                    {m.esterilizado !== null && m.esterilizado !== undefined && (
+                      <p>
+                        <strong>Esterilizado:</strong>{" "}
+                        {m.esterilizado ? "Sí" : "No"}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="border-t pt-3 mt-3">
+                  {/* Origen / info médica */}
+                  {m.lugar_rescate && (
+                    <p className="text-sm mt-2 text-gray-700">
+                      <strong>Rescatada en:</strong> {m.lugar_rescate}
+                    </p>
+                  )}
+
+                  {(m.condicion_ingreso || m.observaciones_medicas) && (
+                    <div className="border-t pt-3 mt-3">
+                      <p className="font-semibold mb-1 text-[#8b4513]">
+                        Información médica:
+                      </p>
+                      <ul className="list-disc ml-5 text-gray-600 leading-relaxed">
+                        {m.condicion_ingreso && (
+                          <li>Condición al ingresar: {m.condicion_ingreso}</li>
+                        )}
+                        {m.observaciones_medicas && (
+                          <li>Observaciones: {m.observaciones_medicas}</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Seguimientos */}
+                  <div className="border-t pt-3 mt-4">
                     <p className="font-semibold mb-1 text-[#8b4513]">
                       Seguimientos programados:
                     </p>
@@ -155,6 +221,7 @@ export default function MisMascotasPage() {
                   </ButtonLink>
 
                   <Button
+                    className="sm:w-auto w-full"
                     onClick={() => {
                       setMascotaSeleccionada(m);
                       setCertificadoAbierto(true);
@@ -167,11 +234,12 @@ export default function MisMascotasPage() {
             </Card>
           );
         })}
+
+        {/* Modal de certificado */}
         <CertificadoModal
           open={certificadoAbierto}
           onClose={() => setCertificadoAbierto(false)}
           mascota={mascotaSeleccionada}
-          adoptante={adoptante}
         />
       </div>
     </div>
