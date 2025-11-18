@@ -7,6 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Loader2, Camera, PawPrint, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { toastConfirm } from "@/components/ui/toastConfirm";
 
 /* ------------------ VALIDACIÓN ------------------ */
 const seguimientoSchema = z.object({
@@ -71,7 +73,7 @@ export default function SeguimientoForm({
       }
 
       if (!user) {
-        alert("Error: sesión del usuario no encontrada.");
+        toast.error("Error: sesión del usuario no encontrada.");
         setUploading(false);
         return;
       }
@@ -135,7 +137,7 @@ export default function SeguimientoForm({
         throw error;
       }
 
-      alert("🐾 Seguimiento guardado correctamente");
+      toast.success("🐾 Seguimiento guardado correctamente");
       reset();
       setRating(0);
       setHoverRating(0);
@@ -143,7 +145,7 @@ export default function SeguimientoForm({
       onSuccess?.();
     } catch (err) {
       console.error("❌ Error registrando seguimiento:", err);
-      alert("Ocurrió un error al registrar el seguimiento.");
+      toast.error("Ocurrió un error al registrar el seguimiento.");
     } finally {
       setUploading(false);
     }
