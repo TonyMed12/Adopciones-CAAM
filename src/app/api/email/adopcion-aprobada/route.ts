@@ -1,3 +1,5 @@
+// src/app/api/email/adopcion-aprobada/route.ts
+
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { buildAdopcionAprobadaEmail } from "../templates/adopcionAprobada";
@@ -10,30 +12,31 @@ export async function POST(req: Request) {
     const {
       email,
       adoptante,
-      mascota, // { nombre, foto, id }
+      mascota,      // { nombre, foto, id }
       fechaAdopcion,
     } = body;
 
-    if (!email || !adoptante || !mascota) {
+    if (!email || !adoptante || !mascota || !fechaAdopcion) {
       return NextResponse.json(
         { ok: false, message: "Faltan campos obligatorios." },
         { status: 400 }
       );
     }
 
-    // ⭐ 1. Crear PDF certificado
+    // 1️⃣ Generar PDF
     const pdfBuffer = await generarCertificadoPDF({
       adoptante,
       mascota,
       fechaAdopcion,
     });
 
-    // ⭐ 2. Crear correo
+    // 2️⃣ Construir correo
     const { subject, html } = buildAdopcionAprobadaEmail({
       nombre: adoptante,
       nombreMascota: mascota.nombre,
     });
 
+    // 3️⃣ Transporter (igual que el de tus otros correos)
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
@@ -61,6 +64,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Error enviando adopcion-aprobada:", error);
-    return NextResponse.json({ ok: false, message: "Error interno" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, message: "Error interno al enviar correo." },
+      { status: 500 }
+    );
   }
 }
