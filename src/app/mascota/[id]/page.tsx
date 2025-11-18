@@ -2,7 +2,6 @@ import { obtenerMascotaPorId } from "@/mascotas/mascotas-actions";
 import HeaderSmart from "@/components/layout/HeaderSmart";
 import MascotaPublicAdoptButton from "@/components/masc/MascotaPublicAdoptButton";
 
-// 🎨 Paleta de colores para mostrar los chips de colores de la mascota
 const COLORES_DISPONIBLES = [
   { nombre: "blanco", hex: "#FFFFFF" },
   { nombre: "negro", hex: "#000000" },

@@ -65,6 +65,7 @@ export default function MisCitasPage() {
         new Date(solicitudActiva?.created_at || "").getTime()) /
         (1000 * 60 * 60 * 24)
     );
+  const [horasOcupadas, setHorasOcupadas] = useState<string[]>([]);
 
   function showSoftToast(message: string) {
     const alerta = document.createElement("div");
@@ -246,6 +247,28 @@ export default function MisCitasPage() {
     }
   }
 
+  async function cargarHorasOcupadas(fechaStr: string) {
+    const { data, error } = await supabase
+      .from("citas_ocupadas")
+      .select("hora_cita, estado")
+      .eq("fecha_cita", fechaStr)
+      .eq("estado", "programada"); // 🔴 SOLO citas programadas
+
+    if (error) {
+      console.error("❌ Error cargando horas ocupadas:", error);
+      setHorasOcupadas([]);
+      return;
+    }
+
+    // Guardamos como "HH:mm" para comparar directo con el arreglo de horas
+    const horas = (data || [])
+      .map((c: any) => (c.hora_cita ? c.hora_cita.slice(0, 5) : null))
+      .filter(Boolean) as string[];
+
+    setHorasOcupadas(horas);
+    console.log("🔵 horasOcupadas cargadas:", horas);
+  }
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -256,6 +279,26 @@ export default function MisCitasPage() {
   async function confirmarCita() {
     if (!fecha || !horaSeleccionada || !solicitudActiva || !perfil) {
       alert("Por favor selecciona una fecha y hora válidas.");
+      return;
+    }
+
+    // ✅ Verificar que no exista ya una cita programada en esa fecha y hora
+    const { data: citaExistente, error: errorCheck } = await supabase
+      .from("citas_adopcion")
+      .select("id")
+      .eq("fecha_cita", fecha)
+      .eq("hora_cita", horaSeleccionada + ":00") // en BD suele estar con segundos
+      .eq("estado", "programada")
+      .maybeSingle();
+
+    if (errorCheck) {
+      console.error("❌ Error verificando cita existente:", errorCheck);
+    }
+
+    if (citaExistente) {
+      showSoftToast("Ya hay una cita programada en esa hora 🐾");
+      // recargar horas ocupadas por si cambió algo
+      await cargarHorasOcupadas(fecha);
       return;
     }
 
@@ -846,7 +889,7 @@ export default function MisCitasPage() {
                         <div className="flex items-center gap-2 justify-center lg:justify-start">
                           🕒{" "}
                           <p>
-                            <strong>Horario:</strong> 8:30 AM – 3:00 PM
+                            <strong>Horario:</strong> 8:30 AM – 2:00 PM
                           </p>
                         </div>
 
@@ -1063,7 +1106,7 @@ export default function MisCitasPage() {
                     <Calendar
                       mode="single"
                       selected={fechaDate}
-                      onSelect={(day: Date | undefined) => {
+                      onSelect={async (day: Date | undefined) => {
                         setFechaDate(day || undefined);
 
                         if (!day) {
@@ -1071,7 +1114,18 @@ export default function MisCitasPage() {
                           return;
                         }
 
-                        // Formatear manualmente a "YYYY-MM-DD" en hora local
+                        const hoy = new Date();
+                        const limite = new Date();
+                        limite.setMonth(limite.getMonth() + 1);
+
+                        if (day > limite) {
+                          showSoftToast(
+                            "Solo puedes agendar dentro del próximo mes 📅"
+                          );
+                          setFecha("");
+                          return;
+                        }
+
                         const year = day.getFullYear();
                         const month = String(day.getMonth() + 1).padStart(
                           2,
@@ -1079,12 +1133,22 @@ export default function MisCitasPage() {
                         );
                         const dayNum = String(day.getDate()).padStart(2, "0");
 
-                        setFecha(`${year}-${month}-${dayNum}`);
+                        const fechaStr = `${year}-${month}-${dayNum}`;
+                        setFecha(fechaStr);
+
+                        // Cargar horas ocupadas
+                        cargarHorasOcupadas(fechaStr);
+                        console.log("🟠 fecha seleccionada:", fechaStr);
                       }}
-                      disabled={(date: Date) =>
-                        isWeekend(date) ||
-                        date < new Date(new Date().setHours(0, 0, 0, 0))
-                      }
+                      disabled={(date: Date) => {
+                        const hoy = new Date();
+                        hoy.setHours(0, 0, 0, 0);
+
+                        const dia = new Date(date);
+                        dia.setHours(0, 0, 0, 0);
+
+                        return isWeekend(dia) || dia < hoy;
+                      }}
                       className="rounded-md border-0 shadow-none"
                     />
                   </div>
@@ -1114,43 +1178,66 @@ export default function MisCitasPage() {
                     "13:30",
                     "14:00",
                   ].map((hora) => {
-                    const deshabilitada = horaEsPasada(hora, fechaDate);
+                    const noHayFecha = !fecha;
+
+                    const esPasada = horaEsPasada(hora, fechaDate);
+
+                    const ocupada = horasOcupadas.includes(hora);
+
+                    const deshabilitada = noHayFecha || esPasada || ocupada;
+
+                    console.log(
+                      "🔶 hora:",
+                      hora,
+                      " | ocupada?:",
+                      horasOcupadas.includes(hora),
+                      " | horasOcupadas:",
+                      horasOcupadas
+                    );
 
                     return (
                       <div key={hora} className="relative group">
                         <button
                           disabled={deshabilitada}
-                          onClick={() =>
-                            !deshabilitada && setHoraSeleccionada(hora)
-                          }
+                          onClick={() => {
+                            if (noHayFecha) {
+                              showSoftToast("Selecciona una fecha primero 📅");
+                              return;
+                            }
+                            if (!deshabilitada) {
+                              setHoraSeleccionada(hora);
+                            }
+                          }}
                           className={`
-          rounded-lg border px-3 py-2 text-sm sm:text-base font-semibold 
-          transition-all text-center select-none w-full
-
+          rounded-lg border px-3 py-2 text-sm font-semibold 
+          text-center select-none w-full transition-all
           ${
             deshabilitada
               ? "cursor-not-allowed opacity-40 bg-[#f5e9e4] border-[#e0cfc5]"
               : horaSeleccionada === hora
-              ? "bg-[#BC5F36] border-[#BC5F36] text-white shadow-md cursor-pointer"
-              : "bg-[#fffaf4] border-[#eadacb] text-[#2b1b12] cursor-pointer hover:bg-[#ffe8df] hover:border-[#BC5F36]"
+              ? "bg-[#BC5F36] border-[#BC5F36] text-white shadow-md"
+              : "bg-[#fffaf4] border-[#eadacb] text-[#2b1b12] hover:bg-[#ffe8df] hover:border-[#BC5F36]"
           }
         `}
                         >
                           {hora}
                         </button>
 
-                        {/* TOOLTIP */}
                         {deshabilitada && (
                           <div
                             className="
             absolute -top-10 left-1/2 -translate-x-1/2
             bg-[#2b1b12] text-[#fffaf4] text-xs
             px-3 py-1 rounded-lg shadow-lg border border-[#eadacb]
-            opacity-0 group-hover:opacity-100 transition-opacity duration-200
+            opacity-0 group-hover:opacity-100 transition-opacity
             pointer-events-none whitespace-nowrap
           "
                           >
-                            Esta hora ya pasó hoy ⏳
+                            {noHayFecha
+                              ? "Selecciona una fecha primero 📅"
+                              : esPasada
+                              ? "Esta hora ya pasó hoy ⏳"
+                              : "Ya hay una cita a esta hora 🐾"}
                           </div>
                         )}
                       </div>
@@ -1244,14 +1331,13 @@ export default function MisCitasPage() {
                 <p className="flex items-center gap-2">
                   📅 <strong>Fecha:</strong>{" "}
                   <span className="text-[#BC5F36] font-semibold">
-                    {new Date(nuevaCita.fecha_cita).toLocaleDateString(
-                      "es-MX",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }
-                    )}
+                    {new Date(
+                      nuevaCita.fecha_cita + "T00:00:00"
+                    ).toLocaleDateString("es-MX", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
                   </span>
                 </p>
                 <p className="flex items-center gap-2">
