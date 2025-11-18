@@ -278,6 +278,7 @@ export default function MisCitasPage() {
 
     if (error) {
       alert("No se pudo registrar la cita 😕");
+      console.error(error);
       return;
     }
 
@@ -291,7 +292,7 @@ export default function MisCitasPage() {
       console.error(updateError);
     }
 
-    // Toast bonito
+    // Toast bonito (como lo tenías)
     const alerta = document.createElement("div");
     document.body.appendChild(alerta);
     setTimeout(() => alerta.remove(), 2500);
@@ -309,11 +310,27 @@ export default function MisCitasPage() {
 
     setNuevaCita(citaCreada);
     setCitas([citaCreada]);
-
-    // Aquí NO ponemos aprobada
     setSolicitudActiva({ ...solicitudActiva, estado: "en_proceso" });
 
     setPaso("confirmacion");
+
+    // 📩 Enviar correo (que no truene el flujo si falla)
+    try {
+      await fetch("/api/email/cita", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: perfil.email,
+          nombre: perfil.nombres,
+          mascota: solicitudActiva.mascota?.nombre,
+          fecha,
+          hora: horaSeleccionada,
+        }),
+      });
+    } catch (e) {
+      console.error("Error al enviar correo de cita:", e);
+      // no hacemos return: la cita ya quedó agendada
+    }
   }
 
   async function cancelarSolicitud(id: string) {
@@ -373,9 +390,10 @@ export default function MisCitasPage() {
   }
 
   // ------------------------------------------------------------
-  // ❌ Cancelar cita
+  // Cancelar cita
   // ------------------------------------------------------------
   async function cancelarCita(id: string) {
+    // 1️⃣ Cancelar en BD
     const { error } = await supabase
       .from("citas_adopcion")
       .update({ estado: "cancelada" })
@@ -383,19 +401,43 @@ export default function MisCitasPage() {
 
     if (error) {
       alert("Hubo un problema al cancelar la cita 😕");
+      console.error(error);
       return;
     }
 
-    // 1️⃣ Regresar solicitud a "pendiente"
-    await supabase
+    // 2️⃣ Regresar solicitud a "pendiente"
+    const { error: solicitudError } = await supabase
       .from("solicitudes_adopcion")
       .update({ estado: "pendiente" })
       .eq("id", solicitudActiva?.id);
 
-    // 2️⃣ Mostrar toast elegante
+    if (solicitudError) {
+      console.error("Error actualizando solicitud:", solicitudError);
+    }
+
+    // 3️⃣ Enviar correo de cancelación (NO rompe flujo si falla)
+    try {
+      await fetch("/api/email/cita-cancelada", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: perfil.email,
+          nombre: perfil.nombres,
+          mascota: solicitudActiva?.mascota?.nombre,
+          fecha: nuevaCita?.fecha_cita,
+          hora: nuevaCita?.hora_cita,
+          motivo: "Cancelada por el adoptante",
+        }),
+      });
+    } catch (correoError) {
+      console.error("❌ Error al enviar correo de cancelación:", correoError);
+      // No hacemos return: la cancelación ya fue exitosa
+    }
+
+    // 4️⃣ Mostrar toast elegante
     showSoftToast("Tu cita fue cancelada correctamente 🐾");
 
-    // 3️⃣ Refrescar data
+    // 5️⃣ Refrescar data
     await fetchData();
   }
 
