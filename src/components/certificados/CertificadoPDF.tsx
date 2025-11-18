@@ -12,14 +12,26 @@ import {
 //     REGISTRO DE FUENTES
 // ==========================
 
+// Detectar si estamos en servidor o cliente
+const isServer = typeof window === "undefined";
+
+// Ruta correcta a /public en servidor
+const fontBasePath = isServer ? `${process.cwd()}/public` : "";
+
+// QUATTROCENTO
 Font.register({
   family: "Quattrocento",
-  src: "/fonts/Quattrocento-Regular.ttf",
+  src: isServer
+    ? `${fontBasePath}/fonts/Quattrocento-Regular.ttf`
+    : "/fonts/Quattrocento-Regular.ttf",
 });
 
+// PET ELEGANT
 Font.register({
   family: "PetElegant",
-  src: "/fonts/GreatVibes-Regular.ttf",
+  src: isServer
+    ? `${fontBasePath}/fonts/GreatVibes-Regular.ttf`
+    : "/fonts/GreatVibes-Regular.ttf",
 });
 
 // ==========================

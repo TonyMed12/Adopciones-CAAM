@@ -1,66 +1,112 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { renderToBuffer } from "@react-pdf/renderer";
+import CertificadoPDF from "@/components/certificados/CertificadoPDF";
 import { buildAdopcionAprobadaEmail } from "../templates/adopcionAprobada";
-import { generarCertificadoPDF } from "./generarCertificado";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const { email, nombre, nombreMascota, fotoMascota, adopcionId } = body;
 
-    const {
-      email,
-      adoptante,
-      mascota, // { nombre, foto, id }
-      fechaAdopcion,
-    } = body;
-
-    if (!email || !adoptante || !mascota) {
+    if (!email || !nombre || !nombreMascota) {
       return NextResponse.json(
-        { ok: false, message: "Faltan campos obligatorios." },
+        { ok: false, message: "Faltan datos obligatorios." },
         { status: 400 }
       );
     }
 
-    // ⭐ 1. Crear PDF certificado
-    const pdfBuffer = await generarCertificadoPDF({
-      adoptante,
-      mascota,
-      fechaAdopcion,
+    console.log("📩 Enviando correo a:", email);
+
+    // ============================
+    // 1️⃣ GENERAR PDF (React PDF)
+    // ============================
+
+        // 1️⃣ Descargar la imagen de la mascota y convertirla a Buffer
+    let fotoParaPDF: any = fotoMascota;
+
+    try {
+      if (fotoMascota) {
+        const resImg = await fetch(fotoMascota);
+        if (resImg.ok) {
+          const arrayBuffer = await resImg.arrayBuffer();
+          fotoParaPDF = Buffer.from(arrayBuffer);
+        } else {
+          console.warn("⚠ No se pudo descargar la imagen, status:", resImg.status);
+        }
+      }
+    } catch (e) {
+      console.warn("⚠ Error descargando imagen, se usa placeholder:", e);
+      fotoParaPDF = "https://caamorelia.vercel.app/logo.png"; // fallback sencillo
+    }
+
+    // 2️⃣ Generar el PDF usando esa imagen
+    const pdfBuffer = await renderToBuffer(
+      CertificadoPDF({
+        adoptante: nombre,
+        mascota: {
+          nombre: nombreMascota,
+          foto: fotoParaPDF,
+          id: adopcionId || "N/A",
+        },
+        fecha: new Date().toLocaleDateString("es-MX"),
+      })
+    );
+    console.log("✅ PDF generado correctamente.");
+
+    // ============================
+    // 2️⃣ TEMPLATE HTML
+    // ============================
+
+    const { subject, html } = buildAdopcionAprobadaEmail({
+      nombre,
+      nombreMascota,
+      fotoMascota,
     });
 
-    // ⭐ 2. Crear correo
-    const { subject, html } = buildAdopcionAprobadaEmail({
-      nombre: adoptante,
-      nombreMascota: mascota.nombre,
-    });
+    // ============================
+    // 3️⃣ SMTP CONFIG
+    // ============================
 
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
+      host: "smtp.gmail.com",
+      port: 587,
       secure: false,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false,
       },
     });
 
+    // ============================
+    // 4️⃣ ENVIAR
+    // ============================
+
     await transporter.sendMail({
-      from: `"CAAM Morelia" <${process.env.SMTP_FROM}>`,
+      from: process.env.EMAIL_FROM,
       to: email,
       subject,
       html,
       attachments: [
         {
-          filename: `Certificado-Adopcion-${mascota.nombre}.pdf`,
+          filename: `Certificado-Adopcion-${nombreMascota}.pdf`,
           content: pdfBuffer,
           contentType: "application/pdf",
         },
       ],
     });
 
+    console.log("✅ Correo enviado con PDF adjunto.");
+
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Error enviando adopcion-aprobada:", error);
-    return NextResponse.json({ ok: false, message: "Error interno" }, { status: 500 });
+    console.error("❌ ERROR:", error);
+    return NextResponse.json(
+      { ok: false, message: "Error interno al enviar correo." },
+      { status: 500 }
+    );
   }
 }

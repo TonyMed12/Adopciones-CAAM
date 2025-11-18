@@ -204,7 +204,7 @@ export default function SeguimientoMascotasPage() {
                     className="mt-3 mx-auto sm:mx-0"
                     onClick={() => setInfoOpen(true)}
                   >
-                    <Info size={16} />  Cómo funciona el seguimiento
+                    <Info size={16} /> Cómo funciona el seguimiento
                   </Button>
                 </div>
               </div>
@@ -245,8 +245,9 @@ export default function SeguimientoMascotasPage() {
                             setSeguimientoActual({
                               adopcionId: m.id,
                               fecha: s.fecha,
-                              fechaFormateada:
-                                dayjs(s.fecha).format("DD/MM/YYYY"),
+                              fechaFormateada: dayjs(s.fecha).format(
+                                "DD/MM/YYYY"
+                              ),
                             });
                             setSeguimientoOpen(true);
                           }}
@@ -278,12 +279,17 @@ export default function SeguimientoMascotasPage() {
         <ModalSeguimiento
           open={seguimientoOpen}
           onClose={() => setSeguimientoOpen(false)}
-          titulo={`Seguimiento — ${seguimientoActual.fechaFormateada}`}
+          titulo="Registra el seguimiento de tu mascota"
         >
           <SeguimientoForm
             adopcionId={seguimientoActual.adopcionId}
             fechaProgramada={seguimientoActual.fecha}
-            onSuccess={() => window.location.reload()}
+            onSuccess={() => {
+              setSeguimientoOpen(false); // cerrar modal suavemente
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000); // permite que el toast se vea
+            }}
           />
         </ModalSeguimiento>
       )}

@@ -41,6 +41,7 @@ export async function POST(req: Request) {
         <tr>
           <td style="text-align: center;">
             <img src="https://caamorelia.vercel.app/logo.png" width="120" alt="Logo CAAM" style="margin-bottom: 10px;" />
+            <h2 style="color:#9B2E45;margin:0;font-weight:900;">Centro de Atención Animal de Morelia</h2>
             <h2 style="color: #9B2E45; margin: 0; margin-bottom: 20px; font-size: 22px; font-weight: 900;">
               Cita Veterinaria Agendada
             </h2>
