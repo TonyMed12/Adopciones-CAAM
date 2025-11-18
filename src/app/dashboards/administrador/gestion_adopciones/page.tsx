@@ -23,7 +23,14 @@ export default function GestionAdopcionesPage() {
   useEffect(() => {
     async function fetchAdopciones() {
       try {
+        console.log("ROWS:", rows);
+
         const data = await listarAdopcionesAdmin();
+        console.log(
+          "ADOPCIONES QUE LLEGAN DESDE listarAdopcionesAdmin():",
+          data
+        );
+
         setRows(data);
       } catch (error) {
         console.error("Error cargando adopciones:", error);
@@ -59,6 +66,8 @@ export default function GestionAdopcionesPage() {
       });
 
       // 2️⃣ Actualizar la tabla en pantalla
+      console.log("ROWS:", rows);
+
       setRows((prev) =>
         prev.map((r) => (r.id === id ? { ...r, estado: "aprobada" } : r))
       );
@@ -69,6 +78,8 @@ export default function GestionAdopcionesPage() {
       const email = adopcion?.adoptante_correo || adopcion?.email || "";
       const nombre = adopcion?.adoptante_nombre || "Adoptante";
       const nombreMascota = adopcion?.mascota_nombre || "tu mascota";
+      const fotoMascota = adopcion?.mascotaImagen || "";
+      const adopcionId = adopcion?.id;
 
       if (email) {
         await fetch("/api/email/adopcion-aprobada", {
@@ -78,6 +89,8 @@ export default function GestionAdopcionesPage() {
             email,
             nombre,
             nombreMascota,
+            fotoMascota,
+            adopcionId,
           }),
         });
       }
@@ -98,9 +111,9 @@ export default function GestionAdopcionesPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
       if (!user) throw new Error("No hay sesión activa.");
 
+      // 1️⃣ Cambiar estado en BD
       await cambiarEstadoAdopcion({
         id,
         estado: "rechazada",
@@ -108,10 +121,35 @@ export default function GestionAdopcionesPage() {
         observaciones_admin: motivo || "Sin motivo.",
       });
 
+      // 2️⃣ Actualizar UI
       setRows((prev) =>
         prev.map((r) => (r.id === id ? { ...r, estado: "rechazada" } : r))
       );
-      toast.success("Adopción rechazada correctamente.");
+
+      // 3️⃣ Tomar datos de la adopción
+      const adopcion = rows.find((r) => r.id === id);
+
+      const email = adopcion?.adoptante_correo || adopcion?.email || "";
+      const nombre = adopcion?.usuarioNombre || "Adoptante";
+      const nombreMascota = adopcion?.mascotaNombre || "tu mascota";
+      const fotoMascota = adopcion?.mascotaImagen || "";
+
+      // 4️⃣ Enviar correo de rechazo
+      if (email) {
+        await fetch("/api/email/adopcion-rechazada", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            nombre,
+            nombreMascota,
+            fotoMascota,
+            motivo,
+          }),
+        });
+      }
+
+      toast.success("Adopción rechazada y correo enviado.");
     } catch (err) {
       console.error(err);
       toast.error("Error al rechazar la adopción.");
