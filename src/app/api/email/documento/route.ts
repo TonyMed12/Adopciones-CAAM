@@ -5,15 +5,30 @@ export async function POST(req: Request) {
   try {
     const { email, nombre, tipoDocumento, estado, motivo } = await req.json();
 
-    if (!email || !estado || !tipoDocumento) {
+    console.log("📨 Solicitud de correo:", { email, nombre, tipoDocumento, estado });
+
+    // Validaciones
+    if (!email || email.trim() === "") {
+      console.error("❌ No se envió correo: email vacío");
       return NextResponse.json(
-        { ok: false, error: "Faltan datos para enviar el correo." },
+        { ok: false, error: "Email no proporcionado." },
         { status: 400 }
       );
     }
 
+    if (!estado || !tipoDocumento) {
+      return NextResponse.json(
+        { ok: false, error: "Faltan datos esenciales para enviar correo." },
+        { status: 400 }
+      );
+    }
+
+    // Configuración SMTP más estable
     const transporter = nodemailer.createTransport({
       service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -26,6 +41,9 @@ export async function POST(req: Request) {
     let subject = "";
     let bodyHtml = "";
 
+    // ==========================================================
+    //  📩 CORREO DE RECHAZO
+    // ==========================================================
     if (estado === "rechazado") {
       subject = `Documento rechazado – ${tipoDocumento}`;
       bodyHtml = `
@@ -46,13 +64,15 @@ export async function POST(req: Request) {
               <tr>
                 <td>
                   <p style="color: #333; font-size: 16px;">
-                    Hola <strong>${nombre}</strong>,
+                    Hola <strong>${nombre || "usuario"}</strong>,
                   </p>
                   <p style="color: #333; font-size: 15px; line-height: 1.6;">
                     Uno de tus documentos fue <strong>rechazado</strong> durante la revisión:
                   </p>
                   <p style="font-size: 15px;"><strong>Documento:</strong> ${tipoDocumento}</p>
-                  <p style="font-size: 15px;"><strong>Motivo:</strong> ${motivo || "No especificado"}</p>
+                  <p style="font-size: 15px;"><strong>Motivo:</strong> ${
+                    motivo || "No especificado"
+                  }</p>
                   <p style="color: #555; font-size: 14px; margin-top: 16px;">
                     Por favor, ingresa a la plataforma para corregirlo y subirlo nuevamente.
                   </p>
@@ -67,7 +87,12 @@ export async function POST(req: Request) {
           </body>
         </html>
       `;
-    } else if (estado === "aprobado_total") {
+    }
+
+    // ==========================================================
+    //  📩 CORREO DE TODOS APROBADOS
+    // ==========================================================
+    else if (estado === "aprobado_total") {
       subject = "✅ Documentos aprobados – CAAM";
       bodyHtml = `
         <html>
@@ -87,13 +112,13 @@ export async function POST(req: Request) {
               <tr>
                 <td>
                   <p style="color: #333; font-size: 16px;">
-                    Hola <strong>${nombre}</strong>,
+                    Hola <strong>${nombre || "usuario"}</strong>,
                   </p>
                   <p style="color: #333; font-size: 15px; line-height: 1.6;">
                     ¡Tus <strong>documentos fueron aprobados</strong> exitosamente! 🎉
                   </p>
                   <p style="color: #555; font-size: 14px; margin-top: 16px;">
-                    En breve nos pondremos en contacto contigo para continuar con el proceso de adopción.
+                    Ya puedes ingresar a la plataforma y agendar una cita para conocer a tu futura mascota. ¡Te esperamos!
                   </p>
                   <hr style="margin: 25px 0; border: none; border-top: 1px solid #eee;" />
                   <p style="text-align: center; color: #888; font-size: 12px; line-height: 1.4;">
@@ -106,12 +131,20 @@ export async function POST(req: Request) {
           </body>
         </html>
       `;
-    } else {
+    }
+
+    // ==========================================================
+    else {
       return NextResponse.json(
         { ok: false, error: "Estado de correo no soportado." },
         { status: 400 }
       );
     }
+
+    // ==========================================================
+    // ENVÍO DEL CORREO
+    // ==========================================================
+    console.log("📬 Enviando correo a:", email);
 
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
@@ -120,9 +153,11 @@ export async function POST(req: Request) {
       html: bodyHtml,
     });
 
+    console.log("✅ Correo enviado correctamente.");
     return NextResponse.json({ ok: true });
+
   } catch (error) {
-    console.error("Error al enviar correo de documento:", error);
+    console.error("❌ Error al enviar correo de documento:", error);
     return NextResponse.json(
       { ok: false, error: "Error al enviar el correo." },
       { status: 500 }

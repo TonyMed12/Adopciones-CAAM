@@ -5,9 +5,9 @@ import { createClient } from "@/lib/supabase/client";
 import PageHead from "@/components/layout/PageHead";
 import DocumentosTable from "@/components/documentos/DocumentosTable";
 import VisorDocumento from "@/components/documentos/VisorDocumento";
+import ModalRechazo from "@/components/documentos/ModalRechazo";
 import type { Documento } from "@/components/documentos/types";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import ModalRechazo from "@/components/documentos/ModalRechazo";
 
 export default function GestionDocumentosPage() {
   const supabase = createClient();
@@ -19,11 +19,10 @@ export default function GestionDocumentosPage() {
   const [rechazoActivo, setRechazoActivo] = useState<Documento | null>(null);
   const [loading, setLoading] = useState(true);
   const [paginaActual, setPaginaActual] = useState(1);
-
   const USERS_PER_PAGE = isMobile ? 5 : 10;
 
   // ================================================================
-  // 🔥 FETCH DOCUMENTOS
+  // 🔥 FETCH DOCUMENTOS (solo corregimos el JOIN)
   // ================================================================
   async function fetchDocumentos() {
     setLoading(true);
@@ -31,7 +30,19 @@ export default function GestionDocumentosPage() {
     let query = supabase
       .from("documentos")
       .select(
-        "id, tipo, url, status, created_at, observacion_admin, perfiles(nombres,email)"
+        `
+        id,
+        tipo,
+        url,
+        status,
+        created_at,
+        observacion_admin,
+        perfil_id,
+        perfiles:perfil_id (
+          nombres,
+          email
+        )
+      `
       )
       .order("created_at", { ascending: false });
 
@@ -39,10 +50,10 @@ export default function GestionDocumentosPage() {
 
     const { data } = await query;
 
-    // Normalizar perfiles: tomar SOLO el primer elemento
+    // Normalizar perfiles (antes venía [] y causaba "desconocido")
     const normalizados = (data || []).map((doc: any) => ({
       ...doc,
-      perfiles: doc.perfiles?.[0] || null,
+      perfiles: doc.perfiles || null,
     }));
 
     setDocumentos(normalizados);
@@ -77,57 +88,71 @@ export default function GestionDocumentosPage() {
   const documentosPagina = usuariosPagina.flatMap((email) => agrupado[email]);
 
   // ================================================================
-  // 🔥 ACTUALIZAR ESTADO (APROBAR O RECHAZAR)
+  // 🔥 ACTUALIZAR ESTADO (APROBAR / RECHAZAR)
   // ================================================================
   async function actualizarEstado(id: string, nuevoEstado: string) {
-    // Actualizar el documento en BD
     await supabase
       .from("documentos")
       .update({ status: nuevoEstado })
       .eq("id", id);
 
+    // Si no es aprobado, aquí termina
+    if (nuevoEstado !== "aprobado") {
+      fetchDocumentos();
+      return;
+    }
+
     // ==========================
-    // 🟢 LÓGICA SOLO PARA APROBADOS
+    // 🟢 LOGICA PARA APROBACIÓN TOTAL
     // ==========================
-    if (nuevoEstado === "aprobado") {
-      // Obtener el documento para saber su usuario
-      const { data: doc } = await supabase
-        .from("documentos")
-        .select("id, tipo, perfiles(nombres,email)")
-        .eq("id", id)
-        .single();
+    const { data: doc } = await supabase
+      .from("documentos")
+      .select(
+        `
+        id,
+        tipo,
+        perfil_id,
+        perfiles:perfil_id (
+          nombres,
+          email
+        )
+      `
+      )
+      .eq("id", id)
+      .single();
 
-      const perfil = doc?.perfiles?.[0];
-      if (perfil) {
-        // Verificar todos sus documentos
-        const { data: docsUsuario } = await supabase
-          .from("documentos")
-          .select("status, perfiles(nombres,email)")
-          .eq("perfiles.email", perfil.email);
+    const perfil = doc?.perfiles;
+    if (!perfil) {
+      fetchDocumentos();
+      return;
+    }
 
-        const normalizados = (docsUsuario || []).map((d: any) => ({
-          ...d,
-          perfiles: d.perfiles?.[0] || null,
-        }));
+    const { data: docsUsuario } = await supabase
+      .from("documentos")
+      .select(
+        `
+        status,
+        perfiles:perfil_id (
+          email
+        )
+      `
+      )
+      .eq("perfil_id", doc.perfil_id);
 
-        const todosAprobados =
-          normalizados.length > 0 &&
-          normalizados.every((d: any) => d.status === "aprobado");
+    const todosAprobados =
+      docsUsuario && docsUsuario.every((d: any) => d.status === "aprobado");
 
-        if (todosAprobados) {
-          // 📩 enviar correo
-          await fetch("/api/email/documento", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: perfil.email,
-              nombre: perfil.nombres,
-              tipoDocumento: "todos",
-              estado: "aprobado_total",
-            }),
-          });
-        }
-      }
+    if (todosAprobados) {
+      await fetch("/api/email/documento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: perfil.email,
+          nombre: perfil.nombres,
+          tipoDocumento: "todos",
+          estado: "aprobado_total",
+        }),
+      });
     }
 
     fetchDocumentos();
@@ -168,13 +193,13 @@ export default function GestionDocumentosPage() {
         <DocumentosTable
           documentos={documentosPagina}
           filtro={filtro}
-          onAprobar={(id) => actualizarEstado(id, "aprobado")} // ✔️ Tu flujo original intacto
+          onAprobar={(id) => actualizarEstado(id, "aprobado")}
           onRechazar={(doc) => setRechazoActivo(doc)}
           onVerDocumento={(url) => setVisorActivo(url)}
         />
       )}
 
-      {/* Paginación */}
+      {/* PAGINACIÓN */}
       {listaUsuarios.length > 0 && (
         <div className="flex justify-center items-center gap-3 mt-6">
           <button
@@ -209,7 +234,6 @@ export default function GestionDocumentosPage() {
         onConfirm={async (motivo) => {
           if (!rechazoActivo) return;
 
-          // Guardar rechazo
           await supabase
             .from("documentos")
             .update({
@@ -218,7 +242,6 @@ export default function GestionDocumentosPage() {
             })
             .eq("id", rechazoActivo.id);
 
-          // Enviar correo de rechazo
           await fetch("/api/email/documento", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
