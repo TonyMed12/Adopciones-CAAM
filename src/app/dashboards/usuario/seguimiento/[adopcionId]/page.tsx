@@ -11,18 +11,24 @@ import {
   PawPrint,
 } from "lucide-react";
 import dayjs from "dayjs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/Dialog";
 import SeguimientoForm from "@/components/seguimiento/SeguimientoForm";
+import ModalInfoSeguimiento from "@/components/seguimiento/ModalInfoSeguimiento";
+import ModalSeguimiento from "@/components/seguimiento/ModalSeguimiento";
 
 export default function SeguimientoMascotasPage() {
   const [mascotas, setMascotas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal "Cómo funciona el seguimiento"
+  const [infoOpen, setInfoOpen] = useState(false);
+
+  // Modal de subir evidencia
+  const [seguimientoOpen, setSeguimientoOpen] = useState(false);
+  const [seguimientoActual, setSeguimientoActual] = useState<{
+    adopcionId: string;
+    fecha: string;
+    fechaFormateada: string;
+  } | null>(null);
 
   useEffect(() => {
     const cargarSeguimientos = async () => {
@@ -90,14 +96,11 @@ export default function SeguimientoMascotasPage() {
             )
           );
 
-          // 🔥 LÓGICA NUEVA FIABLE PARA ESTADOS
           const seguimientos = fechasProgramadas.map((f) => {
             const fecha = f.fecha; // dayjs object
             const hoy = dayjs();
 
             const fechaStr = fecha.format("YYYY-MM-DD");
-            const hoyStr = hoy.format("YYYY-MM-DD");
-
             const diff = fecha.startOf("day").diff(hoy.startOf("day"), "day");
 
             let estado = "Pendiente";
@@ -195,38 +198,14 @@ export default function SeguimientoMascotasPage() {
                   </p>
 
                   {/* INFO */}
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="mt-3 mx-auto sm:mx-0"
-                      >
-                        <Info size={16} /> Cómo funciona el seguimiento
-                      </Button>
-                    </DialogTrigger>
-
-                    <DialogContent className="max-w-lg bg-[#FFF8F0] border-[#E5D1B8]">
-                      <DialogHeader>
-                        <DialogTitle className="text-[#8B4513] text-lg">
-                          ¿Cómo funciona el seguimiento? 🐾
-                        </DialogTitle>
-                      </DialogHeader>
-
-                      <div className="text-[#5C3D2E] text-sm leading-relaxed space-y-3">
-                        <p>
-                          Este seguimiento verifica la adaptación y bienestar de
-                          tu mascota después de la adopción.
-                        </p>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>1 semana — revisión inicial.</li>
-                          <li>1 mes — adaptación familiar.</li>
-                          <li>2 meses — evaluación intermedia.</li>
-                          <li>6 meses — cierre de proceso.</li>
-                        </ul>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-3 mx-auto sm:mx-0"
+                    onClick={() => setInfoOpen(true)}
+                  >
+                    <Info size={16} /> Cómo funciona el seguimiento
+                  </Button>
                 </div>
               </div>
 
@@ -259,27 +238,22 @@ export default function SeguimientoMascotasPage() {
                       {s.estado === "Completado" ? (
                         <CheckCircle2 className="text-green-600" size={20} />
                       ) : s.estado === "Activo" ? (
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" className="bg-[#BC5F36] text-white">
-                              Subir evidencia
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-xl bg-[#FFF8F0] border-[#E5D1B8]">
-                            <DialogHeader>
-                              <DialogTitle className="text-[#8B4513] text-xl">
-                                Seguimiento —{" "}
-                                {dayjs(s.fecha).format("DD/MM/YYYY")}
-                              </DialogTitle>
-                            </DialogHeader>
-
-                            <SeguimientoForm
-                              adopcionId={m.id}
-                              fechaProgramada={s.fecha}
-                              onSuccess={() => window.location.reload()}
-                            />
-                          </DialogContent>
-                        </Dialog>
+                        <Button
+                          size="sm"
+                          className="bg-[#BC5F36] text-white"
+                          onClick={() => {
+                            setSeguimientoActual({
+                              adopcionId: m.id,
+                              fecha: s.fecha,
+                              fechaFormateada: dayjs(s.fecha).format(
+                                "DD/MM/YYYY"
+                              ),
+                            });
+                            setSeguimientoOpen(true);
+                          }}
+                        >
+                          Subir evidencia
+                        </Button>
                       ) : (
                         <Button size="sm" variant="ghost" disabled>
                           Pendiente
@@ -292,6 +266,32 @@ export default function SeguimientoMascotasPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Modal: Cómo funciona el seguimiento */}
+      <ModalInfoSeguimiento
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+      />
+
+      {/* Modal: Formulario de seguimiento */}
+      {seguimientoActual && (
+        <ModalSeguimiento
+          open={seguimientoOpen}
+          onClose={() => setSeguimientoOpen(false)}
+          titulo="Registra el seguimiento de tu mascota"
+        >
+          <SeguimientoForm
+            adopcionId={seguimientoActual.adopcionId}
+            fechaProgramada={seguimientoActual.fecha}
+            onSuccess={() => {
+              setSeguimientoOpen(false); // cerrar modal suavemente
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000); // permite que el toast se vea
+            }}
+          />
+        </ModalSeguimiento>
       )}
     </div>
   );

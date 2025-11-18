@@ -15,7 +15,7 @@ export default function CertificadoModal({ open, onClose, mascota }) {
   if (!mascota) return null;
 
   // Datos reales desde mascotas_adoptadas
-  const adoptante = mascota.adoptante_nombre; // AHORA SÍ
+  const adoptante = mascota.adoptante_nombre; 
   const nombreMascota = mascota.mascota_nombre;
   const fotoMascota = mascota.imagen_url;
   const idAdopcion = mascota.adopcion_id;

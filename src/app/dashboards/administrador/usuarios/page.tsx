@@ -21,7 +21,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 export default function UsuariosPage() {
   const isMobile = useIsMobile();
 
-  const USERS_PER_PAGE = isMobile ? 5 : 20;
+  const USERS_PER_PAGE = isMobile ? 5 : 10;
 
   const [query, setQuery] = useState("");
   const [usuarios, setUsuarios] = useState<PerfilConDireccion[]>([]);
@@ -132,8 +132,17 @@ export default function UsuariosPage() {
           <Pagination
             page={page}
             totalPages={totalPages}
-            onChange={(n) => setPage(n)}
-            isMobile={isMobile}
+            totalItems={filtrados.length}
+            itemsPerPage={USERS_PER_PAGE}
+            itemsLabel="usuarios"
+            onChange={(n) => {
+              setPage(n);
+
+              // ❤️ Scroll hacia arriba (siempre funciona)
+              setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }, 10);
+            }}
           />
         </>
       )}

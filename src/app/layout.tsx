@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import type { Metadata } from "next";
 import { Inter, Montserrat, Zain } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({
@@ -31,6 +32,7 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning className="bg-white text-gray-900 min-h-screen">
         <AuthProvider>{children}</AuthProvider>
+          <Toaster richColors position="top-center" />
       </body>
     </html>
   );

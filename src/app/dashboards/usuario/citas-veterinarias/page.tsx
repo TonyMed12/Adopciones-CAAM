@@ -94,7 +94,7 @@ export default function CitasVeterinariasPage() {
     fetchCitas();
   }, [mascotas]);
 
-  // ➕ Guardar cita
+  //  Guardar cita
   const handleConfirmarCita = async () => {
     if (
       !mascotaSeleccionada ||
@@ -109,6 +109,8 @@ export default function CitasVeterinariasPage() {
     const fechaCompleta = new Date(
       `${fechaSeleccionada}T${horaSeleccionada}:00`
     );
+
+    // 1. Registrar cita en BD
     const { error } = await supabase.from("citas_veterinarias").insert([
       {
         adopcion_id: mascotaSeleccionada.adopcion_id,
@@ -124,6 +126,34 @@ export default function CitasVeterinariasPage() {
       return;
     }
 
+    // 2. Obtener datos del usuario para correo
+    const { data: userData } = await supabase.auth.getUser();
+    const email = userData?.user?.email || "";
+    const nombre = userData?.user?.user_metadata?.full_name || "Usuario";
+
+    // 3. Enviar correo
+    try {
+      await fetch("/api/email/citaVeterinaria", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          nombre,
+          nombreMascota: mascotaSeleccionada.mascota_nombre,
+          fechaTexto: fechaCompleta.toLocaleDateString("es-MX", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+          horaTexto: horaSeleccionada,
+          motivo,
+        }),
+      });
+    } catch (e) {
+      console.error("Error enviando correo de cita veterinaria:", e);
+    }
+
+    // 4. Reset UI
     setModo("lista");
     setMotivo("");
     setFechaSeleccionada(null);
@@ -138,6 +168,7 @@ export default function CitasVeterinariasPage() {
         mascotas.map((m) => m.adopcion_id)
       )
       .order("fecha_cita", { ascending: true });
+
     setCitas(data || []);
   };
 
@@ -266,10 +297,11 @@ export default function CitasVeterinariasPage() {
       {/* Mensaje global */}
       {mensaje && (
         <div
-          className={`mt-4 text-center text-sm p-3 rounded-lg ${mensaje.startsWith("✅")
-            ? "bg-green-50 text-green-700 border border-green-200"
-            : "bg-yellow-50 text-yellow-800 border border-yellow-200"
-            }`}
+          className={`mt-4 text-center text-sm p-3 rounded-lg ${
+            mensaje.startsWith("✅")
+              ? "bg-green-50 text-green-700 border border-green-200"
+              : "bg-yellow-50 text-yellow-800 border border-yellow-200"
+          }`}
         >
           {mensaje}
         </div>
@@ -336,7 +368,9 @@ export default function CitasVeterinariasPage() {
                           hour: "2-digit",
                           minute: "2-digit",
                         });
-                        const mascota = obtenerMascotaPorAdopcion(cita.adopcion_id);
+                        const mascota = obtenerMascotaPorAdopcion(
+                          cita.adopcion_id
+                        );
 
                         return (
                           <tr
@@ -346,11 +380,18 @@ export default function CitasVeterinariasPage() {
                             <td className="px-4 py-3 font-semibold text-[#8B4513]">
                               {mascota}
                             </td>
-                            <td className="px-4 py-3 font-medium">{fechaStr}</td>
+                            <td className="px-4 py-3 font-medium">
+                              {fechaStr}
+                            </td>
                             <td className="px-4 py-3 font-medium">{horaStr}</td>
                             <td className="px-4 py-3">{cita.motivo}</td>
-                            <td className={`px-4 py-3 rounded-lg ${estadoColor[cita.estado]}`}>
-                              {cita.estado.charAt(0).toUpperCase() + cita.estado.slice(1)}
+                            <td
+                              className={`px-4 py-3 rounded-lg ${
+                                estadoColor[cita.estado]
+                              }`}
+                            >
+                              {cita.estado.charAt(0).toUpperCase() +
+                                cita.estado.slice(1)}
                             </td>
                           </tr>
                         );
@@ -380,9 +421,13 @@ export default function CitasVeterinariasPage() {
                         className="bg-white border border-[#E5D1B8] rounded-xl p-4 shadow-sm"
                       >
                         <div className="flex justify-between items-center mb-2">
-                          <h3 className="font-semibold text-[#8B4513]">{mascota}</h3>
+                          <h3 className="font-semibold text-[#8B4513]">
+                            {mascota}
+                          </h3>
                           <span
-                            className={`text-xs px-2 py-1 rounded-full ${estadoColor[cita.estado]}`}
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              estadoColor[cita.estado]
+                            }`}
                           >
                             {cita.estado}
                           </span>
@@ -421,10 +466,11 @@ export default function CitasVeterinariasPage() {
               {mascotas.map((m) => (
                 <div
                   key={m.mascota_id}
-                  className={`flex items-center gap-4 border rounded-2xl p-4 cursor-pointer transition ${mascotaSeleccionada?.mascota_id === m.mascota_id
-                    ? "bg-[#FFF1E6] border-[#8B4513]"
-                    : "hover:bg-[#FFF8F3]"
-                    }`}
+                  className={`flex items-center gap-4 border rounded-2xl p-4 cursor-pointer transition ${
+                    mascotaSeleccionada?.mascota_id === m.mascota_id
+                      ? "bg-[#FFF1E6] border-[#8B4513]"
+                      : "hover:bg-[#FFF8F3]"
+                  }`}
                   onClick={() => setMascotaSeleccionada(m)}
                 >
                   <img
@@ -516,12 +562,13 @@ export default function CitasVeterinariasPage() {
                           onClick={() =>
                             !deshabilitado && setFechaSeleccionada(dateStr)
                           }
-                          className={`py-2 text-sm rounded-lg transition ${deshabilitado
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : seleccionado
+                          className={`py-2 text-sm rounded-lg transition ${
+                            deshabilitado
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : seleccionado
                               ? "bg-[#8B4513] text-white font-semibold"
                               : "hover:bg-[#FFF1E6] text-[#8B4513]"
-                            }`}
+                          }`}
                         >
                           {d}
                         </button>
@@ -548,10 +595,11 @@ export default function CitasVeterinariasPage() {
                         <button
                           key={hora}
                           onClick={() => setHoraSeleccionada(hora)}
-                          className={`py-2 rounded-lg border text-sm transition ${horaSeleccionada === hora
-                            ? "bg-[#8B4513] text-white border-[#A0522D]"
-                            : "hover:bg-[#FFF1E6]"
-                            }`}
+                          className={`py-2 rounded-lg border text-sm transition ${
+                            horaSeleccionada === hora
+                              ? "bg-[#8B4513] text-white border-[#A0522D]"
+                              : "hover:bg-[#FFF1E6]"
+                          }`}
                         >
                           {hora}
                         </button>

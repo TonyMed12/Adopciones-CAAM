@@ -64,17 +64,16 @@ export default function ProcesoAdopcionPage() {
   function formateaFechaBonita(isoDate: string) {
     if (!isoDate) return "";
 
-    const fecha = new Date(isoDate);
+    const [year, month, day] = isoDate.split("-").map(Number);
 
-    const formatter = new Intl.DateTimeFormat("es-MX", {
+    const fecha = new Date(year, month - 1, day);
+
+    return new Intl.DateTimeFormat("es-MX", {
       weekday: "long",
-      day: "numeric",
-      month: "long",
       year: "numeric",
-    });
-
-    // Ejemplo: "lunes, 5 de febrero de 2025"
-    return formatter.format(fecha);
+      month: "long",
+      day: "numeric",
+    }).format(fecha);
   }
 
   useEffect(() => {

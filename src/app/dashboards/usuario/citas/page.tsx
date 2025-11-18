@@ -551,14 +551,18 @@ export default function MisCitasPage() {
                       <p className="text-sm text-[#5a4b3f]">
                         <strong>📅 Fecha:</strong>{" "}
                         <span className="font-semibold text-[#BC5F36]">
-                          {new Date(citas[0].fecha_cita).toLocaleDateString(
-                            "es-MX",
-                            {
+                          {(() => {
+                            const [y, m, d] = citas[0].fecha_cita
+                              .split("-")
+                              .map(Number);
+                            const fechaOK = new Date(y, m - 1, d);
+
+                            return fechaOK.toLocaleDateString("es-MX", {
                               year: "numeric",
                               month: "long",
                               day: "numeric",
-                            }
-                          )}
+                            });
+                          })()}
                         </span>
                       </p>
                       <p className="text-sm text-[#5a4b3f] mt-1">
