@@ -65,11 +65,10 @@ export async function obtenerAdopcionPorId(id: string): Promise<Adopcion | null>
 }
 
 export async function listarAdopcionesAdmin(): Promise<AdopcionAdminRow[]> {
-    // 1) Traer adopciones base
-    const { data: adopciones, error: errAdop } = await supabase
-        .from("adopciones")
-        .select(
-            `
+  // 1) Traer adopciones base
+  const { data: adopciones, error: errAdop } = await supabase
+    .from("adopciones")
+    .select(`
       id,
       created_at,
       estado,
@@ -80,86 +79,113 @@ export async function listarAdopcionesAdmin(): Promise<AdopcionAdminRow[]> {
       evidencia_hogar_urls,
       observaciones_usuario,
       observaciones_admin
-    `
-        )
-        .order("created_at", { ascending: false });
+    `)
+    .order("created_at", { ascending: false });
 
-    if (errAdop) throw new Error(errAdop.message);
-    const solIds = [...new Set((adopciones || []).map((a) => a.solicitud_id).filter(Boolean))] as string[];
-    if (solIds.length === 0) return [];
+  if (errAdop) throw new Error(errAdop.message);
 
-    // 2) Traer solicitudes relacionadas (para nombres)
-    const { data: solicitudes, error: errSol } = await supabase
-        .from("solicitudes_adopcion")
-        .select(
-            `
-    id,
-    usuario_id,
-    mascota_id,
-    perfiles!solicitudes_adopcion_usuario_id_fkey ( id, nombres ),
-    mascotas!solicitudes_adopcion_mascota_id_fkey ( id, nombre, imagen_url )
-  `
-        )
-        .in("id", solIds);
+  const solIds = [...new Set((adopciones || []).map((a) => a.solicitud_id).filter(Boolean))] as string[];
+  if (solIds.length === 0) return [];
 
-    if (errSol) throw new Error(errSol.message);
+  // 2) Traer solicitudes relacionadas (para nombres + correo)
+  const { data: solicitudes, error: errSol } = await supabase
+    .from("solicitudes_adopcion")
+    .select(`
+      id,
+      usuario_id,
+      mascota_id,
+      perfiles!solicitudes_adopcion_usuario_id_fkey (
+         id,
+         nombres,
+         apellido_paterno,
+         apellido_materno,
+        email
+    ),
 
-    // 3) Crear índice de solicitudes con meta de usuario/mascota
-    const byId = new Map(
-        (solicitudes || []).map((s: any) => [
-            s.id,
-            {
-                usuario_id: s.usuario_id ?? s?.perfiles?.id ?? null,
-                usuarioNombre: s?.perfiles?.nombres ?? null,
-                mascota_id: s.mascota_id ?? s?.mascotas?.id ?? null,
-                mascotaNombre: s?.mascotas?.nombre ?? null,
-                mascotaImagen: s?.mascotas?.imagen_url ?? null,
-            },
-        ])
-    );
+      mascotas!solicitudes_adopcion_mascota_id_fkey ( 
+        id, 
+        nombre, 
+        imagen_url 
+      )
+    `)
+    .in("id", solIds);
 
-    // 4) Mezclar adopciones + meta relacionada
-    const rows = (adopciones || []).map((a: any) => {
-        const meta = (byId.get(a.solicitud_id) || {
-            usuario_id: null,
-            usuarioNombre: null,
-            mascota_id: null,
-            mascotaNombre: null,
-            mascotaImagen: null,
-        }) as {
-            usuario_id: string | null;
-            usuarioNombre: string | null;
-            mascota_id: string | null;
-            mascotaNombre: string | null;
-            mascotaImagen: string | null;
-        };
+  if (errSol) throw new Error(errSol.message);
 
-        return {
-            id: a.id,
-            estado: a.estado,
-            created_at: a.created_at,
+  // 3) Crear índice de solicitudes con meta de usuario/mascota
+ const byId = new Map(
+  (solicitudes || []).map((s: any) => {
+    // Construimos el nombre completo ANTES del return
+    const nombreCompleto = [
+      s?.perfiles?.nombres,
+      s?.perfiles?.apellido_paterno,
+      s?.perfiles?.apellido_materno,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
-            usuario_id: meta.usuario_id,
-            usuarioNombre: meta.usuarioNombre,
+    return [
+      s.id,
+      {
+        usuario_id: s.usuario_id ?? s?.perfiles?.id ?? null,
+        usuarioNombre: nombreCompleto || null,
+        usuarioCorreo: s?.perfiles?.email || null,
 
-            mascota_id: meta.mascota_id,
-            mascotaNombre: meta.mascotaNombre,
-            mascotaImagen: meta.mascotaImagen,
+        mascota_id: s.mascota_id ?? s?.mascotas?.id ?? null,
+        mascotaNombre: s?.mascotas?.nombre ?? null,
+        mascotaImagen: s?.mascotas?.imagen_url ?? null,
+      },
+    ];
+  })
+);
 
-            tipo_vivienda: a.tipo_vivienda,
-            espacio_disponible: a.espacio_disponible,
-            otras_mascotas: a.otras_mascotas,
 
-            // ✅ el admin ve todas las fotos (URLs) subidas por el usuario
-            evidencias: Array.isArray(a.evidencia_hogar_urls) ? a.evidencia_hogar_urls : [],
 
-            observaciones_usuario: a.observaciones_usuario,
-            observaciones_admin: a.observaciones_admin,
-        };
-    });
+  // 4) Mezclar adopciones + meta relacionada
+  const rows = (adopciones || []).map((a: any) => {
+    const meta = (byId.get(a.solicitud_id) || {
+      usuario_id: null,
+      usuarioNombre: null,
+      usuarioCorreo: null, // 👈 AGREGADO
+      mascota_id: null,
+      mascotaNombre: null,
+      mascotaImagen: null,
+    }) as {
+      usuario_id: string | null;
+      usuarioNombre: string | null;
+      usuarioCorreo: string | null;  // 👈 AGREGADO
+      mascota_id: string | null;
+      mascotaNombre: string | null;
+      mascotaImagen: string | null;
+    };
 
-    return rows;
+    return {
+      id: a.id,
+      estado: a.estado,
+      created_at: a.created_at,
+
+      usuario_id: meta.usuario_id,
+      usuarioNombre: meta.usuarioNombre,
+      usuarioCorreo: meta.usuarioCorreo,
+
+      mascota_id: meta.mascota_id,
+      mascotaNombre: meta.mascotaNombre,
+      mascotaImagen: meta.mascotaImagen,
+
+      tipo_vivienda: a.tipo_vivienda,
+      espacio_disponible: a.espacio_disponible,
+      otras_mascotas: a.otras_mascotas,
+
+      evidencias: Array.isArray(a.evidencia_hogar_urls) ? a.evidencia_hogar_urls : [],
+
+      observaciones_usuario: a.observaciones_usuario,
+      observaciones_admin: a.observaciones_admin,
+    };
+  });
+
+  return rows;
 }
+
 
 export async function cambiarEstadoAdopcion(params: {
     id: string;

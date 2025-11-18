@@ -52,6 +52,7 @@ export type AdopcionAdminRow = {
 
     usuario_id: string | null;
     usuarioNombre: string | null;
+    usuarioCorreo: string | null;
 
     mascota_id: string | null;
     mascotaNombre: string | null;
