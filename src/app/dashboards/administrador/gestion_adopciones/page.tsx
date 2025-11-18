@@ -50,48 +50,17 @@ export default function GestionAdopcionesPage() {
 
       if (!user) throw new Error("No hay sesión activa.");
 
-      // 1️⃣ Cambiar estado en BD
-      const adopcionActualizada = await cambiarEstadoAdopcion({
+      await cambiarEstadoAdopcion({
         id,
         estado: "aprobada",
         admin_responsable: user.id,
         observaciones_admin: "Adopción aprobada por el administrador.",
       });
 
-      // 2️⃣ Obtener datos completos para el certificado
-      const datos = await obtenerDatosParaCertificado(id);
-
-      /*
-      datos = {
-        email: '',
-        adoptante: '',
-        fechaAdopcion: '',
-        mascota: {
-          nombre: '',
-          foto: '',
-          id: ''
-        }
-      }
-    */
-
-      // 3️⃣ Enviar correo con certificado adjunto
-      await fetch("/api/email/adopcion-aprobada", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: datos.email,
-          adoptante: datos.adoptante,
-          mascota: datos.mascota, // { nombre, foto, id }
-          fechaAdopcion: datos.fechaAdopcion,
-        }),
-      });
-
-      // 4️⃣ Actualizar tabla
       setRows((prev) =>
         prev.map((r) => (r.id === id ? { ...r, estado: "aprobada" } : r))
       );
-
-      toast.success("Adopción aprobada y correo enviado con certificado.");
+      toast.success("Adopción aprobada correctamente.");
     } catch (err) {
       console.error(err);
       toast.error("Error al aprobar la adopción.");
