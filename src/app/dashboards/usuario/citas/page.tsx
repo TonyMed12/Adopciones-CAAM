@@ -296,6 +296,14 @@ export default function MisCitasPage() {
     const alerta = document.createElement("div");
     document.body.appendChild(alerta);
     setTimeout(() => alerta.remove(), 2500);
+    const fechaTexto = new Date(fecha).toLocaleDateString("es-MX", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const horaTexto = horaSeleccionada; // ya está bien
 
     // Actualizar UI local
     const citaCreada = {
@@ -322,9 +330,11 @@ export default function MisCitasPage() {
         body: JSON.stringify({
           email: perfil.email,
           nombre: perfil.nombres,
-          mascota: solicitudActiva.mascota?.nombre,
-          fecha,
-          hora: horaSeleccionada,
+          nombreMascota: solicitudActiva.mascota?.nombre,
+          fechaTexto,
+          horaTexto,
+          lugar: "Centro de Atención Animal de Morelia",
+          folio: data![0].id,
         }),
       });
     } catch (e) {

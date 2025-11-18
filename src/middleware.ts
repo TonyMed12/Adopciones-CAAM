@@ -32,8 +32,7 @@ const PUBLIC_PATHS = [
   "/mascota",
   "/api/email/documento",
   "/api/email/cita",
-"/api/email/cita-cancelada",
-
+  "/api/email/cita-cancelada",
 ];
 
 export async function middleware(request: NextRequest) {
