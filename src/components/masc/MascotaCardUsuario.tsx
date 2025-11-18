@@ -1,243 +1,414 @@
 "use client";
-import type {Mascota} from "@/types/mascotas.types";
-import {X} from "lucide-react";
-import {Button} from "@/components/ui/Button";
-import {motion, AnimatePresence} from "framer-motion";
-import {supabase} from "@/lib/supabase/client";
-import React, {useState} from "react";
+import type { Mascota } from "@/types/mascotas.types";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase/client";
+import React, { useState } from "react";
 
 function getFotoSrc(m: Partial<Mascota>) {
-    return (
-        (m as any).foto ||
-        (m as any).fotoUrl ||
-        (m as any).imagen ||
-        (m as any).image ||
-        (m as any).img ||
-        m.imagen_url ||
-        "/no-image.png"
-    );
+  return (
+    (m as any).foto ||
+    (m as any).fotoUrl ||
+    (m as any).imagen ||
+    (m as any).image ||
+    (m as any).img ||
+    m.imagen_url ||
+    "/no-image.png"
+  );
 }
 
-type Props = {
-    m: Mascota | null;
-    open: boolean;
-    onClose: () => void;
-    onAdopt: () => void;
-    adoptDisabled?: boolean;
-};
+export default function MascotaCardUsuario({
+  m,
+  open,
+  onClose,
+  onAdopt,
+  adoptDisabled = false,
+}: {
+  m: Mascota | null;
+  open: boolean;
+  onClose: () => void;
+  onAdopt: () => void;
+  adoptDisabled?: boolean;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
-export default function MascotaCardUsuario({m, open, onClose, onAdopt, adoptDisabled = false}: Props) {
-    const [loading, setLoading] = useState(false);
-    if (!m) return null;
+  if (!m) return null;
 
-    const fotoSrc = getFotoSrc(m);
+  const fotoSrc = getFotoSrc(m);
 
-    // ✅ Obtener el URL público del QR (igual que en MascotaCardFull)
-    const {data: qrData} = supabase.storage.from("mascotas-qr").getPublicUrl(m.qr_code || "");
+  const { data: qrData } = supabase.storage
+    .from("mascotas-qr")
+    .getPublicUrl(m.qr_code || "");
 
-    const qrUrl = qrData?.publicUrl || null;
+  const qrUrl = qrData?.publicUrl || null;
 
-    // 🐶 Fallbacks para raza y especie
-    const razaNombre = m.raza || "Mestizo";
-    const especieNombre =
-        m.raza?.especie || (typeof (m as any).especie === "string" ? (m as any).especie : "Desconocido");
+  const razaNombre =
+    typeof m.raza === "string" ? m.raza : (m.raza as any)?.nombre || "Mestizo";
 
-    // ✅ Abrir QR en una nueva pestaña
-    const handleVerQR = () => {
-        if (qrUrl) window.open(qrUrl, "_blank");
-    };
+  const especieNombre =
+    (m.raza as any)?.especie ||
+    (typeof (m as any).especie === "string"
+      ? (m as any).especie
+      : "Desconocido");
 
-    return (
-        <AnimatePresence>
-            {open && (
-                <motion.div
-                    key="overlay"
-                    initial={{opacity: 0}}
-                    animate={{opacity: 1}}
-                    exit={{opacity: 0}}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(0,0,0,0.5)] backdrop-blur-sm px-4 py-8"
-                    onClick={onClose}
+  const esHembra =
+    m.sexo?.toLowerCase().startsWith("he") ||
+    m.sexo?.toLowerCase().startsWith("fe") ||
+    ["h", "f"].includes(m.sexo?.toLowerCase());
+
+  const sexoLabel = m.sexo
+    ? m.sexo.charAt(0).toUpperCase() + m.sexo.slice(1).toLowerCase()
+    : "Sin dato";
+
+  const coloresFormatted =
+    m.colores?.length > 0
+      ? m.colores.map((c) => c.charAt(0).toUpperCase() + c.slice(1)).join(", ")
+      : null;
+
+  const handleVerQR = () => {
+    if (!qrUrl) return;
+    setShowQrModal(true);
+  };
+
+  // Descargar QR (PC y la mayoría de Android)
+  const handleDescargarQR = async () => {
+    if (!qrUrl) return;
+
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${m.nombre}-qr.png`;
+      a.click();
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error al descargar QR", err);
+    }
+  };
+
+  const handleCompartirQR = async () => {
+    const linkQR = `https://caamorelia.vercel.app/mascota/${m.id}`;
+
+    // 🌟 Mensaje emocional + profesional
+    const mensaje = `🐾 *CAAM Morelia – Adopta, cambia vidas*  
+
+Hoy queremos presentarte a *${m.nombre}*.  
+Es una vida rescatada que ha pasado por mucho… pero aún conserva una enorme capacidad de amar. 💛🐶  
+
+Cada día espera la oportunidad de conocer a alguien que le brinde un hogar, una familia y una segunda oportunidad.  
+Quizá ese alguien puedas ser tú. 💚  
+
+✨ Aquí puedes ver su información, fotos y el proceso de adopción:
+${linkQR}
+
+Desde este link puedes ver toda su información y adoptarla.  
+
+Gracias por abrir tu corazón.  
+— *CAAM Morelia* 🧡`;
+
+    // 📱 ANDROID / iOS — Compartir usando Web Share API
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Conoce a ${m.nombre}`,
+          text: mensaje,
+        });
+        return;
+      } catch (err) {
+        console.warn("El usuario canceló compartir:", err);
+        // Si falla, seguimos al fallback
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(mensaje);
+
+      // Toast visual
+      const t = document.createElement("div");
+      t.innerHTML = `Información copiada al portapapeles`;
+      t.className = `
+      fixed bottom-6 left-1/2 -translate-x-1/2 
+      bg-black text-white px-4 py-2 
+      rounded-xl shadow-lg text-sm opacity-0
+      transition-all duration-300 z-[99999]
+    `;
+      document.body.appendChild(t);
+
+      requestAnimationFrame(() => (t.style.opacity = "1"));
+      setTimeout(() => {
+        t.style.opacity = "0";
+        setTimeout(() => t.remove(), 300);
+      }, 2000);
+    } catch (err) {
+      console.error("No se pudo copiar:", err);
+    }
+  };
+
+  // 🎨 Títulos de sección suaves
+  const tituloSuave = {
+    color: "#CDA285",
+    fontWeight: 700,
+    fontSize: "1.05rem",
+    letterSpacing: "0.2px",
+    marginBottom: "10px",
+    display: "inline-block",
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 py-8"
+          onClick={onClose}
+        >
+          <motion.article
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.25 }}
+            className="relative z-10 w-[min(1100px,92vw)] max-h-[90vh] bg-[#FFF8F2] rounded-3xl shadow-2xl grid md:grid-cols-2 overflow-hidden border-[4px] border-[#FF8414] font-sans"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Imagen */}
+            <div className="relative h-full bg-[#F4E5D5]">
+              <img
+                src={fotoSrc}
+                alt={m.nombre}
+                className="w-full h-full object-cover"
+              />
+
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition"
+              >
+                <X className="w-5 h-5 text-slate-700" />
+              </button>
+
+              <div className="absolute top-4 left-4 flex items-center gap-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-white font-semibold text-xs sm:text-sm shadow-lg
+                    ${esHembra ? "bg-pink-500/90" : "bg-blue-500/90"}
+                  `}
                 >
-                    <motion.article
-                        key="card"
-                        initial={{opacity: 0, scale: 0.95, y: 20}}
-                        animate={{opacity: 1, scale: 1, y: 0}}
-                        exit={{opacity: 0, scale: 0.95, y: 20}}
-                        transition={{duration: 0.25}}
-                        className="relative z-10 w-[min(1100px,92vw)] max-h-[90vh] bg-white rounded-3xl shadow-2xl grid md:grid-cols-2 overflow-hidden border-[4px] border-[#FF8414]"
-                        onClick={(e) => e.stopPropagation()}
+                  {sexoLabel}
+                </span>
+
+                {m.estado?.toLowerCase() === "disponible" && (
+                  <span className="px-3 py-1 rounded-full bg-emerald-500 text-white font-semibold text-xs sm:text-sm shadow">
+                    Disponible
+                  </span>
+                )}
+              </div>
+
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 to-transparent text-white px-6 py-4">
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                  {m.nombre}
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-200">
+                  {razaNombre} • {especieNombre}
+                </p>
+              </div>
+            </div>
+
+            {/* Info con SCROLL */}
+            <div className="flex flex-col p-6 md:p-8 overflow-y-auto max-h-[90vh] text-[#2B1B12] text-base">
+              {/* ⭐ SECCIÓN 1 */}
+              <h3 style={tituloSuave}>Información general</h3>
+
+              <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 mb-6 mt-2">
+                <div>
+                  <dt className="font-semibold text-slate-700">Tamaño</dt>
+                  <dd className="capitalize mt-1">{m.tamano || "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-slate-700">Edad</dt>
+                  <dd className="mt-1">{m.edad ? `${m.edad} meses` : "—"}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-slate-700">Peso</dt>
+                  <dd className="mt-1">
+                    {m.peso_kg ? `${m.peso_kg} kg` : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-slate-700">Altura</dt>
+                  <dd className="mt-1">
+                    {m.altura_cm ? `${m.altura_cm} cm` : "—"}
+                  </dd>
+                </div>
+              </dl>
+
+              {/* ⭐ SECCIÓN 2 */}
+              <h3 style={tituloSuave}>Detalles adicionales</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6 mb-6 mt-2">
+                <div>
+                  <h4 className="font-semibold text-slate-700">Esterilizado</h4>
+                  <p className="mt-1">{m.esterilizado ? "Sí" : "No"}</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-700">Colores</h4>
+                  <p className="mt-1">{coloresFormatted || "—"}</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-700">Personalidad</h4>
+                  <p className="capitalize mt-1">{m.personalidad || "—"}</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-700">
+                    Descripción física
+                  </h4>
+                  <p className="mt-1">{m.descripcion_fisica || "—"}</p>
+                </div>
+              </div>
+
+              {/* ⭐ SECCIÓN 3 */}
+              {(m.lugar_rescate ||
+                m.condicion_ingreso ||
+                m.observaciones_medicas) && (
+                <div className="border-t border-slate-200 pt-4 mt-2">
+                  <h3 style={tituloSuave}>Datos médicos y rescate</h3>
+
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
+                    {m.lugar_rescate && (
+                      <div>
+                        <dt className="font-semibold text-slate-700">
+                          Lugar de rescate
+                        </dt>
+                        <dd className="mt-1">{m.lugar_rescate}</dd>
+                      </div>
+                    )}
+
+                    {m.condicion_ingreso && (
+                      <div>
+                        <dt className="font-semibold text-slate-700">
+                          Condición al ingreso
+                        </dt>
+                        <dd className="mt-1">{m.condicion_ingreso}</dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  {m.observaciones_medicas && (
+                    <p className="mt-2">
+                      <strong className="font-semibold text-slate-700">
+                        Observaciones:
+                      </strong>{" "}
+                      {m.observaciones_medicas}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {m.fecha_ingreso && (
+                <p className="text-xs text-slate-500 mt-4">
+                  Fecha de ingreso:{" "}
+                  {new Date(m.fecha_ingreso).toLocaleDateString("es-MX")}
+                </p>
+              )}
+
+              {qrUrl && (
+                <div className="flex flex-col items-center mt-6">
+                  <h3 style={tituloSuave}>Código QR</h3>
+                  <img
+                    src={qrUrl}
+                    className="w-28 h-28 sm:w-32 sm:h-32 object-contain border rounded-xl p-2 bg-white shadow-md mt-2"
+                  />
+                  <Button
+                    variant="ghost"
+                    className="mt-2 text-[#FF8414]"
+                    onClick={handleVerQR}
+                  >
+                    Ver QR
+                  </Button>
+
+                  <div className="flex items-center gap-3 mt-2">
+                    <Button
+                      variant="ghost"
+                      className="text-[#FF8414]"
+                      onClick={handleDescargarQR}
                     >
-                        {/* 📸 Imagen */}
-                        <div className="relative h-full bg-gray-100">
-                            <img src={fotoSrc} alt={m.nombre} className="w-full h-full object-cover" />
-                            <button
-                                onClick={onClose}
-                                className="absolute top-4 right-4 p-2 bg-white/80 hover:bg-white rounded-full shadow transition"
-                                aria-label="Cerrar"
-                            >
-                                <X className="w-5 h-5 text-gray-700" />
-                            </button>
-                            <span
-                                className={`absolute left-4 top-4 px-3 py-1 rounded-full text-white font-semibold text-sm shadow ${
-                                    m.sexo === "Hembra" ? "bg-pink-500" : "bg-blue-500"
-                                }`}
-                            >
-                                {m.sexo}
-                            </span>
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white px-6 py-4">
-                                <h2 className="text-3xl font-bold">{m.nombre}</h2>
-                                <p className="text-sm text-gray-200">
-                                    {razaNombre} • {especieNombre}
-                                </p>
-                            </div>
-                        </div>
+                      Descargar
+                    </Button>
 
-                        {/* 🐾 Info */}
-                        <div className="flex flex-col p-6 md:p-8 overflow-y-auto max-h-[90vh] text-[#2b1b12]">
-                            <section className="space-y-3">
-                                <div className="flex flex-wrap gap-2">
-                                    {m.disponible_adopcion === false && (
-                                        <span className="rounded-full bg-red-100 text-red-700 px-3 py-1 text-sm font-semibold">
-                                            No disponible
-                                        </span>
-                                    )}
-                                    {m.estado && (
-                                        <span className="rounded-full bg-green-100 text-green-700 px-3 py-1 text-sm font-semibold">
-                                            {m.estado}
-                                        </span>
-                                    )}
-                                </div>
+                    <Button
+                      variant="ghost"
+                      className="text-[#FF8414]"
+                      onClick={handleCompartirQR}
+                    >
+                      Compartir
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-                                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                    <div>
-                                        <dt className="font-semibold text-slate-700">Tamaño</dt>
-                                        <dd>{m.tamano || "—"}</dd>
-                                    </div>
-                                    <div>
-                                        <dt className="font-semibold text-slate-700">Edad</dt>
-                                        <dd>{m.edad ? `${m.edad} meses` : "—"}</dd>
-                                    </div>
-                                    <div>
-                                        <dt className="font-semibold text-slate-700">Peso</dt>
-                                        <dd>{m.peso_kg ? `${m.peso_kg} kg` : "—"}</dd>
-                                    </div>
-                                    <div>
-                                        <dt className="font-semibold text-slate-700">Altura</dt>
-                                        <dd>{m.altura_cm ? `${m.altura_cm} cm` : "—"}</dd>
-                                    </div>
-                                    <div>
-                                        <dt className="font-semibold text-slate-700">Esterilizado</dt>
-                                        <dd>{m.esterilizado ? "Sí" : "No"}</dd>
-                                    </div>
-                                </dl>
+              <div className="mt-6 flex justify-end border-t border-slate-200 pt-4">
+                <Button
+                  variant="primary"
+                  className="bg-[#FF8414] hover:bg-[#e6730f]"
+                  disabled={loading || adoptDisabled}
+                  onClick={() => {
+                    setLoading(true);
+                    setTimeout(() => onAdopt(), 150);
+                  }}
+                >
+                  {loading ? "Procesando..." : "Adoptar"}
+                </Button>
+              </div>
+            </div>
+            <AnimatePresence>
+              {showQrModal && qrUrl && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 px-4"
+                  onClick={() => setShowQrModal(false)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 10 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full flex flex-col items-center"
+                  >
+                    <div className="w-full flex justify-between items-center mb-4">
+                      <h4 className="text-sm font-extrabold text-[#2B1B12]">
+                        Código QR de {m.nombre}
+                      </h4>
+                      <button
+                        onClick={() => setShowQrModal(false)}
+                        className="p-1 rounded-full hover:bg-slate-100 transition"
+                      >
+                        <X className="w-4 h-4 text-slate-600" />
+                      </button>
+                    </div>
 
-                                {m.colores?.length > 0 && (
-                                    <div>
-                                        <h3 className="font-semibold mt-2 text-slate-800">Colores</h3>
-                                        <p>{m.colores.join(", ")}</p>
-                                    </div>
-                                )}
-
-                                {m.personalidad && (
-                                    <div>
-                                        <h3 className="font-semibold mt-2 text-slate-800">Personalidad</h3>
-                                        <p className="capitalize">{m.personalidad}</p>
-                                    </div>
-                                )}
-
-                                {m.descripcion_fisica && (
-                                    <div>
-                                        <h3 className="font-semibold mt-2 text-slate-800">Descripción Física</h3>
-                                        <p>{m.descripcion_fisica}</p>
-                                    </div>
-                                )}
-
-                                {(m.lugar_rescate || m.condicion_ingreso || m.observaciones_medicas) && (
-                                    <div className="border-t border-slate-200 pt-3 mt-3">
-                                        <h3 className="font-semibold text-slate-800 mb-1">
-                                            Datos Médicos y de Rescate
-                                        </h3>
-                                        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                            {m.lugar_rescate && (
-                                                <div>
-                                                    <dt className="font-semibold text-slate-700">Lugar de rescate</dt>
-                                                    <dd>{m.lugar_rescate}</dd>
-                                                </div>
-                                            )}
-                                            {m.condicion_ingreso && (
-                                                <div>
-                                                    <dt className="font-semibold text-slate-700">
-                                                        Condición al ingreso
-                                                    </dt>
-                                                    <dd>{m.condicion_ingreso}</dd>
-                                                </div>
-                                            )}
-                                        </dl>
-                                        {m.observaciones_medicas && (
-                                            <p className="mt-2 text-slate-700 text-sm">
-                                                <strong>Observaciones:</strong> {m.observaciones_medicas}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-
-                                {m.fecha_ingreso && (
-                                    <p className="text-xs text-slate-500 mt-4">
-                                        Fecha de ingreso: {new Date(m.fecha_ingreso).toLocaleDateString("es-MX")}
-                                    </p>
-                                )}
-
-                                {/* 🧾 QR + botón “Ver QR” */}
-                                {qrUrl && (
-                                    <div className="flex flex-col items-center mt-6">
-                                        <h3 className="font-semibold text-slate-800 mb-2">Código QR</h3>
-                                        <img
-                                            src={qrUrl}
-                                            alt="Código QR"
-                                            className="w-32 h-32 object-contain border rounded-xl p-2 bg-white shadow"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="mt-2 text-[#FF8414]"
-                                            onClick={handleVerQR}
-                                        >
-                                            Ver QR
-                                        </Button>
-                                    </div>
-                                )}
-                            </section>
-
-                            <div className="mt-6 flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button
-                                    variant="primary"
-                                    size="md"
-                                    onClick={() => {
-                                        if (loading || adoptDisabled) return;
-                                        setLoading(true);
-
-                                        // ✅ Esperar un pequeño frame antes de llamar al padre
-                                        setTimeout(() => {
-                                            onAdopt();
-                                        }, 150);
-                                    }}
-                                    disabled={adoptDisabled || loading}
-                                >
-                                    {loading ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            Procesando...
-                                        </div>
-                                    ) : (
-                                        "Adoptar"
-                                    )}
-                                </Button>
-                            </div>
-                        </div>
-                    </motion.article>
+                    <img
+                      src={qrUrl}
+                      alt={`QR de ${m.nombre}`}
+                      className="w-48 h-48 object-contain border rounded-xl p-3 bg-white shadow-md"
+                    />
+                  </motion.div>
                 </motion.div>
-            )}
-        </AnimatePresence>
-    );
+              )}
+            </AnimatePresence>
+          </motion.article>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }

@@ -6,9 +6,9 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Loader2, Camera } from "lucide-react";
+import { Loader2, Camera, PawPrint, Upload } from "lucide-react";
 
-// ✅ Esquema de validación
+/* ------------------ VALIDACIÓN ------------------ */
 const seguimientoSchema = z.object({
   observaciones: z
     .string()
@@ -16,10 +16,12 @@ const seguimientoSchema = z.object({
   recomendaciones: z.string().optional(),
   satisfaccion_adoptante: z
     .number()
-    .min(1, "Debe ser al menos 1")
-    .max(5, "Máximo 5"),
+    .min(1, "Selecciona al menos 1 huellita.")
+    .max(5, "Máximo 5 huellas."),
   fotos: z.any().optional(),
 });
+
+type SeguimientoFormValues = z.infer<typeof seguimientoSchema>;
 
 export default function SeguimientoForm({
   adopcionId,
@@ -30,178 +32,256 @@ export default function SeguimientoForm({
   fechaProgramada: string;
   onSuccess?: () => void;
 }) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    reset,
-  } = useForm({
-    resolver: zodResolver(seguimientoSchema),
-  });
-
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // ✅ Manejar carga de imágenes
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+    reset,
+  } = useForm<SeguimientoFormValues>({
+    resolver: zodResolver(seguimientoSchema),
+  });
+
+  /* ------------------ PREVIEW ------------------ */
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
-
     const urls = Array.from(files).map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
   };
 
-  // ✅ Enviar datos a Supabase
-  const onSubmit = async (data: any) => {
+  /* ------------------ SUBMIT ------------------ */
+  const onSubmit = async (data: SeguimientoFormValues) => {
     try {
       setUploading(true);
 
-      // Subir fotos (si hay)
-      const uploadedUrls: string[] = [];
+      // 🟠 Obtener usuario actual
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-      if (data.fotos && data.fotos.length > 0) {
-        for (const file of data.fotos) {
-          const filePath = `seguimientos/${adopcionId}/${Date.now()}-${
-            file.name
-          }`;
-          const { data: uploadData, error: uploadError } =
-            await supabase.storage.from("adopciones").upload(filePath, file);
+      if (userError) {
+        console.error("Error obteniendo usuario:", userError);
+      }
+
+      if (!user) {
+        alert("Error: sesión del usuario no encontrada.");
+        setUploading(false);
+        return;
+      }
+
+      /* 🟣 SUBIR FOTOS */
+      const fotosUrls: string[] = [];
+      const anyData: any = data;
+      const archivos: FileList | undefined = anyData.fotos;
+
+      if (archivos && archivos.length > 0) {
+        for (const file of Array.from(archivos)) {
+          const ext = file.name.split(".").pop() || "jpg";
+          const fileName = `${Date.now()}.${ext}`;
+
+          // Carpeta por adopción dentro de /evidencias
+          const storagePath = `evidencias/${adopcionId}/${fileName}`;
+
+          console.log("📤 Subiendo archivo a:", storagePath);
+
+          const { data: uploaded, error: uploadError } = await supabase.storage
+            .from("seguimineto")
+            .upload(storagePath, file, {
+              upsert: false,
+            });
+
+          console.log("📤 RESPUESTA UPLOAD:", uploaded, uploadError);
 
           if (uploadError) {
-            console.error("❌ Error subiendo imagen:", uploadError.message);
+            console.error("❌ Error al subir imagen:", uploadError);
             continue;
           }
 
-          const publicUrl = supabase.storage
-            .from("adopciones")
-            .getPublicUrl(filePath).data.publicUrl;
+          // URL pública
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("seguimineto").getPublicUrl(storagePath);
 
-          uploadedUrls.push(publicUrl);
+          console.log("📸 URL pública generada:", publicUrl);
+          fotosUrls.push(publicUrl);
         }
       }
 
-      // Registrar seguimiento
+      console.log("📦 Fotos finales a guardar:", fotosUrls);
+
+      /* 🟢 INSERTAR EN BD */
       const { error } = await supabase.from("seguimiento_adopcion").insert({
         adopcion_id: adopcionId,
         fecha_seguimiento: fechaProgramada,
         observaciones: data.observaciones,
         recomendaciones: data.recomendaciones,
         satisfaccion_adoptante: data.satisfaccion_adoptante,
-        fotos_actuales: uploadedUrls,
+        fotos_actuales: fotosUrls,
+        metodo_contacto: "email", // valor que ya te funcionaba
         completado: true,
-        metodo_contacto: "formulario",
-        realizado_por: null, // lo puedes llenar luego con el perfil del usuario si lo manejas
+        realizado_por: user.id,
         estado_mascota: "bueno",
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ INSERT ERROR:", error);
+        throw error;
+      }
 
-      alert("✅ Seguimiento registrado correctamente");
+      alert("🐾 Seguimiento guardado correctamente");
       reset();
+      setRating(0);
+      setHoverRating(0);
+      setPreviewUrls([]);
       onSuccess?.();
-    } catch (err: any) {
-      console.error("❌ Error registrando seguimiento:", err.message);
-      alert("Error al guardar el seguimiento.");
+    } catch (err) {
+      console.error("❌ Error registrando seguimiento:", err);
+      alert("Ocurrió un error al registrar el seguimiento.");
     } finally {
       setUploading(false);
     }
   };
 
+  /* ------------------ UI ------------------ */
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-4 bg-[#FFF8F0] p-6 rounded-xl border border-[#E5D1B8] shadow-sm"
+      className="space-y-4 p-4 rounded-xl bg-[#FFF5EB] border border-[#E3C9A8] text-sm"
     >
-      <div>
-        <p className="text-sm text-gray-600 mb-1">
-          Fecha programada:{" "}
-          <span className="font-semibold text-[#8B4513]">
-            {new Date(fechaProgramada).toLocaleDateString()}
-          </span>
-        </p>
-      </div>
+      {/* FECHA */}
+      <p className="text-xs text-gray-700">
+        Seguimiento programado para:{" "}
+        <span className="font-semibold text-[#8B4513]">
+          {new Date(fechaProgramada).toLocaleDateString()}
+        </span>
+      </p>
 
-      <div>
-        <label className="block text-sm font-semibold mb-1 text-[#8B4513]">
+      {/* OBSERVACIONES */}
+      <div className="space-y-1">
+        <label className="block text-xs font-semibold text-[#8B4513]">
           Observaciones
         </label>
         <textarea
           {...register("observaciones")}
-          className="w-full border rounded-lg p-2 text-sm"
+          className="w-full p-2 rounded-lg bg-white border border-[#D9BDA3] focus:ring-1 focus:ring-[#BC5F36] text-sm"
           rows={3}
-          placeholder="Describe cómo se ha adaptado la mascota, su comportamiento, alimentación, etc."
+          placeholder="Describe cómo se encuentra tu mascota..."
         />
         {errors.observaciones && (
-          <p className="text-red-600 text-xs mt-1">
+          <p className="text-red-600 text-xs">
             {String(errors.observaciones.message)}
           </p>
         )}
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold mb-1 text-[#8B4513]">
+      {/* RECOMENDACIONES */}
+      <div className="space-y-1">
+        <label className="block text-xs font-semibold text-[#8B4513]">
           Recomendaciones (opcional)
         </label>
         <textarea
           {...register("recomendaciones")}
-          className="w-full border rounded-lg p-2 text-sm"
+          className="w-full p-2 rounded-lg bg-white border border-[#D9BDA3] focus:ring-1 focus:ring-[#BC5F36] text-sm"
           rows={2}
-          placeholder="¿Tienes alguna recomendación o comentario adicional?"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold mb-1 text-[#8B4513]">
-          Satisfacción del adoptante (1 a 5)
+      {/* CALIFICACIÓN */}
+      <div className="space-y-1">
+        <label className="block text-xs font-semibold text-[#8B4513]">
+          Calificación del seguimiento
         </label>
-        <input
-          type="number"
-          min="1"
-          max="5"
-          {...register("satisfaccion_adoptante", { valueAsNumber: true })}
-          className="w-24 border rounded-lg p-2 text-center"
-        />
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((val) => (
+            <button
+              key={val}
+              type="button"
+              onMouseEnter={() => setHoverRating(val)}
+              onMouseLeave={() => setHoverRating(0)}
+              onClick={() => {
+                setRating(val);
+                setValue("satisfaccion_adoptante", val, {
+                  shouldValidate: true,
+                });
+              }}
+              className="transition-transform hover:scale-110"
+            >
+              <PawPrint
+                size={24}
+                className={
+                  val <= (hoverRating || rating)
+                    ? "text-[#BC5F36]"
+                    : "text-gray-300"
+                }
+              />
+            </button>
+          ))}
+        </div>
         {errors.satisfaccion_adoptante && (
-          <p className="text-red-600 text-xs mt-1">
+          <p className="text-red-600 text-xs">
             {String(errors.satisfaccion_adoptante.message)}
           </p>
         )}
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold mb-2 text-[#8B4513]">
-          Fotos de seguimiento (opcional)
+      {/* FOTOS */}
+      <div className="space-y-2">
+        <label className="block text-xs font-semibold text-[#8B4513]">
+          Fotos del seguimiento
         </label>
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          {...register("fotos")}
-          onChange={handleFileChange}
-          className="block w-full text-sm text-gray-700"
-        />
+
+        <label className="w-full p-3 border-2 border-dashed rounded-lg bg-white border-[#D9BDA3] flex flex-col items-center cursor-pointer hover:border-[#BC5F36]">
+          <Upload size={20} className="text-[#BC5F36]" />
+          <span className="text-[11px] text-gray-600 text-center">
+            Haz clic para seleccionar fotos o arrástralas aquí
+          </span>
+
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            {...register("fotos")}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </label>
+
         {previewUrls.length > 0 && (
-          <div className="flex gap-2 mt-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap mt-1">
             {previewUrls.map((url, i) => (
               <img
                 key={i}
                 src={url}
-                alt={`preview-${i}`}
-                className="w-20 h-20 object-cover rounded-lg border"
+                className="w-16 h-16 object-cover rounded-lg border"
               />
             ))}
           </div>
         )}
       </div>
 
-      <div className="flex justify-end pt-2">
-        <Button type="submit" disabled={uploading || isSubmitting}>
+      {/* GUARDAR */}
+      <div className="flex justify-end pt-1">
+        <Button
+          type="submit"
+          disabled={uploading}
+          className="bg-[#BC5F36] hover:bg-[#a5532e] text-white px-4 py-2 h-9 text-xs"
+        >
           {uploading ? (
-            <Loader2 className="animate-spin w-4 h-4 mr-2" />
+            <>
+              <Loader2 className="animate-spin w-3 h-3 mr-1" /> Guardando...
+            </>
           ) : (
-            <Camera className="w-4 h-4 mr-2" />
+            <>
+              <Camera className="w-3 h-3 mr-1" /> Guardar seguimiento
+            </>
           )}
-          Guardar seguimiento
         </Button>
       </div>
     </form>

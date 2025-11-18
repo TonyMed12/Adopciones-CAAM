@@ -18,17 +18,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/Dialog";
-import Image from "next/image";
 import SeguimientoForm from "@/components/seguimiento/SeguimientoForm";
 
 export default function SeguimientoMascotasPage() {
   const [mascotas, setMascotas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const cargarSeguimientos = async () => {
       setLoading(true);
 
-      // Obtener usuario autenticado
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -38,47 +37,36 @@ export default function SeguimientoMascotasPage() {
         return;
       }
 
-      // Obtener perfil asociado al usuario actual
-      const { data: perfil, error: perfilError } = await supabase
+      const { data: perfil } = await supabase
         .from("perfiles")
         .select("id, email")
         .eq("id", user.id)
         .single();
 
-      if (perfilError || !perfil) {
-        console.error("⚠️ No se encontró perfil asociado al usuario actual");
+      if (!perfil) {
         setLoading(false);
         return;
       }
 
-      // 🔍 Filtrar adopciones donde el usuario sea el adoptante
-      const { data: adopciones, error } = await supabase
+      const { data: adopciones } = await supabase
         .from("adopciones")
         .select(
           `
-        id,
-        fecha_adopcion,
-        solicitudes_adopcion (
-          usuario_id,
-          mascota_id,
-          mascotas ( nombre, raza_id, imagen_url )
-        )
-      `
+          id,
+          fecha_adopcion,
+          solicitudes_adopcion (
+            usuario_id,
+            mascota_id,
+            mascotas ( nombre, raza_id, imagen_url )
+          )
+        `
         )
         .order("fecha_adopcion", { ascending: false });
 
-      if (error) {
-        console.error("❌ Error al obtener adopciones:", error.message);
-        setLoading(false);
-        return;
-      }
-
-      // Filtrar las adopciones que pertenecen al perfil actual
       const adopcionesUsuario = (adopciones || []).filter(
         (a) => a.solicitudes_adopcion?.usuario_id === perfil.id
       );
 
-      // Generar lista de seguimientos solo para las adopciones del usuario
       const listaMascotas = await Promise.all(
         adopcionesUsuario.map(async (a) => {
           const mascota = a.solicitudes_adopcion?.mascotas;
@@ -102,17 +90,31 @@ export default function SeguimientoMascotasPage() {
             )
           );
 
+          // 🔥 LÓGICA NUEVA FIABLE PARA ESTADOS
           const seguimientos = fechasProgramadas.map((f) => {
-            const fecha = f.fecha.format("YYYY-MM-DD");
-            const hoy = dayjs().format("YYYY-MM-DD");
-            const diferencia = f.fecha.diff(dayjs(), "day");
+            const fecha = f.fecha; // dayjs object
+            const hoy = dayjs();
+
+            const fechaStr = fecha.format("YYYY-MM-DD");
+            const hoyStr = hoy.format("YYYY-MM-DD");
+
+            const diff = fecha.startOf("day").diff(hoy.startOf("day"), "day");
 
             let estado = "Pendiente";
-            if (completados.has(fecha)) estado = "Completado";
-            else if (fecha <= hoy) estado = "Activo";
-            else if (diferencia <= 3 && diferencia > 0) estado = "Próximo";
 
-            return { nombre: f.nombre, fecha, estado };
+            if (completados.has(fechaStr)) {
+              estado = "Completado";
+            } else if (fecha.isSame(hoy, "day")) {
+              estado = "Activo";
+            } else if (diff <= 3 && diff > 0) {
+              estado = "Próximo";
+            }
+
+            return {
+              nombre: f.nombre,
+              fecha: fechaStr,
+              estado,
+            };
           });
 
           return {
@@ -172,44 +174,55 @@ export default function SeguimientoMascotasPage() {
               key={m.id}
               className="bg-[#FFF8F0] border border-[#E5D1B8] rounded-2xl shadow-sm p-6 hover:shadow-md transition"
             >
-              <div className="flex items-center gap-6 mb-5">
-                <Image
-                  src={m.imagen}
+              {/* ---------------------- HEADER ---------------------- */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-5">
+                <img
+                  src={
+                    m.imagen?.startsWith("http") ? m.imagen : "/placeholder.png"
+                  }
                   alt={m.nombre}
-                  width={120}
-                  height={120}
-                  className="rounded-2xl object-cover border border-[#BC5F36]/30"
+                  className="rounded-2xl object-cover border border-[#BC5F36]/30 
+                             w-32 h-32 sm:w-[120px] sm:h-[120px] mx-auto sm:mx-0"
                 />
-                <div>
-                  <h2 className="text-2xl font-bold text-[#8B4513] flex items-center gap-2">
+
+                <div className="text-center sm:text-left flex-1">
+                  <h2 className="text-2xl font-bold text-[#8B4513] flex items-center justify-center sm:justify-start gap-2">
                     {m.nombre} <PawPrint size={20} />
                   </h2>
-                  <p className="text-sm text-[#5C3D2E]">
+
+                  <p className="text-sm text-[#5C3D2E] mt-1">
                     <b>Fecha de adopción:</b> {m.fechaAdopcion}
                   </p>
 
+                  {/* INFO */}
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="secondary" size="sm" className="mt-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="mt-3 mx-auto sm:mx-0"
+                      >
                         <Info size={16} /> Cómo funciona el seguimiento
                       </Button>
                     </DialogTrigger>
+
                     <DialogContent className="max-w-lg bg-[#FFF8F0] border-[#E5D1B8]">
                       <DialogHeader>
                         <DialogTitle className="text-[#8B4513] text-lg">
                           ¿Cómo funciona el seguimiento? 🐾
                         </DialogTitle>
                       </DialogHeader>
+
                       <div className="text-[#5C3D2E] text-sm leading-relaxed space-y-3">
                         <p>
-                          Este seguimiento permite verificar la adaptación y
-                          bienestar de tu mascota tras la adopción.
+                          Este seguimiento verifica la adaptación y bienestar de
+                          tu mascota después de la adopción.
                         </p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>🗓️ 1 semana: revisión inicial.</li>
-                          <li>📆 1 mes: adaptación familiar.</li>
-                          <li>🐕 2 meses: evaluación intermedia.</li>
-                          <li>💚 6 meses: cierre de proceso.</li>
+                          <li>1 semana — revisión inicial.</li>
+                          <li>1 mes — adaptación familiar.</li>
+                          <li>2 meses — evaluación intermedia.</li>
+                          <li>6 meses — cierre de proceso.</li>
                         </ul>
                       </div>
                     </DialogContent>
@@ -217,12 +230,14 @@ export default function SeguimientoMascotasPage() {
                 </div>
               </div>
 
+              {/* ---------------------- SEGUIMIENTOS ---------------------- */}
               <div className="grid gap-3">
-                {m.seguimientos.map((s, i) => (
+                {m.seguimientos.map((s, i: number) => (
                   <div
-                    key={i}
-                    className="flex justify-between items-center border border-[#E5D1B8] rounded-xl px-4 py-3 bg-white hover:bg-[#FFF3E8] transition"
+                    key={`${m.id}-${i}`}
+                    className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-3 w-full border border-[#E5D1B8] rounded-xl px-4 py-3 bg-white"
                   >
+                    {/* IZQUIERDA */}
                     <div className="flex items-center gap-3">
                       <CalendarDays size={18} className="text-[#8B4513]" />
                       <div>
@@ -235,6 +250,7 @@ export default function SeguimientoMascotasPage() {
                       </div>
                     </div>
 
+                    {/* DERECHA */}
                     <div className="flex items-center gap-3">
                       <span className={getEstadoChip(s.estado)}>
                         {s.estado}
@@ -245,17 +261,18 @@ export default function SeguimientoMascotasPage() {
                       ) : s.estado === "Activo" ? (
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button size="sm" variant="secondary">
-                              Registrar
+                            <Button size="sm" className="bg-[#BC5F36] text-white">
+                              Subir evidencia
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl bg-[#FFF8F0] border-[#E5D1B8]">
+                          <DialogContent className="max-w-xl bg-[#FFF8F0] border-[#E5D1B8]">
                             <DialogHeader>
                               <DialogTitle className="text-[#8B4513] text-xl">
                                 Seguimiento —{" "}
                                 {dayjs(s.fecha).format("DD/MM/YYYY")}
                               </DialogTitle>
                             </DialogHeader>
+
                             <SeguimientoForm
                               adopcionId={m.id}
                               fechaProgramada={s.fecha}

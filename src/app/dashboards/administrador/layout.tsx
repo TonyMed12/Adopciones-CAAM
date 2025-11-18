@@ -56,7 +56,7 @@ export default function AdminLayout({
         </div>
 
         {/* Contenido principal */}
-        <main className="relative px-6 md:px-8 py-6 mt-20">
+        <main className="relative px-6 md:px-8 py-6 mt-[6.5rem] md:mt-[5.5rem]">
           <div
             className="mx-auto max-w-auto bg-white/85 backdrop-blur-sm rounded-3xl border border-slate-100 p-6 md:p-8"
             style={{ boxShadow: "0 20px 60px rgba(2,6,23,.06)" }}

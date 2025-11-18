@@ -24,21 +24,28 @@ export default function RecuperarContrasena() {
     setMensaje(null);
     setLoading(true);
 
-    const supabase = createClient(); // Crea cliente de Supabase
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: correo }),
+      });
 
-    // ⚠️ Aquí faltaba el "await"
-    const { error } = await supabase.auth.resetPasswordForEmail(correo, {
-      redirectTo: `${window.location.origin}/recuperacion/reestablecer_contrasena`,
-    });
+      const data = await res.json();
+      setLoading(false);
 
-    setLoading(false);
+      if (!res.ok) {
+        setError(data.error || "Ocurrió un error.");
+        return;
+      }
 
-    if (error) {
-      setError("Error: " + error.message);
-    } else {
       setMensaje(
         "Si el correo existe en nuestro sistema, recibirás un enlace para restablecer tu contraseña."
       );
+    } catch (err) {
+      console.error(err);
+      setError("Ocurrió un error inesperado.");
+      setLoading(false);
     }
   };
 

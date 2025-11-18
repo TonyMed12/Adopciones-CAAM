@@ -105,7 +105,7 @@ export default function LoginCAAM() {
       <div className="w-full max-w-md">
         {/* Encabezado */}
         <div className="text-center mb-6 mt-15">
-          <Link href="http://localhost:3000">
+          <Link href="/">
             <Image
               src="/logo.png"
               alt="Logo CAAM"
@@ -186,7 +186,7 @@ export default function LoginCAAM() {
             </div>
 
             {/* Botón Google */}
-            <Button
+            {/*<Button
               disabled
               type="button"
               full
@@ -227,7 +227,7 @@ export default function LoginCAAM() {
               <span className="text-[var(--brand-dark)] font-medium">
                 Iniciar sesión con Google
               </span>
-            </Button>
+            </Button>*/}
 
             <div className="text-right -mt-2">
               <ButtonLink

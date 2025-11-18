@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
@@ -15,7 +15,6 @@ import {
   ChevronDown,
   PawPrint,
   Dog,
-  ClipboardList,
   Stethoscope,
   CalendarCheck,
 } from "lucide-react";
@@ -23,33 +22,29 @@ import {
 export default function UserHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [subMenuMascotas, setSubMenuMascotas] = useState(false);
-  const [subMenuAdopcion, setSubMenuAdopcion] = useState(false);
-  const [userName, setUserName] = useState<string>("Cargando...");
   const supabase = createClient();
 
-  const isActive = (href: string) =>
-    href === "/dashboards/usuario"
-      ? pathname === href
-      : pathname === href || pathname.startsWith(href + "/");
+  const [openMobile, setOpenMobile] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [userName, setUserName] = useState("Cargando...");
 
-  // Usuario actual
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const isActive = (href: string) => {
+    if (href === "/dashboards/usuario") {
+      return pathname === href;
+    }
+    return pathname === href || pathname.startsWith(href + "/");
+  };
+
+  /* 🔹 Usuario actual */
   useEffect(() => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        const nombre = data.user.user_metadata?.nombre;
-        setUserName(nombre || "Usuario");
-      } else setUserName("Usuario");
+      const nombre = data.user?.user_metadata?.nombre;
+      setUserName(nombre || "Usuario");
     };
     fetchUser();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      fetchUser();
-    });
-    return () => listener.subscription.unsubscribe();
   }, [supabase]);
 
   const handleLogout = async () => {
@@ -57,9 +52,23 @@ export default function UserHeader() {
     router.push("/");
   };
 
+  /* Cerrar dropdowns al hacer clic fuera */
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <header className="fixed top-0 z-50 w-full bg-[#BC5F36] shadow-md">
-      <nav className="container mx-auto flex items-center justify-between px-6 py-5">
+      <nav
+        ref={menuRef}
+        className="container mx-auto flex items-center justify-between px-6 py-5"
+      >
         {/* Logo */}
         <Link href="/dashboards/usuario" className="flex items-center gap-3">
           <Image src="/logo.png" alt="CAAM" width={40} height={40} />
@@ -67,31 +76,28 @@ export default function UserHeader() {
             <span className="font-bold text-xl text-[#FFF8F0]">
               Centro de Atención Animal
             </span>
-            <span className="font-medium text-lg text-[#FFF8F0]">
+            <span className="font-medium text-sm text-[#FFF8F0]">
               Morelia, Michoacán
             </span>
           </div>
         </Link>
 
-        {/* Botón móvil */}
+        {/* Boton movil */}
         <button
-          className="lg:hidden text-[#FFF8F0] p-2 cursor-pointer"
-          onClick={() => setOpen((v) => !v)}
+          className="lg:hidden text-[#FFF8F0] p-2"
+          onClick={() => setOpenMobile(!openMobile)}
         >
-          {open ? <X size={22} /> : <Menu size={22} />}
+          {openMobile ? <X size={22} /> : <Menu size={22} />}
         </button>
 
         {/* NAV DESKTOP */}
-        <ul className="hidden lg:flex items-center gap-8">
-          {/* Inicio */}
+        <ul className="hidden lg:flex items-center gap-8 text-lg font-medium text-[#FFF8F0]">
           <NavItem
             href="/dashboards/usuario"
             label="Inicio"
             icon={LayoutDashboard}
             active={isActive("/dashboards/usuario")}
           />
-
-          {/* Adoptables */}
           <NavItem
             href="/dashboards/usuario/mascotas"
             label="Adoptables"
@@ -99,146 +105,287 @@ export default function UserHeader() {
             active={isActive("/dashboards/usuario/mascotas")}
           />
 
-          {/* Adopción con submenu */}
-          <li className="relative">
-            <button
-              onClick={() => setSubMenuAdopcion((v) => !v)}
-              className={`flex items-center gap-2 px-4 py-2 text-lg font-medium transition rounded-md cursor-pointer ${
-                isActive("/dashboards/usuario/adopcion") ||
-                isActive("/dashboards/usuario/citas")
-                  ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
-                  : "text-[#FFF8F0] hover:text-[#FDE68A]"
-              }`}
-            >
-              <HeartIcon size={18} />
-              <span>Adopción</span>
-              <ChevronDown size={16} />
-            </button>
+          {/* Adopción */}
+          <Dropdown
+            label="Adopción"
+            icon={HeartIcon}
+            open={openDropdown === "adopcion"}
+            onOpen={() =>
+              setOpenDropdown(openDropdown === "adopcion" ? null : "adopcion")
+            }
+            items={[
+              {
+                href: "/dashboards/usuario/adopcion",
+                label: "Proceso de adopción",
+                icon: HeartIcon,
+              },
+              {
+                href: "/dashboards/usuario/citas",
+                label: "Mis citas de adopción",
+                icon: CalendarCheck,
+              },
+            ]}
+          />
 
-            {subMenuAdopcion && (
-              <div className="absolute left-0 mt-2 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
-                <Link
-                  href="/dashboards/usuario/citas"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
-                  onClick={() => setSubMenuAdopcion(false)}
-                >
-                  <CalendarCheck size={16} />
-                  <span>Mis citas para adopción</span>
-                </Link>
-              </div>
-            )}
-          </li>
-
-          {/* MIS MASCOTAS con desplegable */}
-          <li className="relative">
-            <button
-              onClick={() => setSubMenuMascotas((v) => !v)}
-              className={`flex items-center gap-2 px-4 py-2 text-lg font-medium transition rounded-md cursor-pointer ${
-                isActive("/dashboards/usuario/mis-mascotas") ||
-                isActive("/dashboards/usuario/seguimiento") ||
-                isActive("/dashboards/usuario/citas-veterinarias")
-                  ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
-                  : "text-[#FFF8F0] hover:text-[#FDE68A]"
-              }`}
-            >
-              <PawPrint size={18} />
-              <span>Mis Mascotas</span>
-              <ChevronDown size={16} />
-            </button>
-
-            {subMenuMascotas && (
-              <div className="absolute left-0 mt-2 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
-                <Link
-                  href="/dashboards/usuario/mis-mascotas"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
-                  onClick={() => setSubMenuMascotas(false)}
-                >
-                  <PawPrint size={16} />
-                  <span>Ver mis mascotas</span>
-                </Link>
-
-                <Link
-                  href="/dashboards/usuario/citas-veterinarias"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
-                  onClick={() => setSubMenuMascotas(false)}
-                >
-                  <Stethoscope size={16} />
-                  <span>Citas veterinarias</span>
-                </Link>
-              </div>
-            )}
-          </li>
+          {/* Mis Mascotas */}
+          <Dropdown
+            label="Mis Mascotas"
+            icon={PawPrint}
+            open={openDropdown === "mascotas"}
+            onOpen={() =>
+              setOpenDropdown(openDropdown === "mascotas" ? null : "mascotas")
+            }
+            items={[
+              {
+                href: "/dashboards/usuario/mis-mascotas",
+                label: "Ver mis mascotas",
+                icon: PawPrint,
+              },
+              {
+                href: "/dashboards/usuario/citas-veterinarias",
+                label: "Citas veterinarias",
+                icon: Stethoscope,
+              },
+            ]}
+          />
 
           {/* Usuario */}
-          <li className="relative">
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="flex items-center gap-2 text-[#FFF8F0] hover:text-[#FDE68A] transition text-lg font-medium cursor-pointer"
-            >
-              <User size={18} />
-              <span>{userName}</span>
-              <ChevronDown size={16} />
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513]">
-                <Link
-                  href="/dashboards/perfil"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <User size={16} />
-                  <span>Mi perfil</span>
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition cursor-pointer"
-                >
-                  <LogOutIcon size={16} />
-                  <span>Cerrar sesión</span>
-                </button>
-              </div>
-            )}
-          </li>
+          <Dropdown
+            label={userName}
+            icon={User}
+            open={openDropdown === "usuario"}
+            onOpen={() =>
+              setOpenDropdown(openDropdown === "usuario" ? null : "usuario")
+            }
+            items={[
+              { href: "/dashboards/perfil", label: "Mi perfil", icon: User },
+              {
+                onClick: handleLogout,
+                label: "Cerrar sesión",
+                icon: LogOutIcon,
+              },
+            ]}
+            align="right"
+          />
         </ul>
       </nav>
+
+      {/* NAV MÓVIL */}
+      {openMobile && (
+        <div className="lg:hidden bg-[#BC5F36] border-t border-[#e3bba7] shadow-inner animate-slideDown">
+          <ul className="flex flex-col items-center py-4 space-y-2 text-center text-[#FFF8F0]">
+            <MobileLink
+              href="/dashboards/usuario"
+              label="Inicio"
+              icon={LayoutDashboard}
+              router={router}
+              onClick={() => setOpenMobile(false)}
+            />
+            <MobileLink
+              href="/dashboards/usuario/mascotas"
+              label="Adoptables"
+              icon={Dog}
+              router={router}
+              onClick={() => setOpenMobile(false)}
+            />
+
+            <MobileDropdown
+              label="Adopción"
+              icon={HeartIcon}
+              items={[
+                {
+                  href: "/dashboards/usuario/adopcion",
+                  label: "Proceso de adopción",
+                  icon: HeartIcon,
+                },
+                {
+                  href: "/dashboards/usuario/citas",
+                  label: "Mis citas de adopción",
+                  icon: CalendarCheck,
+                },
+              ]}
+              router={router}
+              setOpenMobile={setOpenMobile}
+            />
+
+            <MobileDropdown
+              label="Mis Mascotas"
+              icon={PawPrint}
+              items={[
+                {
+                  href: "/dashboards/usuario/mis-mascotas",
+                  label: "Ver mis mascotas",
+                  icon: PawPrint,
+                },
+                {
+                  href: "/dashboards/usuario/citas-veterinarias",
+                  label: "Citas veterinarias",
+                  icon: Stethoscope,
+                },
+              ]}
+              router={router}
+              setOpenMobile={setOpenMobile}
+            />
+
+            <button
+              onClick={() => {
+                router.push("/dashboards/perfil");
+                setOpenMobile(false);
+              }}
+              className="block w-full px-4 py-2 hover:text-[#FDE68A]"
+            >
+              Mi perfil
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="w-[90%] mt-3 text-center px-5 py-3 rounded-md bg-[#8B4513] text-white font-semibold hover:bg-[#A0522D] transition"
+            >
+              Cerrar sesión
+            </button>
+          </ul>
+        </div>
+      )}
     </header>
   );
 }
 
-// 🔹 Componente reutilizable para ítems del menú
-function NavItem({
-  href,
-  label,
-  icon: Icon,
-  active,
-}: {
-  href: string;
-  label: string;
-  icon: any;
-  active: boolean;
-}) {
+/* ========= SUBCOMPONENTES ========= */
+
+function NavItem({ href, label, icon: Icon, active }: any) {
   return (
     <li>
       <Link
         href={href}
-        className={[
-          "group flex items-center gap-2 rounded-md px-4 py-2 transition text-lg font-medium cursor-pointer",
+        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${
           active
-            ? "bg-[#FFF1E6] text-[#8B4513] font-semibold border-b-2 border-[#FDE68A]"
-            : "text-[#FFF8F0] hover:text-[#FDE68A]",
-        ].join(" ")}
+            ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
+            : "hover:text-[#FDE68A]"
+        }`}
       >
-        <Icon
-          size={18}
-          className={
-            active
-              ? "text-[#8B4513]"
-              : "text-[#FFF8F0] group-hover:text-[#FDE68A]"
-          }
-        />
+        <Icon size={18} />
         {label}
       </Link>
+    </li>
+  );
+}
+
+function Dropdown({
+  label,
+  icon: Icon,
+  open,
+  onOpen,
+  items,
+  align = "left",
+}: any) {
+  return (
+    <li className="relative group">
+      <button
+        onClick={onOpen}
+        className={`flex items-center gap-2 px-4 py-2 rounded-md transition ${
+          open ? "bg-[#FFF1E6] text-[#8B4513]" : "hover:text-[#FDE68A]"
+        }`}
+      >
+        <Icon size={18} />
+        <span>{label}</span>
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={`absolute ${
+            align === "right" ? "right-0" : "left-0"
+          } mt-2 w-56 bg-[#FFF1E6] rounded-md shadow-lg py-2 text-[#8B4513] animate-fadeIn border border-[#EADACB]`}
+        >
+          {items.map((item: any, i: number) =>
+            item.href ? (
+              <Link
+                key={i}
+                href={item.href}
+                onClick={onOpen}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/40 transition"
+              >
+                <item.icon size={16} />
+                <span>{item.label}</span>
+              </Link>
+            ) : (
+              <button
+                key={i}
+                onClick={item.onClick}
+                className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-[#FDE68A]/40 transition"
+              >
+                <item.icon size={16} />
+                <span>{item.label}</span>
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+/* 🔹 Mobile helpers */
+
+function MobileLink({ href, label, icon: Icon, onClick, router }: any) {
+  return (
+    <li>
+      <button
+        onClick={() => {
+          router.push(href);
+          onClick?.();
+        }}
+        className="flex items-center justify-center gap-2 w-full px-4 py-2 text-lg hover:text-[#FDE68A] transition"
+      >
+        <Icon size={18} />
+        {label}
+      </button>
+    </li>
+  );
+}
+
+function MobileDropdown({
+  label,
+  icon: Icon,
+  items,
+  router,
+  setOpenMobile,
+}: any) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li className="w-full">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-center gap-2 w-full text-lg py-2 hover:text-[#FDE68A] transition"
+      >
+        <Icon size={18} />
+        <span>{label}</span>
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="bg-[#FFF1E6] rounded-md mt-1 mx-6 text-left text-[#8B4513] shadow-lg animate-fadeIn">
+          {items.map((item: any, i: number) => (
+            <button
+              key={i}
+              onClick={() => {
+                router.push(item.href);
+                setOpenMobile(false);
+              }}
+              className="flex items-center gap-2 px-4 py-2 w-full text-left hover:bg-[#FDE68A]/40 transition"
+            >
+              <item.icon size={16} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </li>
   );
 }
