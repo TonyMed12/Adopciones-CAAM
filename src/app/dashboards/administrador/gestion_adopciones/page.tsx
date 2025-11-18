@@ -85,7 +85,7 @@ export default function GestionAdopcionesPage() {
       // Ajusta estos campos a cómo se llaman realmente en tu tabla:
       const email = adopcion?.adoptante_correo || adopcion?.email || "";
       const nombre = adopcion?.adoptante_nombre || "Adoptante";
-      const nombreMascota = adopcion?.mascota_nombre || "tu mascota";
+      const nombreMascota = adopcion?.mascotaNombre || "tu mascota";
       const fotoMascota = adopcion?.mascotaImagen || "";
       const adopcionId = adopcion?.id;
 
