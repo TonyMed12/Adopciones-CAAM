@@ -8,6 +8,8 @@ import VisorDocumento from "@/components/documentos/VisorDocumento";
 import ModalRechazo from "@/components/documentos/ModalRechazo";
 import type { Documento } from "@/components/documentos/types";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import Pagination from "@/components/ui/Pagination";
+import { P } from "node_modules/framer-motion/dist/types.d-BJcRxCew";
 
 export default function GestionDocumentosPage() {
   const supabase = createClient();
@@ -172,11 +174,10 @@ export default function GestionDocumentosPage() {
             <button
               key={estado}
               onClick={() => setFiltro(estado)}
-              className={`whitespace-nowrap px-4 py-1.5 rounded-t-md text-sm font-semibold transition-all duration-200 border-b-2 ${
-                filtro === estado
-                  ? "border-[#BC5F36] text-[#BC5F36] bg-[#fff8f4]"
-                  : "border-transparent text-[#7a5c49] hover:text-[#BC5F36]"
-              }`}
+              className={`whitespace-nowrap px-4 py-1.5 rounded-t-md text-sm font-semibold transition-all duration-200 border-b-2 ${filtro === estado
+                ? "border-[#BC5F36] text-[#BC5F36] bg-[#fff8f4]"
+                : "border-transparent text-[#7a5c49] hover:text-[#BC5F36]"
+                }`}
             >
               {estado.charAt(0).toUpperCase() + estado.slice(1)}
             </button>
@@ -199,32 +200,14 @@ export default function GestionDocumentosPage() {
         />
       )}
 
-      {/* PAGINACIÓN */}
-      {listaUsuarios.length > 0 && (
-        <div className="flex justify-center items-center gap-3 mt-6">
-          <button
-            onClick={() => paginaActual > 1 && setPaginaActual((p) => p - 1)}
-            disabled={paginaActual === 1}
-            className="text-sm px-3 py-1 rounded-md bg-[#fff4e7] text-[#BC5F36] disabled:opacity-30"
-          >
-            Anterior
-          </button>
-
-          <span className="text-sm text-slate-600">
-            Página {paginaActual} de {totalPaginas}
-          </span>
-
-          <button
-            onClick={() =>
-              paginaActual < totalPaginas && setPaginaActual((p) => p + 1)
-            }
-            disabled={paginaActual === totalPaginas}
-            className="text-sm px-3 py-1 rounded-md bg-[#fff4e7] text-[#BC5F36] disabled:opacity-30"
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+      <Pagination
+        page={paginaActual}
+        totalPages={totalPaginas}
+        totalItems={listaUsuarios.length}
+        itemsPerPage={USERS_PER_PAGE}
+        itemsLabel="usuarios"
+        onChange={(p) => setPaginaActual(p)}
+      />
 
       {/* MODAL DE RECHAZO */}
       <ModalRechazo

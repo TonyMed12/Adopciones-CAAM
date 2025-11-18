@@ -18,6 +18,7 @@ import CitasTable from "@/components/citas/CitasTAble";
 import CitaEvalModal from "@/components/citas/CitasEvalModal";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePagination } from "@/hooks/usePagination";
+import Pagination from "@/components/ui/Pagination";
 
 type Cita = CitaType;
 
@@ -350,43 +351,20 @@ export default function GestionCitasPage() {
             onEvaluar={openEval}
           />
 
-          <div className="flex items-center justify-between mt-6 px-2">
-
-            {/* Anterior */}
-            <button
-              disabled={page === 1}
-              onClick={prevPage}
-              className={`flex items-center gap-1 px-4 py-2 rounded-full border text-sm transition
-                  ${page === 1
-                  ? "opacity-40 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                  : "bg-white text-[#2B1B12] border-[#EADACB] hover:bg-[#FFF4E7]"
-                }
-              `}
-            >
-              ◀
-              <span className="hidden sm:block">Anterior</span>
-            </button>
-
-            {/* Indicador de página */}
-            <span className="text-sm text-[#6b4f40] font-medium">
-              {page} / {totalPages}
-            </span>
-
-            {/* Siguiente */}
-            <button
-              disabled={page === totalPages}
-              onClick={nextPage}
-              className={`flex items-center gap-1 px-4 py-2 rounded-full border text-sm transition
-                  ${page === totalPages
-                  ? "opacity-40 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200"
-                  : "bg-white text-[#2B1B12] border-[#EADACB] hover:bg-[#FFF4E7]"
-                }
-              `}
-            >
-              <span className="hidden sm:block">Siguiente</span>
-              ▶
-            </button>
-          </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={citasFiltradas.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              itemsLabel="citas"
+              onChange={(p) => {
+                if (p > page) nextPage();
+                else if (p < page) prevPage();
+                setTimeout(() => {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }, 10);
+              }}
+            />
         </>
       ) : (
 

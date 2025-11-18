@@ -1,96 +1,122 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+type Props = {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+  itemsLabel?: string;   // "usuarios", "mascotas", etc.
+  itemsPerPage?: number; // ej: 5 ó 10
+  totalItems?: number;   // cantidad total real de elementos
+};
+
 export default function Pagination({
   page,
   totalPages,
   onChange,
-  isMobile,
-}: {
-  page: number;
-  totalPages: number;
-  onChange: (n: number) => void;
-  isMobile: boolean;
-}) {
+  itemsLabel = "registros",
+  itemsPerPage,
+  totalItems,
+}: Props) {
   if (totalPages <= 1) return null;
 
-  // --- MOBILE VERSION ---
-  if (isMobile) {
-    return (
-      <div className="flex items-center justify-between text-sm mt-4">
+  const goTo = (p: number) => {
+    if (p >= 1 && p <= totalPages) {
+      onChange(p);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  // 🔢 Cálculo del rango mostrado
+  const start = itemsPerPage && totalItems ? (page - 1) * itemsPerPage + 1 : null;
+  const end =
+    itemsPerPage && totalItems
+      ? Math.min(page * itemsPerPage, totalItems)
+      : null;
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 text-sm">
+
+      {/* Texto descriptivo */}
+      <span className="text-slate-500">
+        {start && end && totalItems ? (
+          <>
+            Mostrando <b>{start}</b>–<b>{end}</b> de <b>{totalItems}</b> {itemsLabel}
+          </>
+        ) : (
+          <>
+            Página <b>{page}</b> de <b>{totalPages}</b>
+          </>
+        )}
+      </span>
+
+      {/* Controles */}
+      <div className="flex items-center gap-2">
+
+        {/* Botón Anterior */}
         <button
+          onClick={() => {
+            if (page > 1) {
+              goTo(page - 1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
           disabled={page === 1}
-          onClick={() => onChange(page - 1)}
-          className={`px-3 py-1 rounded-lg border text-[#BC5F36] ${
-            page === 1 ? "opacity-40" : "hover:bg-[#FFF4E7]"
-          }`}
+          className={`
+            h-8 px-3 rounded-md border text-xs font-semibold flex items-center gap-1
+            transition disabled:opacity-40
+            ${page === 1
+              ? "bg-white border-slate-200 text-slate-400"
+              : "bg-white border-slate-200 text-[#8B4513] hover:bg-amber-50"
+            }
+          `}
         >
+          <ChevronLeft className="w-4 h-4" />
           Anterior
         </button>
-        <span className="text-[#2B1B12] font-medium">
-          {page} / {totalPages}
-        </span>
+
+        {/* Chips numerados */}
+        <div className="flex items-center gap-1">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              onClick={() => goTo(p)}
+              className={`
+                min-w-[2rem] h-8 rounded-full text-xs font-semibold border transition
+                ${p === page
+                  ? "bg-[#BC5F36] text-white border-[#BC5F36]"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-amber-50"
+                }
+              `}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+
+        {/* Botón Siguiente */}
         <button
+          onClick={() => {
+            if (page < totalPages) {
+              goTo(page + 1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
           disabled={page === totalPages}
-          onClick={() => onChange(page + 1)}
-          className={`px-3 py-1 rounded-lg border text-[#BC5F36] ${
-            page === totalPages ? "opacity-40" : "hover:bg-[#FFF4E7]"
-          }`}
+          className={`
+            h-8 px-3 rounded-md border text-xs font-semibold flex items-center gap-1
+            transition disabled:opacity-40
+            ${page === totalPages
+              ? "bg-white border-slate-200 text-slate-400"
+              : "bg-white border-slate-200 text-[#8B4513] hover:bg-amber-50"
+            }
+          `}
         >
           Siguiente
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
-    );
-  }
-
-  // --- DESKTOP VERSION ---
-  return (
-    <div className="flex items-center justify-center gap-2 mt-6">
-      <button
-        disabled={page === 1}
-        onClick={() => onChange(1)}
-        className="px-2 py-1 text-[#BC5F36] hover:bg-[#FFF4E7] rounded-lg disabled:opacity-40"
-      >
-        «
-      </button>
-      <button
-        disabled={page === 1}
-        onClick={() => onChange(page - 1)}
-        className="px-2 py-1 text-[#BC5F36] hover:bg-[#FFF4E7] rounded-lg disabled:opacity-40"
-      >
-        ‹
-      </button>
-
-      {Array.from({ length: totalPages }).map((_, i) => {
-        const num = i + 1;
-        return (
-          <button
-            key={num}
-            onClick={() => onChange(num)}
-            className={`px-3 py-1 rounded-lg border ${
-              num === page
-                ? "bg-[#BC5F36] text-white"
-                : "hover:bg-[#FFF4E7] text-[#2B1B12]"
-            }`}
-          >
-            {num}
-          </button>
-        );
-      })}
-
-      <button
-        disabled={page === totalPages}
-        onClick={() => onChange(page + 1)}
-        className="px-2 py-1 text-[#BC5F36] hover:bg-[#FFF4E7] rounded-lg disabled:opacity-40"
-      >
-        ›
-      </button>
-      <button
-        disabled={page === totalPages}
-        onClick={() => onChange(totalPages)}
-        className="px-2 py-1 text-[#BC5F36] hover:bg-[#FFF4E7] rounded-lg disabled:opacity-40"
-      >
-        »
-      </button>
     </div>
   );
 }
