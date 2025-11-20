@@ -156,6 +156,7 @@ export default function AdminHeader() {
                 {[
                   { href: "/dashboards/administrador/gestion_adopciones", label: "Adopciones", icon: FileText },
                   { href: "/dashboards/administrador/documentos", label: "Documentos", icon: FileText },
+                  { href: "/dashboards/administrador/seguimiento", label: "Seguimiento", icon: FileText },
                   { href: "/dashboards/administrador/gestion_citas", label: "Citas de adopción", icon: CalendarDays },
                   { href: "/dashboards/administrador/citas-veterinarias", label: "Citas veterinarias", icon: CalendarHeart },
                 ].map(({ href, label, icon: Icon }) => (
@@ -256,6 +257,7 @@ export default function AdminHeader() {
                   {[
                     { href: "/dashboards/administrador/gestion_adopciones", label: "Adopciones", icon: FileText },
                     { href: "/dashboards/administrador/documentos", label: "Documentos", icon: FileText },
+                    { href: "/dashboards/administrador/seguimiento", label: "Seguimiento", icon: FileText },
                     { href: "/dashboards/administrador/gestion_citas", label: "Citas de adopción", icon: CalendarDays },
                     { href: "/dashboards/administrador/citas-veterinarias", label: "Citas veterinarias", icon: CalendarHeart },
                   ].map(({ href, label, icon: Icon }) => (

@@ -90,17 +90,31 @@ export default function SeguimientoMascotasPage() {
             )
           );
 
+          // 🔥 LÓGICA NUEVA FIABLE PARA ESTADOS
           const seguimientos = fechasProgramadas.map((f) => {
-            const fecha = f.fecha.format("YYYY-MM-DD");
-            const hoy = dayjs().format("YYYY-MM-DD");
-            const diferencia = f.fecha.diff(dayjs(), "day");
+            const fecha = f.fecha; // dayjs object
+            const hoy = dayjs();
+
+            const fechaStr = fecha.format("YYYY-MM-DD");
+            const hoyStr = hoy.format("YYYY-MM-DD");
+
+            const diff = fecha.startOf("day").diff(hoy.startOf("day"), "day");
 
             let estado = "Pendiente";
-            if (completados.has(fecha)) estado = "Completado";
-            else if (fecha <= hoy) estado = "Activo";
-            else if (diferencia <= 3 && diferencia > 0) estado = "Próximo";
 
-            return { nombre: f.nombre, fecha, estado };
+            if (completados.has(fechaStr)) {
+              estado = "Completado";
+            } else if (fecha.isSame(hoy, "day")) {
+              estado = "Activo";
+            } else if (diff <= 3 && diff > 0) {
+              estado = "Próximo";
+            }
+
+            return {
+              nombre: f.nombre,
+              fecha: fechaStr,
+              estado,
+            };
           });
 
           return {
@@ -160,7 +174,7 @@ export default function SeguimientoMascotasPage() {
               key={m.id}
               className="bg-[#FFF8F0] border border-[#E5D1B8] rounded-2xl shadow-sm p-6 hover:shadow-md transition"
             >
-              {/* ---------------------- ENCABEZADO RESPONSIVE ---------------------- */}
+              {/* ---------------------- HEADER ---------------------- */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 mb-5">
                 <img
                   src={
@@ -180,6 +194,7 @@ export default function SeguimientoMascotasPage() {
                     <b>Fecha de adopción:</b> {m.fechaAdopcion}
                   </p>
 
+                  {/* INFO */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button
@@ -200,14 +215,14 @@ export default function SeguimientoMascotasPage() {
 
                       <div className="text-[#5C3D2E] text-sm leading-relaxed space-y-3">
                         <p>
-                          Este seguimiento permite verificar la adaptación y
-                          bienestar de tu mascota tras la adopción.
+                          Este seguimiento verifica la adaptación y bienestar de
+                          tu mascota después de la adopción.
                         </p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>🗓️ 1 semana: revisión inicial.</li>
-                          <li>📆 1 mes: adaptación familiar.</li>
-                          <li>🐕 2 meses: evaluación intermedia.</li>
-                          <li>💚 6 meses: cierre de proceso.</li>
+                          <li>1 semana — revisión inicial.</li>
+                          <li>1 mes — adaptación familiar.</li>
+                          <li>2 meses — evaluación intermedia.</li>
+                          <li>6 meses — cierre de proceso.</li>
                         </ul>
                       </div>
                     </DialogContent>
@@ -215,27 +230,15 @@ export default function SeguimientoMascotasPage() {
                 </div>
               </div>
 
-              {/* ---------------------- SEGUIMIENTOS RESPONSIVE ---------------------- */}
+              {/* ---------------------- SEGUIMIENTOS ---------------------- */}
               <div className="grid gap-3">
-                {m.seguimientos.map((s: any, i: number) => (
+                {m.seguimientos.map((s, i: number) => (
                   <div
                     key={`${m.id}-${i}`}
-                    className="
-                      flex flex-col sm:flex-row 
-                      sm:justify-between 
-                      items-start sm:items-center 
-                      gap-3
-                      w-full
-                      border border-[#E5D1B8] 
-                      rounded-xl 
-                      px-4 py-3 
-                      bg-white 
-                      hover:bg-[#FFF3E8] 
-                      transition
-                    "
+                    className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-3 w-full border border-[#E5D1B8] rounded-xl px-4 py-3 bg-white"
                   >
                     {/* IZQUIERDA */}
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-3">
                       <CalendarDays size={18} className="text-[#8B4513]" />
                       <div>
                         <p className="text-sm font-medium text-[#8B4513]">
@@ -248,7 +251,7 @@ export default function SeguimientoMascotasPage() {
                     </div>
 
                     {/* DERECHA */}
-                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                    <div className="flex items-center gap-3">
                       <span className={getEstadoChip(s.estado)}>
                         {s.estado}
                       </span>
@@ -258,11 +261,11 @@ export default function SeguimientoMascotasPage() {
                       ) : s.estado === "Activo" ? (
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button size="sm" variant="secondary">
-                              Registrar
+                            <Button size="sm" className="bg-[#BC5F36] text-white">
+                              Subir evidencia
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl bg-[#FFF8F0] border-[#E5D1B8]">
+                          <DialogContent className="max-w-xl bg-[#FFF8F0] border-[#E5D1B8]">
                             <DialogHeader>
                               <DialogTitle className="text-[#8B4513] text-xl">
                                 Seguimiento —{" "}
