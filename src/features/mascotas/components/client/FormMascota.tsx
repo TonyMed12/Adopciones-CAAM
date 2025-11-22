@@ -1,10 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { ESPECIES } from "@/features/mascotas/data/constants";
-import {
-  crearMascota,
-  actualizarMascota,
-} from "@/features/mascotas/actions/mascotas-actions";
 import type { CreateMascotaPayload } from "@/features/mascotas/data/types";
 import { SelectorColores } from "@/features/mascotas/components/client/SelectorColores";
 import "@/styles/form-mascota.css";
@@ -15,6 +11,9 @@ import { toast } from "sonner";
 import { uploadImageClient } from "@/features/mascotas/utils/uploadImageClient";
 import { uploadQRClient } from "@/features/mascotas/utils/uploadQRClient";
 import QRCode from "qrcode";
+
+import { useCreateMascota } from "@/features/mascotas/hooks/useCreateMascota";
+import { useUpdateMascota } from "@/features/mascotas/hooks/useUpdateMascota";
 
 type Opt = { label: string; value: string };
 
@@ -169,6 +168,8 @@ export default function FormMascota({
   const [busquedaRaza, setBusquedaRaza] = useState("");
   const [openRaza, setOpenRaza] = useState(false);
   const router = useRouter();
+  const createMascotaMutation = useCreateMascota();
+  const updateMascotaMutation = useUpdateMascota();
 
   useEffect(() => {
     async function cargarRazas() {
@@ -405,42 +406,34 @@ export default function FormMascota({
     };
 
     try {
-      let result: Mascota; 
-
       if (!mascota?.id) {
-        // Crear ID para la nueva mascota
+        // CREAR
         const nuevoId = crypto.randomUUID();
 
         let imagen_url: string | null = null;
         let qr_code: string | null = null;
 
-        // 1️⃣ Subir imagen
         if (fotoFile) {
           imagen_url = await uploadImageClient(fotoFile, nuevoId);
         }
 
-        // 2️⃣ Generar QR (solo nombre de archivo)
         const qrLink = `https://caamorelia.vercel.app/mascota/${nuevoId}`;
         const qrDataUrl = await QRCode.toDataURL(qrLink, { width: 300 });
         const qrBlob = await (await fetch(qrDataUrl)).blob();
+        qr_code = await uploadQRClient(qrBlob, nuevoId);
 
-        // 3️⃣ Subir QR → debe devolver solo `${id}-qr.png`
-        const qrName = await uploadQRClient(qrBlob, nuevoId);
-        qr_code = qrName; // NO URL completa
-
-        // 4️⃣ Armar payload final
         const payloadFinal = {
           ...payload,
           id: nuevoId,
           imagen_url,
-          qr_code, // solo nombre del archivo
+          qr_code,
         };
 
-        result = await crearMascota(payloadFinal);
+        await createMascotaMutation.mutateAsync(payloadFinal);
         toast.success("Mascota creada 🐾");
       } else {
-        // 🟦 UPDATE
-        let imagen_url: string | null = mascota.imagen_url || null;
+        // ACTUALIZAR
+        let imagen_url = mascota.imagen_url || null;
 
         if (fotoFile) {
           imagen_url = await uploadImageClient(fotoFile, mascota.id);
@@ -450,16 +443,14 @@ export default function FormMascota({
           ...payload,
           id: mascota.id,
           imagen_url,
-          qr_code: mascota.qr_code, // sigue igual, ya es un nombre corto
+          qr_code: mascota.qr_code,
         };
 
-        console.log("PAYLOAD FINAL (UPDATE):", payloadFinal);
-
-        result = await actualizarMascota(payloadFinal);
+        await updateMascotaMutation.mutateAsync(payloadFinal);
         toast.success("Mascota actualizada 🐾");
       }
 
-      await onSubmit(result);
+      onSubmit();
       onCancel();
     } catch (err) {
       console.error("Error al guardar mascota:", err);

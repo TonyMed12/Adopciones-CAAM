@@ -167,8 +167,6 @@ export default function MascotasPage() {
                 setOpenCard(true);
               },
 
-              onEdited: () => {},
-
               onDelete: async (item) => {
                 const id = typeof item === "string" ? item : item?.id;
 
