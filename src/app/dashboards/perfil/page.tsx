@@ -14,9 +14,9 @@ const fetcher = async () => {
 };
 
 export default function PerfilPage() {
-  const { data, error, isLoading } = useSWR("/perfil", fetcher, {
-    revalidateOnFocus: false, // no recarga al cambiar de pestaña
-    dedupingInterval: 60000, // 1 minuto de cache
+  const { data, error, isLoading, } = useSWR("/perfil", fetcher, {
+    revalidateOnFocus: false, 
+    dedupingInterval: 60000, 
   });
 
   if (isLoading) {

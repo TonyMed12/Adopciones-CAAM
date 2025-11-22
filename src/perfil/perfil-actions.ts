@@ -8,27 +8,13 @@ import type {
   SolicitudAdopcionMin as SolicitudAdopcion,
 } from "./perfil";
 
-export async function obtenerPerfilActual(): Promise<{
-  perfil: Perfil | null;
-  direccion: Direccion | null;
-  solicitudes: SolicitudAdopcion[];
-  documentos: Documento[];
-  mascotasAdoptadas: { id: string; nombre: string; imagen_url: string | null }[];
-  rol_id: number | null;
-}> {
+export async function obtenerPerfilActual() {
   const supabase = await createClient();
 
   const { data: userData, error: authError } = await supabase.auth.getUser();
   if (authError || !userData.user) {
     console.error("Error obteniendo usuario:", authError?.message);
-    return {
-      perfil: null,
-      direccion: null,
-      solicitudes: [],
-      documentos: [],
-      mascotasAdoptadas: [],
-      rol_id: null,
-    };
+    throw new Error("No se pudo obtener el usuario autenticado.");
   }
 
   const userId = userData.user.id;
@@ -42,14 +28,7 @@ export async function obtenerPerfilActual(): Promise<{
 
   if (perfilErr) {
     console.error("Error obteniendo perfil:", perfilErr.message);
-    return {
-      perfil: null,
-      direccion: null,
-      solicitudes: [],
-      documentos: [],
-      mascotasAdoptadas: [],
-      rol_id: null,
-    };
+    throw new Error("No se pudo obtener el perfil del usuario.");
   }
 
   // 🔹 Dirección principal
