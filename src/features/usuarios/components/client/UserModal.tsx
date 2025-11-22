@@ -17,7 +17,7 @@ export default function UserModal({
     user,
     adopciones,
     solicitudesActivas,
-    isLoading, // ⬅️ NUEVO
+    isLoading,
     onClose,
 }: {
     open: boolean;
@@ -73,7 +73,11 @@ export default function UserModal({
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-4">
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex items-center gap-4"
+                                >
                                     <div className="h-16 w-16 rounded-full border border-[#EADACB] bg-white grid place-items-center text-[#BC5F36] shadow-inner">
                                         <UserCircle className="h-9 w-9" />
                                     </div>
@@ -87,10 +91,10 @@ export default function UserModal({
                                             ID {user.id.slice(0, 6)}
                                         </p>
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
 
-                            {/* ===== INFO ===== */}
+                            {/* ===== INFO DE CONTACTO ===== */}
                             <div className="space-y-4 bg-white border border-[#EADACB] rounded-2xl p-5 shadow-sm">
                                 {isLoading ? (
                                     <div className="space-y-3">
@@ -101,12 +105,13 @@ export default function UserModal({
                                         <Skeleton className="h-4 w-48" />
                                     </div>
                                 ) : (
-                                    <>
-                                        <h4 className="font-semibold text-[#BC5F36] text-sm tracking-wide border-b border-[#F3E8DC] pb-2">
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+
+                                        <h4 className="font-semibold text-[#BC5F36] text-sm tracking-wide border-b border-[#F3E8DC] pb-2 mb-3">
                                             Información de contacto
                                         </h4>
 
-                                        <div className="space-y-3 text-sm text-[#2B1B12]">
+                                        <div className="space-y-3 text-sm text-[#2B1B12] mt-1">
                                             <div className="flex items-center gap-3">
                                                 <Mail className="h-4 w-4 text-[#BC5F36]" />
                                                 <span>{user.email}</span>
@@ -126,7 +131,6 @@ export default function UserModal({
                                                 </div>
                                             )}
 
-                                            {/* DIRECCIÓN */}
                                             <div className="flex items-start gap-3">
                                                 <MapPin className="h-4 w-4 mt-1 text-[#BC5F36]" />
                                                 {user.direccion ? (
@@ -147,7 +151,7 @@ export default function UserModal({
                                                 )}
                                             </div>
                                         </div>
-                                    </>
+                                    </motion.div>
                                 )}
                             </div>
 
@@ -158,9 +162,9 @@ export default function UserModal({
                                 </h4>
 
                                 {isLoading ? (
-                                    <div className="space-y-3">
-                                        {[1, 2].map((i) => (
-                                            <div key={i} className="flex gap-4 p-4 border border-[#EADACB] rounded-2xl bg-white">
+                                    <div className="space-y-4">
+                                        {[...Array(Math.min((solicitudesActivas?.length || 1), 2))].map((_, i) => (
+                                            <div key={i} className="flex gap-4 p-4 border border-[#EADACB] bg-white rounded-2xl">
                                                 <Skeleton className="h-[80px] w-[80px] rounded-xl" />
                                                 <div className="space-y-2 w-full">
                                                     <Skeleton className="h-4 w-40" />
@@ -171,11 +175,15 @@ export default function UserModal({
                                         ))}
                                     </div>
                                 ) : solicitudesActivas.length === 0 ? (
-                                    <p className="text-[#8B6F5D] text-sm">
+                                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[#8B6F5D] text-sm">
                                         No tiene solicitudes de adopción activas.
-                                    </p>
+                                    </motion.p>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="space-y-4"
+                                    >
                                         {solicitudesActivas.map((s: any) => (
                                             <div
                                                 key={s.id}
@@ -200,21 +208,17 @@ export default function UserModal({
                                                 </div>
 
                                                 <div className="flex flex-col justify-center">
-                                                    <p className="font-semibold text-[#2B1B12] text-sm">
-                                                        {s.mascota?.nombre}
-                                                    </p>
+                                                    <p className="font-semibold text-[#2B1B12] text-sm">{s.mascota?.nombre}</p>
                                                     <p className="text-xs text-[#8B6F5D]">
                                                         Fecha: {new Date(s.fecha_creada).toLocaleDateString()}
                                                     </p>
                                                     <p className="text-xs text-[#BC5F36] font-semibold capitalize">
                                                         Estado: {s.estado.replace("_", " ")}
-
-
                                                     </p>
                                                 </div>
                                             </div>
                                         ))}
-                                    </div>
+                                    </motion.div>
                                 )}
                             </div>
 
@@ -225,9 +229,9 @@ export default function UserModal({
                                 </h4>
 
                                 {isLoading ? (
-                                    <div className="space-y-3">
-                                        {[1, 2].map((i) => (
-                                            <div key={i} className="flex gap-4 p-4 border border-[#EADACB] rounded-2xl bg-white">
+                                    <div className="space-y-4">
+                                        {[...Array(Math.min((adopciones?.length || 1), 2))].map((_, i) => (
+                                            <div key={i} className="flex gap-4 p-4 border border-[#EADACB] bg-white rounded-2xl">
                                                 <Skeleton className="h-[80px] w-[80px] rounded-xl" />
                                                 <div className="space-y-2 w-full">
                                                     <Skeleton className="h-4 w-40" />
@@ -238,11 +242,15 @@ export default function UserModal({
                                         ))}
                                     </div>
                                 ) : adopciones.length === 0 ? (
-                                    <p className="text-[#8B6F5D] text-sm">
+                                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[#8B6F5D] text-sm">
                                         Este usuario no ha adoptado ninguna mascota.
-                                    </p>
+                                    </motion.p>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="space-y-4"
+                                    >
                                         {adopciones.map((a) => (
                                             <div
                                                 key={a.id}
@@ -267,19 +275,13 @@ export default function UserModal({
                                                 </div>
 
                                                 <div className="flex flex-col justify-center">
-                                                    <p className="font-semibold text-[#2B1B12] text-sm">
-                                                        {a.mascota_nombre}
-                                                    </p>
-                                                    <p className="text-xs text-[#8B6F5D]">
-                                                        Fecha: {a.fecha_adopcion}
-                                                    </p>
-                                                    <p className="text-xs text-[#BC5F36] font-semibold capitalize">
-                                                        Estado: {a.estado}
-                                                    </p>
+                                                    <p className="font-semibold text-[#2B1B12] text-sm">{a.mascota_nombre}</p>
+                                                    <p className="text-xs text-[#8B6F5D]">Fecha: {a.fecha_adopcion}</p>
+                                                    <p className="text-xs text-[#BC5F36] font-semibold capitalize">{a.estado}</p>
                                                 </div>
                                             </div>
                                         ))}
-                                    </div>
+                                    </motion.div>
                                 )}
                             </div>
 
