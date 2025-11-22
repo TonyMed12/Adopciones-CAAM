@@ -4,12 +4,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import PageHead from "@/components/layout/PageHead";
 
-import {
-  listarUsuarios,
-  listarAdopcionesPorUsuario,
-  listarSolicitudesActivasPorUsuario,
-} from "@/features/usuarios/actions/usuarios-actions";
-
 import type { PerfilConDireccion } from "@/features/usuarios/types/usuarios";
 
 import UserTable from "@/features/usuarios/components/client/UserTable";
@@ -18,24 +12,33 @@ import Pagination from "@/components/ui/Pagination";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 
+// 🔥 Hooks de TanStack para usuarios
+import { useUsuariosQuery } from "@/features/usuarios/hooks/useUsuariosQuery";
+import { useUsuarioAdopcionesQuery } from "@/features/usuarios/hooks/useUsuarioAdopcionesQuery";
+import { useUsuarioSolicitudesQuery } from "@/features/usuarios/hooks/useUsuarioSolicitudesQuery";
+
 export default function UsuariosPage() {
   const isMobile = useIsMobile();
 
   const USERS_PER_PAGE = isMobile ? 5 : 10;
 
   const [query, setQuery] = useState("");
-  const [usuarios, setUsuarios] = useState<PerfilConDireccion[]>([]);
-  const [loading, setLoading] = useState(true);
-
   const [selected, setSelected] = useState<PerfilConDireccion | null>(null);
-  const [adopciones, setAdopciones] = useState<any[]>([]);
-  const [solicitudesActivas, setSolicitudesActivas] = useState<any[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-
   const [page, setPage] = useState(1);
-
   const [searchTerm, setSearchTerm] = useState("");
 
+  // 🚀 TanStack: obtener TODOS los usuarios
+  const {
+    data: usuariosData,
+    isLoading: loadingUsuarios,
+    isError,
+    error,
+  } = useUsuariosQuery();
+
+  const usuarios = usuariosData ?? [];
+
+  // 🔁 Debounce de búsqueda
   useEffect(() => {
     const handler = setTimeout(() => {
       setQuery(searchTerm);
@@ -45,19 +48,7 @@ export default function UsuariosPage() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await listarUsuarios();
-        setUsuarios(data);
-      } catch (error) {
-        console.error("Error cargando usuarios:", error);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
+  // 🧠 Filtro en cliente
   const filtrados = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return usuarios;
@@ -69,7 +60,7 @@ export default function UsuariosPage() {
     );
   }, [query, usuarios]);
 
-  const totalPages = Math.ceil(filtrados.length / USERS_PER_PAGE);
+  const totalPages = Math.ceil(filtrados.length / USERS_PER_PAGE) || 1;
 
   const paginated = useMemo(() => {
     return filtrados.slice(
@@ -78,22 +69,15 @@ export default function UsuariosPage() {
     );
   }, [filtrados, page, USERS_PER_PAGE]);
 
-  const abrirUsuario = async (u: PerfilConDireccion) => {
+  // 🐾 Datos adicionales del usuario seleccionado (Adopciones + Solicitudes)
+  const selectedId = selected?.id ?? "";
+
+  const { data: adopcionesData = [] } = useUsuarioAdopcionesQuery(selectedId);
+  const { data: solicitudesData = [] } = useUsuarioSolicitudesQuery(selectedId);
+
+  const abrirUsuario = (u: PerfilConDireccion) => {
     setSelected(u);
     setModalOpen(true);
-
-    setAdopciones([]);
-    setSolicitudesActivas([]);
-
-    try {
-      const data1 = await listarAdopcionesPorUsuario(u.id);
-      setAdopciones(data1);
-
-      const data2 = await listarSolicitudesActivasPorUsuario(u.id);
-      setSolicitudesActivas(data2);
-    } catch (err) {
-      console.error(err);
-    }
   };
 
   return (
@@ -121,9 +105,15 @@ export default function UsuariosPage() {
         </button>
       </div>
 
-      {loading ? (
+      {/* Estados de carga / error / tabla */}
+      {loadingUsuarios ? (
         <div className="rounded-xl border border-dashed border-[#EADACB] bg-white py-10 text-center text-sm text-[#8B6F5D]">
           Cargando usuarios...
+        </div>
+      ) : isError ? (
+        <div className="rounded-xl border border-dashed border-red-200 bg-white py-10 text-center text-sm text-red-700">
+          Ocurrió un error al cargar usuarios:{" "}
+          {(error as Error)?.message ?? "Error desconocido"}
         </div>
       ) : (
         <>
@@ -138,7 +128,7 @@ export default function UsuariosPage() {
             onChange={(n) => {
               setPage(n);
 
-              // ❤️ Scroll hacia arriba (siempre funciona)
+              // ❤️ Scroll hacia arriba
               setTimeout(() => {
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }, 10);
@@ -150,8 +140,8 @@ export default function UsuariosPage() {
       <UserModal
         open={modalOpen}
         user={selected}
-        solicitudesActivas={solicitudesActivas}
-        adopciones={adopciones}
+        solicitudesActivas={solicitudesData}
+        adopciones={adopcionesData}
         onClose={() => setModalOpen(false)}
         onDeleteClick={() => selected}
       />

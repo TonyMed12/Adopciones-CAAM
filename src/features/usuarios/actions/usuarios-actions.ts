@@ -1,16 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { DeleteUsuarioSchema } from "../schemas/usuarios-schemas";
 import type { PerfilConDireccion } from "../types/usuarios";
 
-// ======================================================
-// LISTAR USUARIOS (ADMIN)
-// ======================================================
 export async function listarUsuarios(): Promise<PerfilConDireccion[]> {
   const supabase = await createClient();
 
-  // 1. Obtener perfiles
   const { data: perfiles, error } = await supabase
     .from("perfiles")
     .select("*")
@@ -20,7 +15,6 @@ export async function listarUsuarios(): Promise<PerfilConDireccion[]> {
   if (error) throw new Error(error.message);
   if (!perfiles) return [];
 
-  // 2. Obtener dirección principal
   const usuariosConDireccion = await Promise.all(
     perfiles.map(async (perfil) => {
       const { data: direccion } = await supabase
@@ -40,27 +34,6 @@ export async function listarUsuarios(): Promise<PerfilConDireccion[]> {
   return usuariosConDireccion as PerfilConDireccion[];
 }
 
-// ======================================================
-// ELIMINAR USUARIO
-// ======================================================
-export async function eliminarUsuario(id: string): Promise<{ success: boolean }> {
-  const supabase = await createClient();
-
-  const parsed = DeleteUsuarioSchema.parse({ id });
-
-  const { error } = await supabase
-    .from("perfiles")
-    .delete()
-    .eq("id", parsed.id);
-
-  if (error) throw new Error(error.message);
-
-  return { success: true };
-}
-
-// ======================================================
-// CONTAR USUARIOS
-// ======================================================
 export async function contarUsuarios(): Promise<number> {
   const supabase = await createClient();
 
@@ -74,9 +47,6 @@ export async function contarUsuarios(): Promise<number> {
   return count ?? 0;
 }
 
-// ======================================================
-// TIPOS PARA ADOPCIONES (los mantengo porque sí se usan)
-// ======================================================
 export type AdopcionUsuario = {
   id: string;
   numero_adopcion: string;
@@ -87,9 +57,6 @@ export type AdopcionUsuario = {
   imagen_url: string | null;
 };
 
-// ======================================================
-// LISTAR ADOPCIONES DE USUARIO (ADMIN)
-// ======================================================
 export async function listarAdopcionesPorUsuario(
   adoptanteId: string
 ): Promise<AdopcionUsuario[]> {
@@ -114,8 +81,7 @@ export async function listarAdopcionesPorUsuario(
     .order("fecha_adopcion", { ascending: false });
 
   if (error) throw new Error(error.message);
-
-  return (data || []).map((row: any) => ({
+  return (data ?? []).map((row) => ({
     id: row.id,
     numero_adopcion: row.numero_adopcion,
     fecha_adopcion_raw: row.fecha_adopcion,
@@ -126,9 +92,6 @@ export async function listarAdopcionesPorUsuario(
   }));
 }
 
-// ======================================================
-// LISTAR SOLICITUDES ACTIVAS DEL USUARIO
-// ======================================================
 export async function listarSolicitudesActivasPorUsuario(usuarioId: string) {
   const supabase = await createClient();
 
