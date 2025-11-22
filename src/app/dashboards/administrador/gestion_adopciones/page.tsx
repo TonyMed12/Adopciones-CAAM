@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import AdopcionesTable from "@/components/adopciones/AdopcionesTable";
+import AdopcionesTable from "@/features/adopciones/components/client/AdopcionesTable";
 import {
   listarAdopcionesAdmin,
   cambiarEstadoAdopcion,
-} from "@/adopciones/adopciones-actions";
-import type { AdopcionAdminRow } from "@/adopciones/adopciones";
+} from "@/features/adopciones/actions/adopciones-actions";
+import type { AdopcionAdminRow } from "@/features/adopciones/types/adopciones";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";

@@ -1,8 +1,8 @@
 "use client";
 
 import useSWR from "swr";
-import { obtenerPerfilActual } from "@/perfil/perfil-actions";
-import PerfilCard from "@/components/perfil/PerfilCard";
+import { obtenerPerfilActual } from "@/features/perfil/actions/perfil-actions";
+import PerfilCard from "@/features/perfil/components/client/PerfilCard";
 import HeaderAd from "@/components/layout/HeaderAd";
 import HeaderUsr from "@/components/layout/HeaderUsr";
 import { Loader2 } from "lucide-react";

@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { obtenerMascotasAdoptadas } from "@/usuarios/usuario-mascotas-actions";
+import { obtenerMascotasAdoptadas } from "@/features/usuarios/actions/usuario-mascotas-actions";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button, ButtonLink } from "@/components/ui/Button";

@@ -3,10 +3,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import PageHead from "@/components/layout/PageHead";
-import DocumentosTable from "@/components/documentos/DocumentosTable";
-import VisorDocumento from "@/components/documentos/VisorDocumento";
-import ModalRechazo from "@/components/documentos/ModalRechazo";
-import type { Documento } from "@/components/documentos/types";
+import DocumentosTable from "@/features/documentos/components/client/DocumentosTable";
+import VisorDocumento from "@/features/documentos/components/client/VisorDocumento";
+import ModalRechazo from "@/features/documentos/components/client/ModalRechazo";
+import type { Documento } from "@/features/documentos/types/types";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import Pagination from "@/components/ui/Pagination";
 import { P } from "node_modules/framer-motion/dist/types.d-BJcRxCew";

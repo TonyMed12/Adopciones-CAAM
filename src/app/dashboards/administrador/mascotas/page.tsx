@@ -6,14 +6,14 @@ import PageHead from "@/components/layout/PageHead";
 import Button from "@/components/ui/Button2";
 import Modal from "@/components/ui/Modal";
 
-import Filters from "@/components/masc/Filters";
-import FormMascota from "@/components/masc/FormMascota";
-import MascotasTable from "@/components/masc/MascotasTable";
-import MascotaCardFull from "@/components/masc/MascotaCardFull";
-import GestionRazas from "@/components/razas/GestionRazas";
+import Filters from "@/features/mascotas/components/client/Filters";
+import FormMascota from "@/features/mascotas/components/client/FormMascota";
+import MascotasTable from "@/features/mascotas/components/client/MascotasTable";
+import MascotaCardFull from "@/features/mascotas/components/client/MascotaCardFull";
+import GestionRazas from "@/features/mascotas/razas/GestionRazas";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
-import { listarMascotas, eliminarMascota } from "@/mascotas/mascotas-actions";
+import { listarMascotas, eliminarMascota } from "@/features/mascotas/actions/mascotas-actions";
 import { createPortal } from "react-dom";
 
 export default function MascotasPage() {

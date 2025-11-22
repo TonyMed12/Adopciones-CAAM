@@ -7,8 +7,8 @@ import { Calendar } from "@/components/ui/Calendar";
 import { isWeekend } from "date-fns";
 import PageHead from "@/components/layout/PageHead";
 import { Button } from "@/components/ui/Button";
-import ConfirmCancelModal from "@/components/adopciones/ConfirmCancelModal";
-import ConfirmCancelSolicitudModal from "@/components/adopciones/ConfirmCancelSolicitudModal";
+import ConfirmCancelModal from "@/features/adopciones/components/client/ConfirmCancelModal";
+import ConfirmCancelSolicitudModal from "@/features/adopciones/components/client/ConfirmCancelSolicitudModal";
 import { FileText } from "lucide-react";
 import { XCircle } from "lucide-react";
 

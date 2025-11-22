@@ -21,8 +21,8 @@ import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { showSoftToast } from "@/lib/showSoftToast";
-import ConfirmCancelSolicitudModal from "@/components/adopciones/ConfirmCancelSolicitudModal";
-import MascotaSeleccionadaCard from "@/components/adopciones/MascotaSeleccionadaCard";
+import ConfirmCancelSolicitudModal from "@/features/adopciones/components/client/ConfirmCancelSolicitudModal";
+import MascotaSeleccionadaCard from "@/features/adopciones/components/client/MascotaSeleccionadaCard";
 const StepperAdopcion = dynamic(() => import("./StepperAdopcion"), {
   ssr: false,
 });

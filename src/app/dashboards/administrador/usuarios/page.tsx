@@ -8,12 +8,12 @@ import {
   listarUsuarios,
   listarAdopcionesPorUsuario,
   listarSolicitudesActivasPorUsuario,
-} from "@/usuarios/usuarios-actions";
+} from "@/features/usuarios/actions/usuarios-actions";
 
-import type { PerfilConDireccion } from "@/usuarios/usuarios";
+import type { PerfilConDireccion } from "@/features/usuarios/types/usuarios";
 
-import UserTable from "@/components/usuario/UserTable";
-import UserModal from "@/components/usuario/UserModal";
+import UserTable from "@/features/usuarios/components/client/UserTable";
+import UserModal from "@/features/usuarios/components/client/UserModal";
 import Pagination from "@/components/ui/Pagination";
 
 import { useIsMobile } from "@/hooks/useIsMobile";

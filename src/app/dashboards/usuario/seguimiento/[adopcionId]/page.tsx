@@ -11,9 +11,9 @@ import {
   PawPrint,
 } from "lucide-react";
 import dayjs from "dayjs";
-import SeguimientoForm from "@/components/seguimiento/SeguimientoForm";
-import ModalInfoSeguimiento from "@/components/seguimiento/ModalInfoSeguimiento";
-import ModalSeguimiento from "@/components/seguimiento/ModalSeguimiento";
+import SeguimientoForm from "@/features/seguimiento/components/client/SeguimientoForm";
+import ModalInfoSeguimiento from "@/features/seguimiento/components/client/ModalInfoSeguimiento";
+import ModalSeguimiento from "@/features/seguimiento/components/client/ModalSeguimiento";
 
 export default function SeguimientoMascotasPage() {
   const [mascotas, setMascotas] = useState<any[]>([]);

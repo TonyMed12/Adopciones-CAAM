@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import PageHead from "@/components/layout/PageHead";
-import Filters from "@/components/masc/Filters";
-import MascotasTable from "@/components/masc/MascotasTable";
-import { listarMascotas } from "@/mascotas/mascotas-actions";
+import Filters from "@/features/mascotas/components/client/Filters";
+import MascotasTable from "@/features/mascotas/components/client/MascotasTable";
+import { listarMascotas } from "@/features/mascotas/actions/mascotas-actions";
 import { useRouter } from "next/navigation";
 
 export default function SeguimientoAdminPage() {

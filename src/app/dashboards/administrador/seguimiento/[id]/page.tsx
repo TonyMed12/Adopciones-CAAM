@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { obtenerMascotaPorId } from "@/mascotas/mascotas-actions";
+import { obtenerMascotaPorId } from "@/features/mascotas/actions/mascotas-actions";
 import { supabase } from "@/lib/supabase/client";
 import PageHead from "@/components/layout/PageHead";
 import { PawPrint, CalendarDays, CheckCircle2, X } from "lucide-react";

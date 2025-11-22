@@ -4,12 +4,12 @@ import { useEffect, useState, useMemo } from "react";
 import {
   listarCitasVeterinariasAdmin,
   cambiarEstadoCitaVeterinaria,
-} from "@/citas/citas-veterinarias-actions";
+} from "@/features/citas/actions/citas-veterinarias-actions";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import CalendarioVeterinarias from "@/components/citas/CalendarioVeterinarias";
+import CalendarioVeterinarias from "@/features/citas/components/client/CalendarioVeterinarias";
 import PageHead from "@/components/layout/PageHead";
 
 export default function GestionCitasVeterinariasPage() {

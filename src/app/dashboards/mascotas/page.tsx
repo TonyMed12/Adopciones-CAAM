@@ -2,11 +2,11 @@
 import React, { useEffect, useState } from "react";
 
 import PageHead from "@/components/layout/PageHead";
-import Filters from "@/components/masc/Filters";
-import MascotaCard2 from "@/components/masc/MascotaCard2";
-import MascotaCardUsuario from "@/components/masc/MascotaCardUsuario";
+import Filters from "@/features/mascotas/components/client/Filters";
+import MascotaCard2 from "@/features/mascotas/components/client/MascotaCard2";
+import MascotaCardUsuario from "@/features/mascotas/components/client/MascotaCardUsuario";
 
-import { listarMascotas } from "@/mascotas/mascotas-actions";
+import { listarMascotas } from "@/features/mascotas/actions/mascotas-actions";
 
 export default function MascotasPublicPage() {
   const [items, setItems] = useState<any[]>([]);

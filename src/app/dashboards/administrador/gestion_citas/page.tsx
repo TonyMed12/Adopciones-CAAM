@@ -9,13 +9,13 @@ import {
   reprogramarCita,
   actualizarEstadoCita,
   evaluarCita,
-} from "@/citas/citas-actions";
+} from "@/features/citas/actions/citas-actions";
 import { Search, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
 import PageHead from "@/components/layout/PageHead";
-import CitasTable from "@/components/citas/CitasTAble";
-import CitaEvalModal from "@/components/citas/CitasEvalModal";
+import CitasTable from "@/features/citas/components/client/CitasTAble";
+import CitaEvalModal from "@/features/citas/components/client/CitasEvalModal";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePagination } from "@/hooks/usePagination";
 import Pagination from "@/components/ui/Pagination";
