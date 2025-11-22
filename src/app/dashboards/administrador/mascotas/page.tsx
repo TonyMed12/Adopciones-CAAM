@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useEffect } from "react";
 import { Plus } from "lucide-react";
 
 import PageHead from "@/components/layout/PageHead";
@@ -22,93 +21,49 @@ import { useMascotasQuery } from "@/features/mascotas/hooks/useMascotasQuery";
 import { useDeleteMascota } from "@/features/mascotas/hooks/useDeleteMascota";
 import { useMascotasPageState } from "@/features/mascotas/hooks/useMascotasPageState";
 
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useMascotasFilter } from "@/features/mascotas/hooks/useMascotasFilter";
+import { formatEdad } from "@/features/mascotas/utils/formatEdad";
+
 export default function MascotasPage() {
   const {
-    openForm, setOpenForm,
-    selectedMascota, setSelectedMascota,
-    openCard, setOpenCard,
-    openRazas, setOpenRazas,
-    q, setQ,
-    especie, setEspecie,
-    sexo, setSexo,
+    openForm,
+    setOpenForm,
+    selectedMascota,
+    setSelectedMascota,
+    openCard,
+    setOpenCard,
+    openRazas,
+    setOpenRazas,
+    q,
+    setQ,
+    especie,
+    setEspecie,
+    sexo,
+    setSexo,
   } = useMascotasPageState();
 
   const { data: items = [], isLoading } = useMascotasQuery();
   const deleteMascota = useDeleteMascota();
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  useBodyScrollLock(openCard);
 
-    const body = document.body;
-    const html = document.documentElement;
+  /* Filtrado */
+  const filteredItems = useMascotasFilter(items, q, especie, sexo);
 
-    if (openCard) {
-      const scrollY = window.scrollY;
-      body.dataset.scrollY = String(scrollY);
-      body.style.position = "fixed";
-      body.style.top = `-${scrollY}px`;
-      body.style.left = "0";
-      body.style.right = "0";
-      body.style.width = "100%";
-      body.style.overflow = "hidden";
-      html.style.overscrollBehavior = "none";
-    } else {
-      const prevY = Number(body.dataset.scrollY || 0);
-      body.style.position = "";
-      body.style.top = "";
-      body.style.left = "";
-      body.style.right = "";
-      body.style.width = "";
-      body.style.overflow = "";
-      delete body.dataset.scrollY;
-      html.style.overscrollBehavior = "";
-      if (!isNaN(prevY)) window.scrollTo(0, prevY);
-    }
-  }, [openCard]);
-
-  /* 🔍 Filtrado */
-  const filteredItems = items.filter((m) => {
-    const matchQ =
-      q.trim() === "" ||
-      m.nombre.toLowerCase().includes(q.toLowerCase()) ||
-      m.raza?.nombre?.toLowerCase().includes(q.toLowerCase());
-
-    const matchEspecie =
-      especie === "Todas" ||
-      m.raza?.especie?.toLowerCase() === especie.toLowerCase();
-
-    const matchSexo =
-      sexo === "Todos" || m.sexo.toLowerCase() === sexo.toLowerCase();
-
-    return matchQ && matchEspecie && matchSexo;
-  });
-
-  /* 👉 Formato para tabla */
-  const dataParaTabla = filteredItems.map((m) => {
-    const totalMeses = Number(m.edad ?? 0);
-    const años = Math.floor(totalMeses / 12);
-    const meses = totalMeses % 12;
-
-    const edadFormateada =
-      años > 0
-        ? `${años} año${años > 1 ? "s" : ""}${
-            meses > 0 ? ` y ${meses} mes${meses > 1 ? "es" : ""}` : ""
-          }`
-        : `${meses} mes${meses !== 1 ? "es" : ""}`;
-
-    return {
-      id: m.id,
-      nombre: m.nombre,
-      especie: m.raza?.especie ?? "Desconocido",
-      raza: m.raza?.nombre ?? "Mestizo",
-      sexo: m.sexo,
-      tamano: m.tamano,
-      edadMeses: edadFormateada,
-      descripcion: m.personalidad || m.descripcion_fisica || "",
-      foto: m.imagen_url ?? null,
-      original: m,
-    };
-  });
+  /* Formato para tabla */
+  const dataParaTabla = filteredItems.map((m) => ({
+    id: m.id,
+    nombre: m.nombre,
+    especie: m.raza?.especie ?? "Desconocido",
+    raza: m.raza?.nombre ?? "Mestizo",
+    sexo: m.sexo,
+    tamano: m.tamano,
+    edadMeses: formatEdad(m.edad),
+    descripcion: m.personalidad || m.descripcion_fisica || "",
+    foto: m.imagen_url ?? null,
+    original: m,
+  }));
 
   return (
     <>

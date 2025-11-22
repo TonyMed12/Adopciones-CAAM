@@ -4,7 +4,6 @@ import { ESPECIES } from "@/features/mascotas/data/constants";
 import type { CreateMascotaPayload } from "@/features/mascotas/data/types";
 import { SelectorColores } from "@/features/mascotas/components/client/SelectorColores";
 import "@/styles/form-mascota.css";
-import { listarRazas } from "@/features/mascotas/actions/razas-actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -14,6 +13,7 @@ import QRCode from "qrcode";
 
 import { useCreateMascota } from "@/features/mascotas/hooks/useCreateMascota";
 import { useUpdateMascota } from "@/features/mascotas/hooks/useUpdateMascota";
+import { useRazasQuery } from "@/features/mascotas/hooks/useRazasQuery";
 
 type Opt = { label: string; value: string };
 
@@ -162,26 +162,13 @@ export default function FormMascota({
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [todasRazas, setTodasRazas] = useState<
-    { id: string; nombre: string; especie: string }[]
-  >([]);
   const [busquedaRaza, setBusquedaRaza] = useState("");
   const [openRaza, setOpenRaza] = useState(false);
   const router = useRouter();
   const createMascotaMutation = useCreateMascota();
   const updateMascotaMutation = useUpdateMascota();
 
-  useEffect(() => {
-    async function cargarRazas() {
-      try {
-        const data = await listarRazas();
-        setTodasRazas(data);
-      } catch (err) {
-        console.error("Error al cargar razas:", err);
-      }
-    }
-    cargarRazas();
-  }, []);
+  const { data: todasRazas = [], isLoading: loadingRazas } = useRazasQuery();
 
   const razasFiltradas = useMemo(() => {
     const filtradas = todasRazas.filter(
