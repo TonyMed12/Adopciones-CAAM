@@ -6,3 +6,4 @@ export const RazaSchema = z.object({
   tamano: z.enum(["pequeño", "mediano", "grande"]).optional(),
   activa: z.boolean().optional(),
 });
+

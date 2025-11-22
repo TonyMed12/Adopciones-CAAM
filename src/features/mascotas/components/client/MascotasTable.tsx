@@ -6,8 +6,9 @@ import Modal from "@/components/ui/Modal";
 import FormMascota from "@/features/mascotas/components/client/FormMascota";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import Pagination from "@/components/ui/Pagination";
+import type { Mascota } from "@/features/mascotas/types/mascotas";
 
-type RowMascota = {
+export type RowMascota = {
   id: string;
   nombre: string;
   especie: string;
@@ -17,7 +18,7 @@ type RowMascota = {
   edadMeses: string;
   descripcion: string;
   foto: string | null;
-  original?: any;
+  original?: Mascota; 
 };
 
 type RowActions = {

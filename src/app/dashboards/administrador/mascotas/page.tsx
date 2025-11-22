@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect } from "react";
 import { Plus } from "lucide-react";
 
 import PageHead from "@/components/layout/PageHead";
@@ -11,39 +12,33 @@ import FormMascota from "@/features/mascotas/components/client/FormMascota";
 import MascotasTable from "@/features/mascotas/components/client/MascotasTable";
 import MascotaCardFull from "@/features/mascotas/components/client/MascotaCardFull";
 import GestionRazas from "@/features/mascotas/razas/GestionRazas";
+
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
-import { listarMascotas, eliminarMascota } from "@/features/mascotas/actions/mascotas-actions";
+
 import { createPortal } from "react-dom";
 
+import { useMascotasQuery } from "@/features/mascotas/hooks/useMascotasQuery";
+import { useDeleteMascota } from "@/features/mascotas/hooks/useDeleteMascota";
+import { useMascotasPageState } from "@/features/mascotas/hooks/useMascotasPageState";
+
 export default function MascotasPage() {
-  const [openForm, setOpenForm] = useState(false);
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedMascota, setSelectedMascota] = useState<any | null>(null);
-  const [openCard, setOpenCard] = useState(false);
-  const [openRazas, setOpenRazas] = useState(false);
-  // Filtros
-  const [q, setQ] = useState("");
-  const [especie, setEspecie] = useState("Todas");
-  const [sexo, setSexo] = useState("Todos");
+  const {
+    openForm, setOpenForm,
+    selectedMascota, setSelectedMascota,
+    openCard, setOpenCard,
+    openRazas, setOpenRazas,
+    q, setQ,
+    especie, setEspecie,
+    sexo, setSexo,
+  } = useMascotasPageState();
 
-  async function fetchMascotas() {
-    try {
-      const data = await listarMascotas();
-      setItems(data);
-    } catch (err) {
-      console.error("Error cargando mascotas:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data: items = [], isLoading } = useMascotasQuery();
+  const deleteMascota = useDeleteMascota();
 
-  useEffect(() => {
-    fetchMascotas();
-  }, []);
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const body = document.body;
     const html = document.documentElement;
 
@@ -71,27 +66,29 @@ export default function MascotasPage() {
     }
   }, [openCard]);
 
+  /* 🔍 Filtrado */
   const filteredItems = items.filter((m) => {
     const matchQ =
       q.trim() === "" ||
-      m.nombre?.toLowerCase().includes(q.toLowerCase()) ||
+      m.nombre.toLowerCase().includes(q.toLowerCase()) ||
       m.raza?.nombre?.toLowerCase().includes(q.toLowerCase());
 
     const matchEspecie =
       especie === "Todas" ||
-      (m.raza?.especie &&
-        m.raza.especie.toLowerCase() === especie.toLowerCase());
+      m.raza?.especie?.toLowerCase() === especie.toLowerCase();
 
     const matchSexo =
-      sexo === "Todos" || m.sexo?.toLowerCase() === sexo.toLowerCase();
+      sexo === "Todos" || m.sexo.toLowerCase() === sexo.toLowerCase();
 
     return matchQ && matchEspecie && matchSexo;
   });
 
+  /* 👉 Formato para tabla */
   const dataParaTabla = filteredItems.map((m) => {
     const totalMeses = Number(m.edad ?? 0);
     const años = Math.floor(totalMeses / 12);
     const meses = totalMeses % 12;
+
     const edadFormateada =
       años > 0
         ? `${años} año${años > 1 ? "s" : ""}${
@@ -99,19 +96,16 @@ export default function MascotasPage() {
           }`
         : `${meses} mes${meses !== 1 ? "es" : ""}`;
 
-    const especie = m.raza?.especie || "Desconocido";
-    const raza = m.raza?.nombre || "Mestizo";
-
     return {
       id: m.id,
       nombre: m.nombre,
-      especie,
-      raza,
+      especie: m.raza?.especie ?? "Desconocido",
+      raza: m.raza?.nombre ?? "Mestizo",
       sexo: m.sexo,
       tamano: m.tamano,
       edadMeses: edadFormateada,
       descripcion: m.personalidad || m.descripcion_fisica || "",
-      foto: m.imagen_url,
+      foto: m.imagen_url ?? null,
       original: m,
     };
   });
@@ -126,14 +120,7 @@ export default function MascotasPage() {
       >
         <FormMascota
           onCancel={() => setOpenForm(false)}
-          onSubmit={async (saved) => {
-            setItems((prev) => {
-              const idx = prev.findIndex((m) => m.id === saved.id);
-              if (idx === -1) return [saved, ...prev];
-              const next = [...prev];
-              next[idx] = saved;
-              return next;
-            });
+          onSubmit={() => {
             setOpenForm(false);
           }}
         />
@@ -167,25 +154,24 @@ export default function MascotasPage() {
       />
 
       {/* Tabla */}
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-10">Cargando mascotas...</div>
       ) : (
         <div className="p-4">
           <MascotasTable
-            data={dataParaTabla as any}
+            data={dataParaTabla}
             actions={{
               onViewCard: (rowMascota) => {
-                const mascotaCompleta = items.find(
-                  (item) => item.id === rowMascota.id
-                );
-                setSelectedMascota(mascotaCompleta);
+                const m = items.find((item) => item.id === rowMascota.id);
+                setSelectedMascota(m ?? null);
                 setOpenCard(true);
               },
-              onEdited: async () => {
-                await fetchMascotas();
-              },
-              onDelete: async (item: any) => {
+
+              onEdited: () => {},
+
+              onDelete: async (item) => {
                 const id = typeof item === "string" ? item : item?.id;
+
                 if (!id) {
                   toast.error("No se pudo determinar el ID de la mascota 😿");
                   return;
@@ -196,36 +182,7 @@ export default function MascotasPage() {
                 );
                 if (!confirmar) return;
 
-                const res = await eliminarMascota(id);
-
-                if (!res.success) {
-                  // Mostrar mensajes según el motivo
-                  switch (res.reason) {
-                    case "no_eliminable":
-                      toast.error(
-                        "La mascota no se puede eliminar porque está en proceso o adoptada."
-                      );
-                      break;
-
-                    case "no_existe":
-                      toast.error("La mascota ya no existe.");
-                      break;
-
-                    case "error_estado":
-                      toast.error(
-                        "No se pudo verificar el estado de la mascota."
-                      );
-                      break;
-
-                    default:
-                      toast.error("No se pudo eliminar la mascota.");
-                  }
-                  return; // detener flujo, no refrescar tabla
-                }
-
-                // Si sí se eliminó
-                toast.success("Mascota eliminada correctamente 🗑️");
-                await fetchMascotas();
+                deleteMascota.mutate(id);
               },
             }}
             deleteDisabledForId={() => false}
@@ -251,28 +208,20 @@ export default function MascotasPage() {
                   m={selectedMascota}
                   open={true}
                   onClose={() => setOpenCard(false)}
-                  onEdit={() => {
-                    console.log("Editar mascota:", selectedMascota);
-                  }}
+                  onEdit={() => console.log("Editar mascota:", selectedMascota)}
                   onDelete={async () => {
                     if (!selectedMascota) return;
 
                     const confirm = await toastConfirm(
-                      ":¿Seguro que deseas eliminar esta mascota?"
+                      "¿Seguro que deseas eliminar esta mascota?"
                     );
                     if (!confirm) return;
 
-                    try {
-                      await eliminarMascota(selectedMascota.id);
-                      setItems((prev) =>
-                        prev.filter((m) => m.id !== selectedMascota.id)
-                      );
-                      setOpenCard(false);
-                      toast.success("Mascota eliminada correctamente 🗑️");
-                    } catch (err: any) {
-                      console.error("Error eliminando mascota:", err);
-                      toast.error(err.message || "Error eliminando mascota");
-                    }
+                    deleteMascota.mutate(selectedMascota.id, {
+                      onSuccess: () => {
+                        setOpenCard(false);
+                      },
+                    });
                   }}
                 />
               </div>

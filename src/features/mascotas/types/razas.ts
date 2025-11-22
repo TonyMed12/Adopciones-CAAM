@@ -7,3 +7,9 @@ export type Raza = {
   activa?: boolean;
   created_at?: string;
 };
+
+export type verRaza = {
+  id: string;
+  nombre: string;
+  especie: "Perro" | "Gato" | "Otro";
+};

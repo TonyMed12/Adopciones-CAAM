@@ -1,6 +1,11 @@
-export type Sexo = "Macho" | "Hembra";
+import { verRaza } from "./razas";
+
+export type Sexo = "macho" | "hembra";
 export type Tamano = "pequeño" | "mediano" | "grande";
-export type EstadoMascota = "disponible" | "adoptado" | "en proceso";
+export type EstadoMascota =
+    | "disponible"
+    | "en_proceso"
+    | "adoptada";
 
 export interface Mascota {
     id: string;
@@ -12,23 +17,19 @@ export interface Mascota {
     personalidad?: string | null;
     imagen_url?: string | null;
     esterilizado: boolean;
-    peso_kg?: number | null;
+    peso_kg?: string | null;
     altura_cm?: number | null;
-    colores?: string[];
+    colores?: string[] | null;
     descripcion_fisica?: string | null;
     fecha_ingreso: string;
     lugar_rescate?: string | null;
-    condicion_ingreso?: string | null; // ⚡ agregado
+    condicion_ingreso?: string | null;
     observaciones_medicas?: string | null;
     raza_id?: string | null;
     qr_code?: string | null;
-    estado?: EstadoMascota;
+    estado: EstadoMascota;
     created_at?: string;
     updated_at?: string;
 
-    raza?: {
-        id: string;
-        nombre: string;
-        especie: string;
-    } | null;
+    raza?: verRaza | null;
 }
