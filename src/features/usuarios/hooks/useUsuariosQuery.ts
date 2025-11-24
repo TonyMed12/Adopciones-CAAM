@@ -6,5 +6,7 @@ export function useUsuariosQuery() {
     queryKey: ["usuarios"],
     queryFn: fetchUsuarios,
     staleTime: 10000,
+    gcTime: 1000 * 60 * 5,
+    retry: 1,
   });
 }
