@@ -5,6 +5,7 @@ import type { Mascota } from "../types/mascotas";
 
 import { deleteMascotaImagen } from "./storage/deleteMascotaImagen";
 import { deleteMascotaQR } from "./storage/deleteMascotaQR";
+import { validarMascotaEliminable } from "./helpers/validarMascotaEliminable";
 
 export async function listarMascotas() {
     const supabase = await createClient();
@@ -61,25 +62,20 @@ export async function eliminarMascota(id: string): Promise<{ success: boolean; r
     const supabase = await createClient();
     const parsed = DeleteMascotaSchema.parse({ id });
 
-    const { data: mascota, error } = await supabase
-        .from("mascotas")
-        .select("estado, disponible_adopcion, imagen_url, qr_code")
-        .eq("id", parsed.id)
-        .maybeSingle();
+    const validacion = await validarMascotaEliminable(parsed.id);
 
-    if (error) return { success: false, reason: "error_estado" };
-    if (!mascota) return { success: false, reason: "no_existe" };
-
-    if (mascota.estado !== "disponible" || mascota.disponible_adopcion !== true)
-        return { success: false, reason: "no_eliminable" };
-
-    if (mascota.imagen_url) {
-        const fileName = mascota.imagen_url.split("/").pop()?.split("?")[0];
-        if (fileName) await deleteMascotaImagen(parsed.id);
+    if (!validacion.success) {
+        return validacion;
     }
 
-    if (mascota.qr_code) {
-        await deleteMascotaQR(mascota.qr_code);
+    const { imagen_url, qr_code } = validacion.mascota!;
+
+    if (imagen_url) {
+        await deleteMascotaImagen(parsed.id);
+    }
+
+    if (qr_code) {
+        await deleteMascotaQR(qr_code);
     }
 
     const { error: deleteError } = await supabase
@@ -87,7 +83,10 @@ export async function eliminarMascota(id: string): Promise<{ success: boolean; r
         .delete()
         .eq("id", parsed.id);
 
-    if (deleteError) return { success: false, reason: "error_eliminar" };
+    if (deleteError) {
+        return { success: false, reason: "error_eliminar" };
+    }
+
     return { success: true };
 }
 

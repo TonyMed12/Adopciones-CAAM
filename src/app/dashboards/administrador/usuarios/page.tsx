@@ -11,6 +11,9 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 
 import UserModalSkeleton from "@/features/usuarios/components/client/UserModalSkeleton";
 import UserTableSkeleton from "@/features/usuarios/components/client/UserTableSkeleton";
+import { createPortal } from "react-dom";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+
 
 import { useUsuariosQuery } from "@/features/usuarios/hooks/useUsuariosQuery";
 import { useUsuarioAdopcionesQuery } from "@/features/usuarios/hooks/useUsuarioAdopcionesQuery";
@@ -25,7 +28,7 @@ export default function UsuariosPage() {
   const { data: usuariosData, isLoading: loadingUsuarios } = useUsuariosQuery();
   const usuarios = usuariosData ?? [];
 
-  // 🔥 Hook nuevo que concentra toda la lógica
+  // Hook nuevo que concentra toda la lógica
   const {
     searchTerm,
     setSearchTerm,
@@ -43,6 +46,8 @@ export default function UsuariosPage() {
   const selectedId = selected?.id ?? "";
   const { data: adopcionesData = [], isLoading: loadingAdopciones } = useUsuarioAdopcionesQuery(selectedId);
   const { data: solicitudesData = [], isLoading: loadingSolicitudes } = useUsuarioSolicitudesQuery(selectedId);
+
+  useBodyScrollLock(modalOpen);
 
   return (
     <div className="space-y-6">
@@ -87,14 +92,23 @@ export default function UsuariosPage() {
         </>
       )}
 
-      <UserModal
-        open={modalOpen}
-        user={selected}
-        isLoading={loadingAdopciones || loadingSolicitudes || !selected}
-        solicitudesActivas={solicitudesData}
-        adopciones={adopcionesData}
-        onClose={() => setModalOpen(false)}
-      />
+      {modalOpen &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center px-4 py-8">
+            <UserModal
+              open={modalOpen}
+              user={selected}
+              isLoading={loadingAdopciones || loadingSolicitudes || !selected}
+              solicitudesActivas={solicitudesData}
+              adopciones={adopcionesData}
+              onClose={() => setModalOpen(false)}
+            />
+          </div>,
+          document.body
+        )}
+
+
     </div>
   );
 }
