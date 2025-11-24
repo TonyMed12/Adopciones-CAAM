@@ -14,6 +14,8 @@ import GestionRazas from "@/features/mascotas/razas/GestionRazas";
 
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
+import UserTableSkeleton from "@/features/usuarios/components/client/UserTableSkeleton";
+
 
 import { createPortal } from "react-dom";
 
@@ -110,7 +112,7 @@ export default function MascotasPage() {
 
       {/* Tabla */}
       {isLoading ? (
-        <div className="text-center py-10">Cargando mascotas...</div>
+        <UserTableSkeleton />
       ) : (
         <div className="p-4">
           <MascotasTable

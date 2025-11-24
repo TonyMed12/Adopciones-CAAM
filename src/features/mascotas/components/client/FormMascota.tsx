@@ -117,9 +117,8 @@ function MenuSelect({
               key={opt.value}
               role="option"
               aria-selected={opt.value === value}
-              className={`mselect-item cursor-pointer ${
-                opt.value === value ? "is-active" : ""
-              }`}
+              className={`mselect-item cursor-pointer ${opt.value === value ? "is-active" : ""
+                }`}
               onClick={() => {
                 onChange(opt.value);
                 setOpen(false);
@@ -185,7 +184,7 @@ export default function FormMascota({
     value: r.id,
   }));
 
-  /* ✅ Si estamos editando, llenar campos */
+  /* Si estamos editando, llenar campos */
   useEffect(() => {
     if (mascota) {
       setNombre(mascota.nombre || "");
@@ -197,7 +196,7 @@ export default function FormMascota({
       setRazaId(mascota.raza_id || "");
       setPesoKg(mascota.peso_kg ? String(mascota.peso_kg) : "");
       setAlturaCm(mascota.altura_cm ? String(mascota.altura_cm) : "");
-      setEsterilizado(mascota.esterilizado ? "sí" : "no");
+      setEsterilizado(mascota.esterilizado ? "si" : "no");
       setPersonalidad(mascota.personalidad || "");
       setColores(mascota.colores || []);
       setLugarRescate(mascota.lugar_rescate || "");
@@ -382,7 +381,7 @@ export default function FormMascota({
       altura_cm: Number(alturaCm),
       personalidad,
       descripcion_fisica: descripcion,
-      esterilizado: esterilizado === "sí",
+      esterilizado: esterilizado === "si",
       disponible_adopcion: true,
       colores,
       lugar_rescate: lugarRescate,
@@ -549,11 +548,10 @@ export default function FormMascota({
                         setBusquedaRaza(r.label);
                         setOpenRaza(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-[#fff2e6] ${
-                        razaId === r.value
-                          ? "bg-[#FF8414]/10 font-medium text-[#8B4513]"
-                          : ""
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-[#fff2e6] ${razaId === r.value
+                        ? "bg-[#FF8414]/10 font-medium text-[#8B4513]"
+                        : ""
+                        }`}
                     >
                       {r.label}
                     </button>
@@ -634,8 +632,8 @@ export default function FormMascota({
             onChange={setEsterilizado}
             options={[
               { label: "Seleccionar opción", value: "" },
-              { label: "Sí", value: "Sí" },
-              { label: "No", value: "No" },
+              { label: "Sí", value: "si" },
+              { label: "No", value: "no" },
             ]}
             ariaLabel="Seleccionar esterilización"
           />
