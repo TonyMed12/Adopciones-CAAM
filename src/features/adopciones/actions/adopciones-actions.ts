@@ -3,7 +3,7 @@
 
 import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/server";
-import { NuevaAdopcionSchema, RevisionAdopcionSchema } from "../adopciones-schemas";
+import { NuevaAdopcionSchema, RevisionAdopcionSchema } from "../schemas/adopciones-schemas";
 import type { Adopcion, NuevaAdopcion, RevisionAdopcion, AdopcionAdminRow } from "../types/adopciones";
 
 export async function listarAdopciones(): Promise<Adopcion[]> {

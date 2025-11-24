@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { CreateMascotaSchema, UpdateMascotaSchema, DeleteMascotaSchema } from "../schemas/mascotas-schemas";
 import type { Mascota } from "../types/mascotas";
 
-
-import { uploadMascotaArchivos } from "./storage/uploadMascotaArchivos";
 import { deleteMascotaImagen } from "./storage/deleteMascotaImagen";
 import { deleteMascotaQR } from "./storage/deleteMascotaQR";
 
