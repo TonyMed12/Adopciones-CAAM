@@ -17,7 +17,6 @@ import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
 import UserTableSkeleton from "@/features/usuarios/components/client/UserTableSkeleton";
 
-
 import { createPortal } from "react-dom";
 
 import { useMascotasQuery } from "@/features/mascotas/hooks/useMascotasQuery";
@@ -58,10 +57,10 @@ export default function MascotasPage() {
 
   useBodyScrollLock(openCard);
 
-  /* 🔍 Filtrado */
+  /* Filtrado */
   const filteredItems = useMascotasFilter(items, q, especie, sexo);
 
-  /* 🧩 Formato para tabla */
+  /* Formato para tabla */
   const dataParaTabla = filteredItems.map((m) => ({
     id: m.id,
     nombre: m.nombre,
@@ -77,7 +76,7 @@ export default function MascotasPage() {
 
   return (
     <>
-      {/* 🧡 MODAL Creación / Edición */}
+      {/* MODAL Creación / Edición */}
       <Modal
         open={openForm}
         onClose={() => {
@@ -94,9 +93,8 @@ export default function MascotasPage() {
           }}
           onSubmitFinal={async (values) => {
             try {
-              /* ---------------------------------------------------------------------- */
-              /* 🐾 EDITAR MASCOTA */
-              /* ---------------------------------------------------------------------- */
+              /* -----------------------------------EDITAR MASCOTA----------------------------------------- */
+
               if (selectedMascota) {
                 let imagen_url = values.imagen_url;
                 let qr_code = values.qr_code;
@@ -116,16 +114,14 @@ export default function MascotasPage() {
                 };
 
                 await updateMascota.mutateAsync(payloadEdit);
-                toast.success("Mascota actualizada correctamente 🐾");
+                toast.success("Mascota actualizada correctamente");
 
                 setSelectedMascota(null);
                 setOpenForm(false);
                 return;
               }
 
-              /* ---------------------------------------------------------------------- */
-              /* 🐶 CREAR MASCOTA */
-              /* ---------------------------------------------------------------------- */
+              /* --------------------------------CREAR MASCOTA-------------------------------------- */
               const nuevoId = crypto.randomUUID();
 
               let imagen_url: string | null = null;
@@ -148,7 +144,7 @@ export default function MascotasPage() {
               };
 
               await createMascota.mutateAsync(payloadCreate);
-              toast.success("Mascota creada correctamente 🐾");
+              toast.success("Mascota agregada correctamente");
 
               setOpenForm(false);
             } catch (error) {
@@ -159,7 +155,7 @@ export default function MascotasPage() {
         />
       </Modal>
 
-      {/* 🧡 Header */}
+      {/* Header */}
       <PageHead
         title="Mascotas"
         subtitle="Explora a nuestros adorables compañeros 🐾"
@@ -174,12 +170,14 @@ export default function MascotasPage() {
               <Plus size={18} /> Agregar
             </Button>
 
-            <Button onClick={() => setOpenRazas(true)}>🐶 Gestionar Razas</Button>
+            <Button onClick={() => setOpenRazas(true)}>
+              🐶 Gestionar Razas
+            </Button>
           </div>
         }
       />
 
-      {/* 🔎 Filtros */}
+      {/* Filtros */}
       <Filters
         q={q}
         onQ={setQ}
@@ -190,7 +188,7 @@ export default function MascotasPage() {
         ESPECIES={["Perro", "Gato", "Otro"]}
       />
 
-      {/* 📋 Tabla */}
+      {/* Tabla */}
       {isLoading ? (
         <UserTableSkeleton />
       ) : (
@@ -224,7 +222,7 @@ export default function MascotasPage() {
         </div>
       )}
 
-      {/* 🔍 Card Full */}
+      {/* Card Full */}
       {openCard &&
         typeof window !== "undefined" &&
         createPortal(
@@ -264,7 +262,7 @@ export default function MascotasPage() {
           document.body
         )}
 
-      {/* 🐶 Modal de gestión de razas */}
+      {/* modal gestión de razas */}
       <GestionRazas open={openRazas} onClose={() => setOpenRazas(false)} />
     </>
   );

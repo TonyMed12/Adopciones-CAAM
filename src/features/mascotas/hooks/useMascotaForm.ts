@@ -50,7 +50,7 @@ export function useMascotaForm({ mascota, onSubmit }: UseMascotaFormProps) {
     },
   });
 
-  /* 🔁 PRE-CARGA EN EDICIÓN */
+  /* PRE-CARGA EN EDICIÓN */
   useEffect(() => {
     if (!mascota) return;
 
@@ -76,7 +76,7 @@ export function useMascotaForm({ mascota, onSubmit }: UseMascotaFormProps) {
       estado: mascota.estado,
     });
 
-    // ✔ ESPECIE UI (NO PARA GUARDAR)
+    // ESPECIE UI (NO PARA GUARDAR)
     setEspecieUI(mascota.raza?.especie ?? "");
 
     if (mascota.imagen_url) {
@@ -84,7 +84,7 @@ export function useMascotaForm({ mascota, onSubmit }: UseMascotaFormProps) {
     }
   }, [mascota, form]);
 
-  /* 📸 Foto */
+  /* Foto */
   const handleSelectFoto = useCallback((file: File | null) => {
     if (!file) return;
     setFotoFile(file);
@@ -94,7 +94,7 @@ export function useMascotaForm({ mascota, onSubmit }: UseMascotaFormProps) {
     reader.readAsDataURL(file);
   }, []);
 
-  /* 🟠 SUBMIT FINAL */
+  /* SUBMIT FINAL */
   const submit = form.handleSubmit((values) => {
     onSubmit({
       ...values,
