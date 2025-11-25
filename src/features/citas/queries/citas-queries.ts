@@ -4,6 +4,7 @@ import {
     reprogramarCita,
     actualizarEstadoCita,
     evaluarCita,
+    cancelarCita,
 } from "../actions/citas-actions";
 
 import type { Cita } from "../types/cita";
@@ -51,12 +52,7 @@ export const fetchCitas = async (): Promise<Cita[]> => {
     });
 };
 
-export const fetchCitasRango = async (
-    desdeISO: string,
-    hastaISO: string
-): Promise<RawCita[]> => {
-    return await listarCitasRango(desdeISO, hastaISO);
-};
+
 
 
 export const reprogramarCitaMutation = async (
@@ -65,9 +61,15 @@ export const reprogramarCitaMutation = async (
     return await reprogramarCita(params.id, params.fecha, params.hora);
 };
 
+export const cancelarCitaMutation = async (id: string) => {
+    return await cancelarCita(id);
+};
 
-export const cancelarCitaMutation = async (id: string): Promise<RawCita> => {
-    return await actualizarEstadoCita(id, "cancelada");
+export const fetchCitasRango = async (
+    desdeISO: string,
+    hastaISO: string
+): Promise<RawCita[]> => {
+    return await listarCitasRango(desdeISO, hastaISO);
 };
 
 export const evaluarCitaMutation = async (params: {

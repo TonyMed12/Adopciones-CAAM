@@ -10,6 +10,7 @@ import {
 } from "@/features/citas/actions/citas-actions";
 import { useCitas } from "@/features/citas/hooks/useCitas";
 import { useReprogramarCita } from "@/features/citas/hooks/useReprogramarCita";
+import { useCancelarCita } from "@/features/citas/hooks/useCancelarCita";
 import { Search, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
@@ -32,6 +33,7 @@ export default function GestionCitasPage() {
 
   const { data: citas = [], isLoading } = useCitas();
   const { mutate: reprogramar, isPending: isReprogramando } = useReprogramarCita();
+  const { mutate: cancelar, isPending: isCancelando } = useCancelarCita();
 
   const [query, setQuery] = useState("");
   const [filtroEstado, setFiltroEstado] =
@@ -156,15 +158,16 @@ export default function GestionCitasPage() {
     const ok = await toastConfirm("¿Cancelar esta cita?");
     if (!ok) return;
 
-    try {
-      const updated = await actualizarEstadoCita(id, "cancelada");
-      setCitas((prev) =>
-        prev.map((c) => (c.id === id ? (updated as any) : c))
-      );
-    } catch {
-      toast.error("No se pudo cancelar");
-    }
+    cancelar(id, {
+      onSuccess: () => {
+        toast.success("Cita cancelada");
+      },
+      onError: () => {
+        toast.error("No se pudo cancelar");
+      }
+    });
   };
+
 
   const openEval = (c: Cita) => {
     setEvalTarget(c);

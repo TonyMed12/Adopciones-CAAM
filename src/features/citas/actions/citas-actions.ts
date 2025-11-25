@@ -17,6 +17,47 @@ export async function listarCitas() {
   return data ?? [];
 }
 
+export async function reprogramarCita(id: string, fecha: string, hora: string) {
+  const supabase = await createClient();
+
+  await validarHorarioCita(fecha, hora, id);
+
+  const { data, error } = await supabase
+    .from("citas_adopcion")
+    .update({
+      fecha_cita: fecha,
+      hora_cita: hora,
+      actualizada_en: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select(
+      "id, fecha_cita, hora_cita, estado, usuario_id, mascota_id, asistencia, interaccion, nota"
+    )
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}
+
+export async function cancelarCita(id: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("citas_adopcion")
+    .update({
+      estado: "cancelada",
+      actualizada_en: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select("id, estado") // solo lo necesario
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}
+
 export async function listarCitasRango(desdeISO: string, hastaISO: string) {
   const supabase = await createClient();
 
@@ -82,28 +123,7 @@ export async function crearCita(input: NuevaCita) {
   return { ...data, usuario: perfil || null };
 }
 
-export async function reprogramarCita(id: string, fecha: string, hora: string) {
-  const supabase = await createClient();
 
-  await validarHorarioCita(fecha, hora, id);
-
-  const { data, error } = await supabase
-    .from("citas_adopcion")
-    .update({
-      fecha_cita: fecha,
-      hora_cita: hora,
-      actualizada_en: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select(
-      "id, fecha_cita, hora_cita, estado, usuario_id, mascota_id, asistencia, interaccion, nota"
-    )
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  return data;
-}
 
 
 export async function actualizarEstadoCita(
@@ -249,4 +269,6 @@ export async function evaluarCita(
 
   return { ...data, usuario: perfil || null };
 }
+
+
 

@@ -1,19 +1,26 @@
 "use client";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { actualizarEstadoCita } from "../actions/citas-actions";
-import { citasKeys } from "../queries/citas-queries";
-import { mapCita } from "../mappers/cita.mapper";
+import { cancelarCita } from "../actions/citas-actions";
+import { citasKeys } from "../queries/citas-keys";
 
 export function useCancelarCita() {
     const qc = useQueryClient();
 
     return useMutation({
         mutationFn: async (id: string) => {
-            const data = await actualizarEstadoCita(id, "cancelada");
-            return mapCita(data);
+            return await cancelarCita(id);
         },
-        onSuccess() {
-            qc.invalidateQueries({ queryKey: citasKeys.list() });
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: citasKeys.list() });
+
+            qc.refetchQueries({ queryKey: citasKeys.list() });
         },
+
+        onError: (error) => {
+            console.error("Error cancelando cita:", error?.message);
+        },
+
+        retry: 1,
     });
 }
