@@ -1,94 +1,51 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import PageHead from "@/components/layout/PageHead";
 import Filters from "@/features/mascotas/components/client/Filters";
 import MascotasTable from "@/features/mascotas/components/client/MascotasTable";
-import { listarMascotas } from "@/features/mascotas/actions/mascotas-actions";
+import { useMascotasQuery } from "@/features/mascotas/hooks/useMascotasQuery";
 import { useRouter } from "next/navigation";
+import { formatearMascotaParaTabla } from "@/features/seguimiento/utils/formatearMascotaParaTabla";
+import UserTableSkeleton from "@/components/ui/UserTableSkeleton";
 
 export default function SeguimientoAdminPage() {
   const router = useRouter();
+  const { data: mascotas = [], isLoading } = useMascotasQuery();
 
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Filtros
   const [q, setQ] = useState("");
   const [especie, setEspecie] = useState("Todas");
   const [sexo, setSexo] = useState("Todos");
 
-  async function fetchMascotas() {
-    try {
-      const data = await listarMascotas();
-      setItems(data);
-    } catch (err) {
-      console.error("Error cargando mascotas:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const mascotasFiltradas = useMemo(() => {
+    return mascotas.filter((m) => {
+      const matchQ =
+        q.trim() === "" ||
+        m.nombre?.toLowerCase().includes(q.toLowerCase()) ||
+        m.raza?.nombre?.toLowerCase().includes(q.toLowerCase());
 
-  useEffect(() => {
-    fetchMascotas();
-  }, []);
+      const matchEspecie =
+        especie === "Todas" ||
+        m.raza?.especie?.toLowerCase() === especie.toLowerCase();
 
-  // Filtros
-  const filteredItems = items.filter((m) => {
-    const matchQ =
-      q.trim() === "" ||
-      m.nombre?.toLowerCase().includes(q.toLowerCase()) ||
-      m.raza?.nombre?.toLowerCase().includes(q.toLowerCase());
+      const matchSexo =
+        sexo === "Todos" || m.sexo?.toLowerCase() === sexo.toLowerCase();
 
-    const matchEspecie =
-      especie === "Todas" ||
-      (m.raza?.especie &&
-        m.raza.especie.toLowerCase() === especie.toLowerCase());
+      return matchQ && matchEspecie && matchSexo;
+    });
+  }, [mascotas, q, especie, sexo]);
 
-    const matchSexo =
-      sexo === "Todos" || m.sexo?.toLowerCase() === sexo.toLowerCase();
-
-    return matchQ && matchEspecie && matchSexo;
-  });
-
-  // Formateo para tabla
-  const dataParaTabla = filteredItems.map((m) => {
-    const totalMeses = Number(m.edad ?? 0);
-    const años = Math.floor(totalMeses / 12);
-    const meses = totalMeses % 12;
-    const edadFormateada =
-      años > 0
-        ? `${años} año${años > 1 ? "s" : ""}${
-            meses > 0 ? ` y ${meses} mes${meses > 1 ? "es" : ""}` : ""
-          }`
-        : `${meses} mes${meses !== 1 ? "es" : ""}`;
-
-    const especie = m.raza?.especie || "Desconocido";
-    const raza = m.raza?.nombre || "Mestizo";
-
-    return {
-      id: m.id,
-      nombre: m.nombre,
-      especie,
-      raza,
-      sexo: m.sexo,
-      tamano: m.tamano,
-      edadMeses: edadFormateada,
-      descripcion: m.personalidad || m.descripcion_fisica || "",
-      foto: m.imagen_url,
-      original: m,
-    };
-  });
+  const dataTabla = useMemo(() => {
+    return mascotasFiltradas.map(formatearMascotaParaTabla);
+  }, [mascotasFiltradas]);
 
   return (
     <>
-      {/* Header */}
       <PageHead
         title="Seguimiento de Mascotas"
         subtitle="Administra y revisa los seguimientos de cada mascota 🐾"
       />
 
-      {/* Filtros */}
       <Filters
         q={q}
         onQ={setQ}
@@ -99,20 +56,20 @@ export default function SeguimientoAdminPage() {
         ESPECIES={["Perro", "Gato", "Otro"]}
       />
 
-      {/* Tabla */}
-      {loading ? (
-        <div className="text-center py-10">Cargando mascotas...</div>
+      {isLoading ? (
+        <div className="text-center py-10 text-[#7a5c49]">
+          <UserTableSkeleton />
+        </div>
       ) : (
         <div className="p-4">
           <MascotasTable
-            mode="seguimiento"         // 🔥 MODO ADMIN SEGUIMIENTO
-            data={dataParaTabla}
+            mode="seguimiento"
+            data={dataTabla}
             actions={{
-              onViewCard: (rowMascota) => {
+              onViewCard: (rowMascota) =>
                 router.push(
                   `/dashboards/administrador/seguimiento/${rowMascota.id}`
-                );
-              },
+                ),
             }}
             deleteDisabledForId={() => true}
           />
