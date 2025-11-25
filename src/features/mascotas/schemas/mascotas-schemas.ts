@@ -84,7 +84,7 @@ export const CreateMascotaSchema = z.object({
       .nullable()
       .optional(),
 
-  raza_id: z.string().uuid("ID de raza inválido").optional().nullable(),
+  raza_id: z.string().min(1, "Debes seleccionar una raza."),
 
   qr_code: z.string().nullable().default(null),
 
