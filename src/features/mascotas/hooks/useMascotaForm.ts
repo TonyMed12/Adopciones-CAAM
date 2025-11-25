@@ -44,13 +44,13 @@ export function useMascotaForm({ mascota, onSubmit }: UseMascotaFormProps) {
       lugar_rescate: "",
       condicion_ingreso: "",
       observaciones_medicas: "",
-      raza_id: null,
+      raza_id: "",
       qr_code: null,
       estado: "disponible",
     },
   });
 
-  /* PRE-CARGA EN EDICIÓN */
+  /* PRE-CARGA */
   useEffect(() => {
     if (!mascota) return;
 
@@ -71,17 +71,22 @@ export function useMascotaForm({ mascota, onSubmit }: UseMascotaFormProps) {
       lugar_rescate: mascota.lugar_rescate,
       condicion_ingreso: mascota.condicion_ingreso,
       observaciones_medicas: mascota.observaciones_medicas,
-      raza_id: mascota.raza_id,
+      raza_id: mascota.raza_id ?? "",
       qr_code: mascota.qr_code,
       estado: mascota.estado,
     });
 
-    // ESPECIE UI (NO PARA GUARDAR)
-    setEspecieUI(mascota.raza?.especie ?? "");
+    // ESPECIE 
+    if (mascota.raza?.especie) {
+      setEspecieUI(mascota.raza.especie.toLowerCase());
+    }
 
+    // PREVIEW
     if (mascota.imagen_url) {
       setFotoPreview(mascota.imagen_url);
     }
+
+    form.trigger();
   }, [mascota, form]);
 
   /* Foto */
@@ -94,8 +99,11 @@ export function useMascotaForm({ mascota, onSubmit }: UseMascotaFormProps) {
     reader.readAsDataURL(file);
   }, []);
 
-  /* SUBMIT FINAL */
-  const submit = form.handleSubmit((values) => {
+  /* SUBMIT  */
+  const submit = form.handleSubmit(async (values) => {
+    const valid = await form.trigger("raza_id");
+    if (!valid) return;
+
     onSubmit({
       ...values,
       peso_kg: values.peso_kg ? Number(values.peso_kg) : null,
