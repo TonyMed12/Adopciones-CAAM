@@ -33,12 +33,11 @@ export default function RootLayout({
     >
       <body
         suppressHydrationWarning
-        className="bg-white text-gray-900 min-h-screen"
+        className="min-h-screen bg-background text-foreground"
       >
         <AuthProvider>
           <Providers>{children}</Providers>
         </AuthProvider>
-
       </body>
     </html>
   );

@@ -18,8 +18,7 @@ export const CreateMascotaSchema = z.object({
   imagen_url: z.string().url("Debe ser una URL válida").nullable().default(null),
 
   esterilizado: z.boolean().default(false),
-
-  peso_kg: z.string().optional().nullable(),
+  peso_kg: z.number().optional().nullable(),
   altura_cm: z.number().optional().nullable(),
 
   colores: z.array(z.string()).optional().nullable(),

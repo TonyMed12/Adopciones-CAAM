@@ -39,7 +39,7 @@ export default function Modal({
       onClick={onClose} // cerrar si hacen clic fuera del modal
     >
       <div
-        className="relative w-full max-w-[720px] mx-4 my-8 rounded-2xl border-[4px] border-[#FF8414] bg-[#fff4e7] text-[#2b1b12] shadow-[0_18px_60px_rgba(43,27,18,.25)] flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-[720px] mx-4 my-8 rounded-2xl border-[4px] border-[#FF8414] bg-[#fff4e7] text-[#531f01] shadow-[0_18px_60px_rgba(43,27,18,.25)] flex flex-col max-h-[90vh] mb-3"
         onClick={(e) => e.stopPropagation()} // evita cierre al hacer clic dentro
       >
         <header className="flex items-center justify-between border-b border-[#f0e6dc] bg-[#fff4e7] px-4 py-2.5 sticky top-0 z-10">

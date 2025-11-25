@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import QRCode from "qrcode";
 
 import PageHead from "@/components/layout/PageHead";
 import Button from "@/components/ui/Button2";
@@ -21,9 +22,14 @@ import { useMascotasQuery } from "@/features/mascotas/hooks/useMascotasQuery";
 import { useDeleteMascota } from "@/features/mascotas/hooks/useDeleteMascota";
 import { useMascotasPageState } from "@/features/mascotas/hooks/useMascotasPageState";
 
+import { useCreateMascota } from "@/features/mascotas/hooks/useCreateMascota";
+import { useUpdateMascota } from "@/features/mascotas/hooks/useUpdateMascota";
+
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useMascotasFilter } from "@/features/mascotas/hooks/useMascotasFilter";
 import { formatEdad } from "@/features/mascotas/utils/formatEdad";
+import { uploadQRClient } from "@/features/mascotas/utils/uploadQRClient";
+import { uploadImageClient } from "@/features/mascotas/utils/uploadImageClient";
 
 export default function MascotasPage() {
   const {
@@ -45,13 +51,15 @@ export default function MascotasPage() {
 
   const { data: items = [], isLoading } = useMascotasQuery();
   const deleteMascota = useDeleteMascota();
+  const createMascota = useCreateMascota();
+  const updateMascota = useUpdateMascota();
 
   useBodyScrollLock(openCard);
 
-  /* Filtrado */
+  /* 🔍 Filtrado */
   const filteredItems = useMascotasFilter(items, q, especie, sexo);
 
-  /* Formato para tabla */
+  /* 🧩 Formato para tabla */
   const dataParaTabla = filteredItems.map((m) => ({
     id: m.id,
     nombre: m.nombre,
@@ -67,37 +75,109 @@ export default function MascotasPage() {
 
   return (
     <>
-      {/* Modal para agregar mascota */}
+      {/* 🧡 MODAL Creación / Edición */}
       <Modal
         open={openForm}
-        onClose={() => setOpenForm(false)}
-        title="Agregar Mascota"
+        onClose={() => {
+          setSelectedMascota(null);
+          setOpenForm(false);
+        }}
+        title={selectedMascota ? "Editar Mascota" : "Agregar Mascota"}
       >
         <FormMascota
-          onCancel={() => setOpenForm(false)}
-          onSubmit={() => {
+          mascota={selectedMascota}
+          onCancel={() => {
+            setSelectedMascota(null);
             setOpenForm(false);
+          }}
+          onSubmitFinal={async (values) => {
+            try {
+              /* ---------------------------------------------------------------------- */
+              /* 🐾 EDITAR MASCOTA */
+              /* ---------------------------------------------------------------------- */
+              if (selectedMascota) {
+                let imagen_url = values.imagen_url;
+                let qr_code = values.qr_code;
+
+                if (values.fotoFile) {
+                  imagen_url = await uploadImageClient(
+                    values.fotoFile,
+                    selectedMascota.id
+                  );
+                }
+
+                const payloadEdit = {
+                  ...values,
+                  id: selectedMascota.id,
+                  imagen_url,
+                  qr_code,
+                };
+
+                await updateMascota.mutateAsync(payloadEdit);
+                toast.success("Mascota actualizada correctamente 🐾");
+
+                setSelectedMascota(null);
+                setOpenForm(false);
+                return;
+              }
+
+              /* ---------------------------------------------------------------------- */
+              /* 🐶 CREAR MASCOTA */
+              /* ---------------------------------------------------------------------- */
+              const nuevoId = crypto.randomUUID();
+
+              let imagen_url: string | null = null;
+              let qr_code: string | null = null;
+
+              if (values.fotoFile) {
+                imagen_url = await uploadImageClient(values.fotoFile, nuevoId);
+              }
+
+              const qrLink = `https://caamorelia.vercel.app/mascota/${nuevoId}`;
+              const qrDataUrl = await QRCode.toDataURL(qrLink, { width: 300 });
+              const qrBlob = await (await fetch(qrDataUrl)).blob();
+              qr_code = await uploadQRClient(qrBlob, nuevoId);
+
+              const payloadCreate = {
+                ...values,
+                id: nuevoId,
+                imagen_url,
+                qr_code,
+              };
+
+              await createMascota.mutateAsync(payloadCreate);
+              toast.success("Mascota creada correctamente 🐾");
+
+              setOpenForm(false);
+            } catch (error) {
+              console.error("❌ Error al guardar mascota:", error);
+              toast.error("Ocurrió un error al guardar la mascota");
+            }
           }}
         />
       </Modal>
 
-      {/* Header */}
+      {/* 🧡 Header */}
       <PageHead
         title="Mascotas"
         subtitle="Explora a nuestros adorables compañeros 🐾"
         right={
           <div className="flex gap-2">
-            <Button onClick={() => setOpenForm(true)}>
+            <Button
+              onClick={() => {
+                setSelectedMascota(null);
+                setOpenForm(true);
+              }}
+            >
               <Plus size={18} /> Agregar
             </Button>
-            <Button onClick={() => setOpenRazas(true)}>
-              🐶 Gestionar Razas
-            </Button>
+
+            <Button onClick={() => setOpenRazas(true)}>🐶 Gestionar Razas</Button>
           </div>
         }
       />
 
-      {/* Filtros */}
+      {/* 🔎 Filtros */}
       <Filters
         q={q}
         onQ={setQ}
@@ -108,7 +188,7 @@ export default function MascotasPage() {
         ESPECIES={["Perro", "Gato", "Otro"]}
       />
 
-      {/* Tabla */}
+      {/* 📋 Tabla */}
       {isLoading ? (
         <div className="text-center py-10">Cargando mascotas...</div>
       ) : (
@@ -116,25 +196,24 @@ export default function MascotasPage() {
           <MascotasTable
             data={dataParaTabla}
             actions={{
-              onViewCard: (rowMascota) => {
-                const m = items.find((item) => item.id === rowMascota.id);
+              onViewCard: (row) => {
+                const m = items.find((i) => i.id === row.id);
                 setSelectedMascota(m ?? null);
                 setOpenCard(true);
               },
 
-              onDelete: async (item) => {
-                const id = typeof item === "string" ? item : item?.id;
+              onEdit: (row) => {
+                const m = items.find((i) => i.id === row.id);
+                setSelectedMascota(m ?? null);
+                setOpenForm(true);
+              },
 
-                if (!id) {
-                  toast.error("No se pudo determinar el ID de la mascota 😿");
-                  return;
-                }
-
+              onDelete: async (row) => {
+                const id = row.id;
                 const confirmar = await toastConfirm(
                   "¿Estás seguro de que deseas eliminar esta mascota?"
                 );
                 if (!confirmar) return;
-
                 deleteMascota.mutate(id);
               },
             }}
@@ -143,7 +222,7 @@ export default function MascotasPage() {
         </div>
       )}
 
-      {/* Card en pantalla completa */}
+      {/* 🔍 Card Full */}
       {openCard &&
         typeof window !== "undefined" &&
         createPortal(
@@ -183,7 +262,7 @@ export default function MascotasPage() {
           document.body
         )}
 
-      {/* Modal de gestión de razas */}
+      {/* 🐶 Modal de gestión de razas */}
       <GestionRazas open={openRazas} onClose={() => setOpenRazas(false)} />
     </>
   );
