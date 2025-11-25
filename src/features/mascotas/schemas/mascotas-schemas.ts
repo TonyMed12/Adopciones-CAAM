@@ -3,35 +3,86 @@ import { z } from "zod";
 const SexoEnum = z.enum(["macho", "hembra"]);
 const TamanoEnum = z.enum(["pequeño", "mediano", "grande"]);
 const EstadoEnum = z.enum(["disponible", "en_proceso", "adoptada"]);
+const PersonalidadEnum = z.enum(["timido", "carinoso", "jugueton", "tranquilo", "energetico", "protector"]);
 
 /* -------------------- CREATE -------------------- */
 export const CreateMascotaSchema = z.object({
-  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres").max(50, "El nombre es demasiado largo"),
 
-  sexo: SexoEnum,
-  tamano: TamanoEnum,
+  sexo: SexoEnum.or(z.literal("")).refine(v => v !== "", {
+    message: "Selecciona el sexo",
+  }),
+  tamano: TamanoEnum.or(z.literal("")).refine(v => v !== "", {
+    message: "Selecciona el tamaño",
+  }),
 
   disponible_adopcion: z.boolean().default(true),
 
-  edad: z.string().optional().nullable(),
-  personalidad: z.string().optional().nullable(),
+  edad: z
+    .string()
+    .min(1, "Ingresa la edad en meses")
+    .refine((v) => !isNaN(Number(v)), { message: "La edad debe ser un número" })
+    .refine((v) => Number(v) >= 0, { message: "La edad no puede ser negativa" })
+    .refine((v) => Number(v) <= 300, {
+      message: "Edad demasiado alta para una mascota",
+    }),
+  personalidad: PersonalidadEnum.or(z.literal("")).refine(v => v !== "", {
+    message: "Selecciona la personalidad",
+  }),
+
   imagen_url: z.string().url("Debe ser una URL válida").nullable().default(null),
 
   esterilizado: z.boolean().default(false),
-  peso_kg: z.number().optional().nullable(),
-  altura_cm: z.number().optional().nullable(),
+  peso_kg: z
+    .number()
+    .nullable()
+    .refine((v) => v === null || v > 0, {
+      message: "El peso debe ser mayor a 0",
+    })
+    .refine((v) => v === null || v < 200, {
+      message: "Peso inválido",
+    }),
+  altura_cm: z
+    .number()
+    .nullable()
+    .refine((v) => v === null || v > 0, {
+      message: "La altura debe ser mayor a 0",
+    })
+    .refine((v) => v === null || v < 250, {
+      message: "Altura inválida",
+    }),
 
-  colores: z.array(z.string()).optional().nullable(),
+  colores: z
+    .array(z.string())
+    .min(1, "Selecciona al menos un color")
+    .optional()
+    .nullable(),
 
-  descripcion_fisica: z.string().optional().nullable(),
+  descripcion_fisica: z
+    .string()
+    .min(10, "Describe brevemente la apariencia")
+    .nullable()
+    .optional(),
 
   fecha_ingreso: z
     .string()
     .default(() => new Date().toISOString().split("T")[0]),
 
-  lugar_rescate: z.string().optional().nullable(),
-  condicion_ingreso: z.string().optional().nullable(),
-  observaciones_medicas: z.string().optional().nullable(),
+  lugar_rescate: z
+    .string()
+    .min(3, "Ingresa un lugar de rescate")
+    .nullable()
+    .optional(),
+  condicion_ingreso: z
+    .string()
+    .min(3, "Selecciona o describe la condición")
+    .nullable()
+    .optional(),
+  observaciones_medicas:
+    z.string()
+      .min(3, "Describe brevemente alguna observación médica")
+      .nullable()
+      .optional(),
 
   raza_id: z.string().uuid("ID de raza inválido").optional().nullable(),
 

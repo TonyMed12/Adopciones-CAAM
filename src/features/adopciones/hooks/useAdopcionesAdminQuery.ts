@@ -10,7 +10,6 @@ import {
 } from "../actions/adopciones-actions";
 import type { Adopcion, AdopcionAdminRow } from "../types/adopciones";
 
-// 📌 Listado para el admin (tabla /dashboard/administrador/gestion_adopciones)
 export function useAdopcionesAdminQuery() {
   return useQuery<AdopcionAdminRow[], Error>({
     queryKey: adopcionesQueries.list("admin"),
@@ -19,7 +18,6 @@ export function useAdopcionesAdminQuery() {
   });
 }
 
-// 📌 Listado general (si lo necesitas para el usuario o público)
 export function useAdopcionesUsuarioQuery() {
   return useQuery<Adopcion[], Error>({
     queryKey: adopcionesQueries.list("usuario"),
@@ -27,7 +25,6 @@ export function useAdopcionesUsuarioQuery() {
   });
 }
 
-// 📌 Detalle por id
 export function useAdopcionByIdQuery(id: string | null) {
   return useQuery<Adopcion | null, Error>({
     queryKey: id ? adopcionesQueries.detail(id) : ["adopciones", "detail", "null"],
