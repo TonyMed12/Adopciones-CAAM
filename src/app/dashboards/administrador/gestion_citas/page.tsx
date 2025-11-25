@@ -5,20 +5,25 @@ import { Calendar } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { localizer } from "@/utils/calendarLocalizer";
 import {
-  listarCitas,
-  reprogramarCita,
   actualizarEstadoCita,
   evaluarCita,
-} from "@/citas/citas-actions";
+} from "@/features/citas/actions/citas-actions";
+import { useCitas } from "@/features/citas/hooks/useCitas";
+import { useReprogramarCita } from "@/features/citas/hooks/useReprogramarCita";
+import { useCancelarCita } from "@/features/citas/hooks/useCancelarCita";
 import { Search, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
 import PageHead from "@/components/layout/PageHead";
-import CitasTable from "@/components/citas/CitasTAble";
-import CitaEvalModal from "@/components/citas/CitasEvalModal";
+import CitasTable from "@/features/citas/components/client/CitasTAble";
+import CitaEvalModal from "@/features/citas/components/client/CitasEvalModal";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePagination } from "@/hooks/usePagination";
 import Pagination from "@/components/ui/Pagination";
+
+import CitaReprogramarModal from "@/features/citas/components/client/CitaReprogramarModal";
+import { createPortal } from "react-dom";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 type Cita = CitaType;
 
@@ -26,11 +31,14 @@ export default function GestionCitasPage() {
   const isMobile = useIsMobile();
   const ITEMS_PER_PAGE = isMobile ? 5 : 10;
 
-  const [citas, setCitas] = useState<Cita[]>([]);
+  const { data: citas = [], isLoading } = useCitas();
+  const { mutate: reprogramar, isPending: isReprogramando } = useReprogramarCita();
+  const { mutate: cancelar, isPending: isCancelando } = useCancelarCita();
+
   const [query, setQuery] = useState("");
   const [filtroEstado, setFiltroEstado] =
     useState<"todas" | "programada" | "completada" | "cancelada" | "aprobada">("todas");
-  const [loading, setLoading] = useState(true);
+
   const [view, setView] = useState<"tabla" | "calendario">("tabla");
 
   // Modal reprogramar
@@ -43,26 +51,8 @@ export default function GestionCitasPage() {
   const [evalOpen, setEvalOpen] = useState(false);
   const [evalTarget, setEvalTarget] = useState<Cita | null>(null);
 
-  /* CARGAR CITAS */
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await listarCitas();
-        const normalizadas: Cita[] = data.map((c: any) => ({
-          ...c,
-          asistencia: c.asistencia ?? null,
-          interaccion: c.interaccion ?? null,
-          nota: c.nota ?? null,
-        }));
-        setCitas(normalizadas);
-      } catch (err) {
-        console.error(err);
-        toast.error("No se pudieron cargar las citas");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  useBodyScrollLock(modalOpen);
+
 
   /* FILTROS + BÚSQUEDA */
   const citasFiltradas = useMemo(() => {
@@ -71,7 +61,7 @@ export default function GestionCitasPage() {
     return citas.filter((c) => {
       const matchQ =
         !q ||
-        c.mascotas?.nombre?.toLowerCase().includes(q) ||
+        c.mascota?.nombre?.toLowerCase().includes(q) ||
         c.usuario?.nombres?.toLowerCase().includes(q) ||
         c.usuario?.email?.toLowerCase().includes(q);
 
@@ -110,7 +100,7 @@ export default function GestionCitasPage() {
     () =>
       citas.map((c) => ({
         id: c.id,
-        title: `${c.usuario?.nombres ?? "—"} · ${c.mascotas?.nombre ?? "Mascota"
+        title: `${c.usuario?.nombres ?? "—"} · ${c.mascota?.nombre ?? "Mascota"
           }`,
         start: buildDate(c.fecha_cita, c.hora_cita),
         end: new Date(buildDate(c.fecha_cita, c.hora_cita).getTime() + 30 * 60 * 1000),
@@ -129,50 +119,55 @@ export default function GestionCitasPage() {
     setModalOpen(true);
   };
 
-  const onSubmitModal = async () => {
-    try {
-      if (!formFecha || !formHora) return toast.warning("Fecha y hora obligatorias");
-
-      const now = new Date();
-      const nueva = new Date(`${formFecha}T${formHora}:00`);
-
-      if (nueva < now) return toast.error("No puedes programar en el pasado");
-
-      const diffHours = (nueva.getTime() - now.getTime()) / 1000 / 60 / 60;
-      if (diffHours < 3) return toast.error("Mínimo 3 horas de anticipación");
-
-      const h = nueva.getHours();
-      const m = nueva.getMinutes();
-      if (h < 8 || (h === 8 && m < 30) || h > 14) {
-        return toast.error("Horario permitido: 8:30 a 14:00");
-      }
-
-      const updated = await reprogramarCita(edicionId!, formFecha, formHora);
-      setCitas((prev) =>
-        prev.map((c) => (c.id === edicionId ? (updated as any) : c))
-      );
-
-      setModalOpen(false);
-      toast.success("Cita reprogramada");
-    } catch (e) {
-      console.error(e);
-      toast.error("Error al reprogramar");
-    }
+  const closeModalReprogramar = () => {
+    setModalOpen(false);
   };
+
+  const onSubmitModal = () => {
+    const ocupado = citas.some(c =>
+      c.fecha_cita === formFecha &&
+      c.hora_cita.slice(0, 5) === formHora &&
+      c.id !== edicionId
+    );
+
+    if (ocupado) {
+      return toast.error("Ese horario ya está ocupado");
+    }
+
+    // Ejecutar mutation
+    reprogramar(
+      {
+        id: edicionId!,
+        fecha: formFecha,
+        hora: formHora,
+      },
+      {
+        onSuccess: () => {
+          closeModalReprogramar();
+          toast.success("Cita reprogramada");
+        },
+        onError: () => {
+          toast.error("Error al reprogramar");
+        },
+      }
+    );
+  };
+
 
   const cancelarCita = async (id: string) => {
     const ok = await toastConfirm("¿Cancelar esta cita?");
     if (!ok) return;
 
-    try {
-      const updated = await actualizarEstadoCita(id, "cancelada");
-      setCitas((prev) =>
-        prev.map((c) => (c.id === id ? (updated as any) : c))
-      );
-    } catch {
-      toast.error("No se pudo cancelar");
-    }
+    cancelar(id, {
+      onSuccess: () => {
+        toast.success("Cita cancelada");
+      },
+      onError: () => {
+        toast.error("No se pudo cancelar");
+      }
+    });
   };
+
 
   const openEval = (c: Cita) => {
     setEvalTarget(c);
@@ -215,7 +210,7 @@ export default function GestionCitasPage() {
     }
   };
 
-  if (loading)
+  if (isLoading)
     return (
       <div className="py-12 text-center text-[#6b4f40]">
         Cargando citas...
@@ -351,20 +346,20 @@ export default function GestionCitasPage() {
             onEvaluar={openEval}
           />
 
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              totalItems={citasFiltradas.length}
-              itemsPerPage={ITEMS_PER_PAGE}
-              itemsLabel="citas"
-              onChange={(p) => {
-                if (p > page) nextPage();
-                else if (p < page) prevPage();
-                setTimeout(() => {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }, 10);
-              }}
-            />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={citasFiltradas.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            itemsLabel="citas"
+            onChange={(p) => {
+              if (p > page) nextPage();
+              else if (p < page) prevPage();
+              setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }, 10);
+            }}
+          />
         </>
       ) : (
 
@@ -388,86 +383,24 @@ export default function GestionCitasPage() {
         </div>
       )}
 
-      {/* MODAL REPROGRAMAR */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-[#EADACB] bg-white p-5 shadow-lg">
-            <h3 className="text-lg font-extrabold text-[#2B1B12] mb-1">
-              Reprogramar cita
-            </h3>
-            <p className="text-sm text-[#6b4f40] mb-4">
-              <span className="font-semibold text-[#2B1B12]">
-                {citas.find((c) => c.id === edicionId)?.usuario?.nombres}
-              </span>{" "}
-              —{" "}
-              <span className="italic">
-                {citas.find((c) => c.id === edicionId)?.mascotas?.nombre}
-              </span>
-            </p>
+      {modalOpen &&
+        createPortal(
+          <CitaReprogramarModal
+            open={modalOpen}
+            onClose={closeModalReprogramar}
+            onSubmit={onSubmitModal}
+            isSaving={isReprogramando}
+            fecha={formFecha}
+            hora={formHora}
+            onFechaChange={setFormFecha}
+            onHoraChange={setFormHora}
+            cita={citas.find(c => c.id === edicionId) || null}
+            citas={citas}
+          />,
+          document.body
+        )
+      }
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-sm font-semibold text-[#2B1B12]">
-                  Nueva fecha
-                </label>
-                <input
-                  type="date"
-                  value={formFecha}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setFormFecha(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-[#EADACB] px-3 py-2 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-[#2B1B12]">
-                  Nueva hora
-                </label>
-                <select
-                  value={formHora}
-                  onChange={(e) => setFormHora(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-[#EADACB] px-3 py-2 text-sm"
-                >
-                  <option value="">Selecciona hora</option>
-                  {[
-                    "08:30",
-                    "09:00",
-                    "09:30",
-                    "10:00",
-                    "10:30",
-                    "11:00",
-                    "11:30",
-                    "12:00",
-                    "12:30",
-                    "13:00",
-                    "13:30",
-                    "14:00",
-                  ].map((h) => (
-                    <option key={h} value={h}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={() => setModalOpen(false)}
-                className="rounded-lg border px-3 py-1.5 text-sm"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={onSubmitModal}
-                className="rounded-lg bg-[#BC5F36] text-white px-3 py-1.5 text-sm"
-              >
-                Guardar cambios
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL EVALUACIÓN */}
       <CitaEvalModal

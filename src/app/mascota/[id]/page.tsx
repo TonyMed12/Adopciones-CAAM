@@ -1,6 +1,6 @@
-import { obtenerMascotaPorId } from "@/mascotas/mascotas-actions";
+import { obtenerMascotaPorId } from "@/features/mascotas/actions/mascotas-actions";
 import HeaderSmart from "@/components/layout/HeaderSmart";
-import MascotaPublicAdoptButton from "@/components/masc/MascotaPublicAdoptButton";
+import MascotaPublicAdoptButton from "@/features/mascotas/components/client/MascotaPublicAdoptButton";
 
 const COLORES_DISPONIBLES = [
   { nombre: "blanco", hex: "#FFFFFF" },

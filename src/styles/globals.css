@@ -240,6 +240,16 @@ body {
   margin: 0.8rem !important;
 }
 
+.react-datepicker-full {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.react-datepicker {
+  font-family: inherit;
+}
+
 /* ----------------------------------------------- */
 /* SOLUCIÓN DE ALTURA/SCROLL Y DROPDOWN */
 /* ----------------------------------------------- */
@@ -382,4 +392,3 @@ body {
 .soft-bounce {
   animation: softBounce 0.3s ease-out;
 }
-

@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import AdoptionForm, { type AdoptionPayload } from "@/components/adopciones/AdoptionForm";
-import { obtenerSolicitudParaAdopcion } from "@/solicitudes/solicitudes-actions";
-import { crearAdopcion } from "@/adopciones/adopciones-actions";
+import AdoptionForm, { type AdoptionPayload } from "@/features/adopciones/components/client/AdoptionForm";
+import { obtenerSolicitudParaAdopcion } from "@/features/usuarios/actions/solicitudes-actions";
+import { crearAdopcion } from "@/features/adopciones/actions/adopciones-actions";
 import PageHead from "@/components/layout/PageHead";
 import { toast } from "sonner";
 

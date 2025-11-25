@@ -1,15 +1,15 @@
 "use client";
 import { useMemo, useState } from "react";
-import Topbar from "@/components/citas/TopBar";
-import Filtros from "@/components/citas/Filtros";
-import EmptyState from "@/components/citas/VAcio";
-import DayGroups from "@/components/citas/Dgroup";
-import Resumen from "@/components/citas/Resumen";
-import VeterinarioDestacado from "@/components/citas/Vet";
-import NuevoModal from "@/components/citas/ModalCita";
+import Topbar from "@/features/citas/components/client/TopBar";
+import Filtros from "@/features/citas/components/client/Filtros";
+import EmptyState from "@/features/citas/components/client/VAcio";
+import DayGroups from "@/features/citas/components/client/Dgroup";
+import Resumen from "@/features/citas/components/client/Resumen";
+import VeterinarioDestacado from "@/features/citas/components/client/Vet";
+import NuevoModal from "@/features/citas/components/client/ModalCita";
 
-import { Cita } from "@/data/citas/types";
-import { agrupaPorDia, filtraCitas, seedCitas, useFechasBase } from "@/components/citas/Helper";
+import { Cita } from "@/features/citas/types/types";
+import { agrupaPorDia, filtraCitas, seedCitas, useFechasBase } from "@/features/citas/components/client/Helper";
 
 export default function CitasPage() {
   const [query, setQuery] = useState("");

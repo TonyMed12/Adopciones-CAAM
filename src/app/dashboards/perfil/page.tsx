@@ -1,8 +1,8 @@
 "use client";
 
 import useSWR from "swr";
-import { obtenerPerfilActual } from "@/perfil/perfil-actions";
-import PerfilCard from "@/components/perfil/PerfilCard";
+import { obtenerPerfilActual } from "@/features/perfil/actions/perfil-actions";
+import PerfilCard from "@/features/perfil/components/client/PerfilCard";
 import HeaderAd from "@/components/layout/HeaderAd";
 import HeaderUsr from "@/components/layout/HeaderUsr";
 import { Loader2 } from "lucide-react";
@@ -14,9 +14,9 @@ const fetcher = async () => {
 };
 
 export default function PerfilPage() {
-  const { data, error, isLoading } = useSWR("/perfil", fetcher, {
-    revalidateOnFocus: false, // no recarga al cambiar de pestaña
-    dedupingInterval: 60000, // 1 minuto de cache
+  const { data, error, isLoading, } = useSWR("/perfil", fetcher, {
+    revalidateOnFocus: false, 
+    dedupingInterval: 60000, 
   });
 
   if (isLoading) {

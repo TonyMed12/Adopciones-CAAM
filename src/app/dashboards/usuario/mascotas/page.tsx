@@ -5,16 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ReactDOM from "react-dom";
 
 import PageHead from "@/components/layout/PageHead";
-import Filters from "@/components/masc/Filters";
-import MascotaCard from "@/components/masc/MascotaCard";
-import MascotaCardUsuario from "@/components/masc/MascotaCardUsuario";
+import Filters from "@/features/mascotas/components/client/Filters";
+import MascotaCard from "@/features/mascotas/components/client/MascotaCard";
+import MascotaCardUsuario from "@/features/mascotas/components/client/MascotaCardUsuario";
 import { Button } from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { createClient } from "@/lib/supabase/client";
 
-import { listarMascotas } from "@/mascotas/mascotas-actions";
-import { ESPECIES } from "@/data/masc/constants";
-import type { Mascota } from "@/data/masc/types";
+import { listarMascotas } from "@/features/mascotas/actions/mascotas-actions";
+import { ESPECIES } from "@/features/mascotas/data/constants";
+import type { Mascota } from "@/features/mascotas/data/types";
 
 type DocEstado = "aprobado" | "en_revision" | "rechazado" | "sin_documentos";
 

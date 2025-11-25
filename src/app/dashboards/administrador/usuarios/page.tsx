@@ -1,109 +1,59 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import PageHead from "@/components/layout/PageHead";
 
-import {
-  listarUsuarios,
-  listarAdopcionesPorUsuario,
-  listarSolicitudesActivasPorUsuario,
-} from "@/usuarios/usuarios-actions";
-
-import type { PerfilConDireccion } from "@/usuarios/usuarios";
-
-import UserTable from "@/components/usuario/UserTable";
-import UserModal from "@/components/usuario/UserModal";
+import UserTable from "@/features/usuarios/components/client/UserTable";
+import UserModal from "@/features/usuarios/components/client/UserModal";
 import Pagination from "@/components/ui/Pagination";
-
 import { useIsMobile } from "@/hooks/useIsMobile";
+
+import UserModalSkeleton from "@/features/usuarios/components/client/UserModalSkeleton";
+import UserTableSkeleton from "@/features/usuarios/components/client/UserTableSkeleton";
+import { createPortal } from "react-dom";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+
+
+import { useUsuariosQuery } from "@/features/usuarios/hooks/useUsuariosQuery";
+import { useUsuarioAdopcionesQuery } from "@/features/usuarios/hooks/useUsuarioAdopcionesQuery";
+import { useUsuarioSolicitudesQuery } from "@/features/usuarios/hooks/useUsuarioSolicitudesQuery";
+
+import { useUsuariosPageState } from "@/features/usuarios/hooks/useUsuariosPageState";
 
 export default function UsuariosPage() {
   const isMobile = useIsMobile();
-
   const USERS_PER_PAGE = isMobile ? 5 : 10;
 
-  const [query, setQuery] = useState("");
-  const [usuarios, setUsuarios] = useState<PerfilConDireccion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: usuariosData, isLoading: loadingUsuarios } = useUsuariosQuery();
+  const usuarios = usuariosData ?? [];
 
-  const [selected, setSelected] = useState<PerfilConDireccion | null>(null);
-  const [adopciones, setAdopciones] = useState<any[]>([]);
-  const [solicitudesActivas, setSolicitudesActivas] = useState<any[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
+  // Hook nuevo que concentra toda la lógica
+  const {
+    searchTerm,
+    setSearchTerm,
+    page,
+    setPage,
+    paginated,
+    totalPages,
+    filtrados,
+    selected,
+    modalOpen,
+    setModalOpen,
+    abrirUsuario,
+  } = useUsuariosPageState(usuarios, USERS_PER_PAGE);
 
-  const [page, setPage] = useState(1);
+  const selectedId = selected?.id ?? "";
+  const { data: adopcionesData = [], isLoading: loadingAdopciones } = useUsuarioAdopcionesQuery(selectedId);
+  const { data: solicitudesData = [], isLoading: loadingSolicitudes } = useUsuarioSolicitudesQuery(selectedId);
 
-  const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setQuery(searchTerm);
-      setPage(1);
-    }, 350);
-
-    return () => clearTimeout(handler);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await listarUsuarios();
-        setUsuarios(data);
-      } catch (error) {
-        console.error("Error cargando usuarios:", error);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  const filtrados = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return usuarios;
-
-    return usuarios.filter((u) =>
-      [u.nombres, u.apellido_paterno, u.apellido_materno, u.email]
-        .filter(Boolean)
-        .some((campo) => campo!.toLowerCase().includes(q))
-    );
-  }, [query, usuarios]);
-
-  const totalPages = Math.ceil(filtrados.length / USERS_PER_PAGE);
-
-  const paginated = useMemo(() => {
-    return filtrados.slice(
-      (page - 1) * USERS_PER_PAGE,
-      page * USERS_PER_PAGE
-    );
-  }, [filtrados, page, USERS_PER_PAGE]);
-
-  const abrirUsuario = async (u: PerfilConDireccion) => {
-    setSelected(u);
-    setModalOpen(true);
-
-    setAdopciones([]);
-    setSolicitudesActivas([]);
-
-    try {
-      const data1 = await listarAdopcionesPorUsuario(u.id);
-      setAdopciones(data1);
-
-      const data2 = await listarSolicitudesActivasPorUsuario(u.id);
-      setSolicitudesActivas(data2);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  useBodyScrollLock(modalOpen);
 
   return (
     <div className="space-y-6">
-      <PageHead
-        title="Usuarios"
-        subtitle="Listado general de adoptantes."
-      />
+      <PageHead title="Usuarios" subtitle="Listado general de adoptantes." />
 
-      {/* Buscador + Filtros */}
+      {/* Buscador */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-1 max-w-md rounded-2xl border border-[#EADACB] bg-white px-3 py-2">
           <Search className="h-4 w-4 text-[#8B6F5D]" />
@@ -121,10 +71,9 @@ export default function UsuariosPage() {
         </button>
       </div>
 
-      {loading ? (
-        <div className="rounded-xl border border-dashed border-[#EADACB] bg-white py-10 text-center text-sm text-[#8B6F5D]">
-          Cargando usuarios...
-        </div>
+      {/* Tabla o Skeleton */}
+      {loadingUsuarios ? (
+        <UserTableSkeleton />
       ) : (
         <>
           <UserTable usuarios={paginated} onSelect={abrirUsuario} />
@@ -137,24 +86,28 @@ export default function UsuariosPage() {
             itemsLabel="usuarios"
             onChange={(n) => {
               setPage(n);
-
-              // ❤️ Scroll hacia arriba (siempre funciona)
-              setTimeout(() => {
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }, 10);
+              setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 10);
             }}
           />
         </>
       )}
 
-      <UserModal
-        open={modalOpen}
-        user={selected}
-        solicitudesActivas={solicitudesActivas}
-        adopciones={adopciones}
-        onClose={() => setModalOpen(false)}
-        onDeleteClick={() => selected}
-      />
+      {modalOpen &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center px-4 py-8">
+            <UserModal
+              open={modalOpen}
+              user={selected}
+              isLoading={loadingAdopciones || loadingSolicitudes || !selected}
+              solicitudesActivas={solicitudesData}
+              adopciones={adopcionesData}
+              onClose={() => setModalOpen(false)}
+            />
+          </div>,
+          document.body
+        )}
+
     </div>
   );
 }

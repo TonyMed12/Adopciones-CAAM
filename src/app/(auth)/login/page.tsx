@@ -229,11 +229,11 @@ export default function LoginCAAM() {
               </span>
             </Button>*/}
 
-            <div className="text-right -mt-2">
+            <div className="text-center -mt-2">
               <ButtonLink
                 href="/recuperacion"
                 variant="ghost"
-                className="text-[var(--brand-purple)]"
+                className="text-[var(--brand-purple)] align-center"
               >
                 ¿Olvidaste tu contraseña?
               </ButtonLink>

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter, Montserrat, Zain } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
+import Providers from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 const montserrat = Montserrat({
@@ -30,9 +31,13 @@ export default function RootLayout({
       lang="es"
       className={`${inter.className} ${montserrat.variable} ${zain.variable}`}
     >
-      <body suppressHydrationWarning className="bg-white text-gray-900 min-h-screen">
-        <AuthProvider>{children}</AuthProvider>
-          <Toaster richColors position="top-center" />
+      <body
+        suppressHydrationWarning
+        className="min-h-screen bg-background text-foreground"
+      >
+        <AuthProvider>
+          <Providers>{children}</Providers>
+        </AuthProvider>
       </body>
     </html>
   );

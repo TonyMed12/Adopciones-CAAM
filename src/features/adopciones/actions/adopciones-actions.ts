@@ -1,0 +1,226 @@
+"use server";
+
+import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
+import {
+  NuevaAdopcionSchema,
+  RevisionAdopcionSchema,
+} from "../schemas/adopciones-schemas";
+import type {
+  Adopcion,
+  NuevaAdopcion,
+  RevisionAdopcion,
+  AdopcionAdminRow,
+} from "../types/adopciones";
+import { fetchAdopcionesBase } from "./helpers/fetchAdopcionesBase";
+import { fetchSolicitudesMeta } from "./helpers/fetchSolicitudesMeta";
+import { indexSolicitudesPorId } from "./helpers/indexSolicitudesPorId";
+import { mapAdopcionesAdminRows } from "./helpers/mapAdopcionesAdminRows";
+import { throwIf } from "./helpers/throwIf";
+import { updateSolicitudEstado } from "@/features/solicitudes/actions/solicitudes-actions";
+import { getUsuarioAuthId } from "@/features/perfil/actions/perfil-actions";
+
+export async function listarAdopciones(): Promise<Adopcion[]> {
+  const { data, error } = await supabase
+    .from("adopciones")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  throwIf(error);
+  return (data ?? []) as Adopcion[];
+}
+
+export async function crearAdopcion(input: unknown): Promise<Adopcion> {
+  const parsed = NuevaAdopcionSchema.parse(input);
+
+  const { data, error } = await supabase
+    .from("adopciones")
+    .insert({
+      solicitud_id: parsed.solicitud_id,
+      tipo_vivienda: parsed.tipo_vivienda,
+      espacio_disponible: parsed.espacio_disponible,
+      otras_mascotas: parsed.otras_mascotas,
+      detalle_otras_mascotas: parsed.detalle_otras_mascotas,
+      evidencia_hogar_urls: parsed.evidencia_hogar_urls,
+      compromiso_seguimiento: parsed.compromiso_seguimiento,
+      compromiso_cuidado: parsed.compromiso_cuidado,
+      observaciones_usuario: parsed.observaciones_usuario || null,
+      estado: "pendiente",
+    })
+    .select()
+    .single();
+
+  throwIf(error);
+  return data as Adopcion;
+}
+
+export async function revisarAdopcion(input: unknown): Promise<Adopcion> {
+  const parsed = RevisionAdopcionSchema.parse(input);
+
+  const { data, error } = await supabase
+    .from("adopciones")
+    .update({
+      admin_responsable: parsed.admin_responsable,
+      estado: parsed.estado,
+      observaciones_admin: parsed.observaciones_admin || null,
+      contrato_url: parsed.contrato_url || null,
+      seguimiento_programado: parsed.seguimiento_programado || null,
+      fecha_revision: new Date().toISOString(),
+    })
+    .eq("id", parsed.id)
+    .select()
+    .single();
+
+  throwIf(error);
+  return data as Adopcion;
+}
+
+export async function obtenerAdopcionPorId(
+  id: string
+): Promise<Adopcion | null> {
+  const { data, error } = await supabase
+    .from("adopciones")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  throwIf(error);
+  return data as Adopcion;
+}
+
+export async function listarAdopcionesAdmin(): Promise<AdopcionAdminRow[]> {
+  const adopciones = await fetchAdopcionesBase();
+
+  const solIds = [
+    ...new Set(adopciones.map((a: any) => a.solicitud_id).filter(Boolean)),
+  ];
+
+  if (solIds.length === 0) return [];
+
+  const solicitudes = await fetchSolicitudesMeta(solIds);
+  const byId = indexSolicitudesPorId(solicitudes);
+
+  return mapAdopcionesAdminRows(adopciones, byId);
+}
+
+async function moverCitaAGemela(
+  supabaseSrv: any,
+  usuarioAuthId: string,
+  mascotaId: string,
+  solicitudId: string
+) {
+  const { data: cita } = await supabaseSrv
+    .from("citas_adopcion")
+    .select("*")
+    .eq("usuario_id", usuarioAuthId)
+    .eq("mascota_id", mascotaId)
+    .order("creada_en", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!cita) return;
+
+  const { data: existe } = await supabaseSrv
+    .from("citas_adopcion_aprobadas")
+    .select("id")
+    .eq("id", cita.id)
+    .maybeSingle();
+
+  if (!existe) {
+    await supabaseSrv.from("citas_adopcion_aprobadas").insert([
+      {
+        id: cita.id,
+        usuario_id: cita.usuario_id,
+        solicitud_id: cita.solicitud_id ?? solicitudId,
+        mascota_id: cita.mascota_id,
+        fecha_cita: cita.fecha_cita,
+        hora_cita: cita.hora_cita,
+        estado: "completada",
+        creada_en: cita.creada_en,
+        actualizada_en: new Date().toISOString(),
+        asistencia: cita.asistencia ?? "asistio",
+        interaccion: cita.interaccion ?? "buena_aprobada",
+        nota: cita.nota ?? "Cita aprobada al aceptar adopción.",
+        aprobada_en: new Date().toISOString(),
+      },
+    ]);
+  }
+
+  await supabaseSrv.from("citas_adopcion").delete().eq("id", cita.id);
+}
+
+async function eliminarCitasPendientes(
+  supabaseSrv: any,
+  usuarioAuthId: string,
+  mascotaId: string
+) {
+  const { data: citasRelacionadas } = await supabaseSrv
+    .from("citas_adopcion")
+    .select("id")
+    .eq("usuario_id", usuarioAuthId)
+    .eq("mascota_id", mascotaId);
+
+  if (!citasRelacionadas?.length) return;
+
+  await supabaseSrv
+    .from("citas_adopcion")
+    .delete()
+    .in("id", citasRelacionadas.map((c) => c.id));
+}
+
+export async function cambiarEstadoAdopcion(params: {
+  id: string;
+  estado: "aprobada" | "rechazada";
+  observaciones_admin?: string | null;
+  contrato_url?: string | null;
+  seguimiento_programado?: string | null;
+  admin_responsable: string;
+}): Promise<Adopcion> {
+  const supabaseSrv = await createClient();
+  const parsed = RevisionAdopcionSchema.parse(params);
+
+  const { data, error } = await supabaseSrv
+    .from("adopciones")
+    .update({
+      admin_responsable: parsed.admin_responsable,
+      estado: parsed.estado,
+      observaciones_admin: parsed.observaciones_admin || null,
+      contrato_url: parsed.contrato_url || null,
+      seguimiento_programado: parsed.seguimiento_programado || null,
+      fecha_revision: new Date().toISOString(),
+    })
+    .eq("id", parsed.id)
+    .select("id, solicitud_id, estado")
+    .single();
+
+  throwIf(error);
+
+  if (!data?.solicitud_id) return data as Adopcion;
+
+  const solicitud = await updateSolicitudEstado(
+    supabaseSrv,
+    parsed,
+    data.solicitud_id
+  );
+
+  if (!solicitud?.mascota_id) return data as Adopcion;
+
+  const mascotaId = solicitud.mascota_id;
+  const usuarioAuthId = await getUsuarioAuthId(solicitud.usuario_id);
+
+  if (!usuarioAuthId) return data as Adopcion;
+
+  if (parsed.estado === "aprobada") {
+    const mod = await import("@/features/mascotas/actions/mascotas-actions");
+    await mod.marcarMascotaAdoptada(supabaseSrv, mascotaId);
+
+    await moverCitaAGemela(supabaseSrv, usuarioAuthId, mascotaId, solicitud.id);
+  } else {
+    const mod = await import("@/features/mascotas/actions/mascotas-actions");
+    await mod.marcarMascotaDisponible(supabaseSrv, mascotaId);
+
+    await eliminarCitasPendientes(supabaseSrv, usuarioAuthId, mascotaId);
+  }
+
+  return data as Adopcion;
+}

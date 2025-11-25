@@ -7,9 +7,9 @@ import { buildAdopcionAprobadaEmail } from "../templates/adopcionAprobada";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, nombre, nombreMascota, fotoMascota, adopcionId } = body;
+    const { email, adoptante, nombreMascota, fotoMascota, adopcionId } = body;
 
-    if (!email || !nombre || !nombreMascota) {
+    if (!email || !adoptante || !nombreMascota) {
       return NextResponse.json(
         { ok: false, message: "Faltan datos obligatorios." },
         { status: 400 }
@@ -19,10 +19,9 @@ export async function POST(req: Request) {
     console.log("📩 Enviando correo a:", email);
 
     // ============================
-    // 1️⃣ GENERAR PDF (React PDF)
+    // 1️⃣ GENERAR PDF
     // ============================
 
-        // 1️⃣ Descargar la imagen de la mascota y convertirla a Buffer
     let fotoParaPDF: any = fotoMascota;
 
     try {
@@ -31,19 +30,16 @@ export async function POST(req: Request) {
         if (resImg.ok) {
           const arrayBuffer = await resImg.arrayBuffer();
           fotoParaPDF = Buffer.from(arrayBuffer);
-        } else {
-          console.warn("⚠ No se pudo descargar la imagen, status:", resImg.status);
         }
       }
     } catch (e) {
-      console.warn("⚠ Error descargando imagen, se usa placeholder:", e);
-      fotoParaPDF = "https://caamorelia.vercel.app/logo.png"; // fallback sencillo
+      console.warn("⚠ Error descargando imagen, usando placeholder.");
+      fotoParaPDF = "https://caamorelia.vercel.app/logo.png";
     }
 
-    // 2️⃣ Generar el PDF usando esa imagen
     const pdfBuffer = await renderToBuffer(
       CertificadoPDF({
-        adoptante: nombre,
+        adoptante,
         mascota: {
           nombre: nombreMascota,
           foto: fotoParaPDF,
@@ -52,20 +48,22 @@ export async function POST(req: Request) {
         fecha: new Date().toLocaleDateString("es-MX"),
       })
     );
+
     console.log("✅ PDF generado correctamente.");
 
     // ============================
     // 2️⃣ TEMPLATE HTML
     // ============================
 
-    const { subject, html } = buildAdopcionAprobadaEmail({
-      nombre,
-      nombreMascota,
-      fotoMascota,
-    });
+const { subject, html } = buildAdopcionAprobadaEmail({
+  nombre: adoptante, // 👈 se lo pasamos como 'nombre'
+  nombreMascota,
+  fotoMascota,
+});
+    console.log("✅ HTML del correo generado.");
 
     // ============================
-    // 3️⃣ SMTP CONFIG
+    // 3️⃣ SMTP
     // ============================
 
     const transporter = nodemailer.createTransport({
@@ -76,9 +74,7 @@ export async function POST(req: Request) {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-      tls: {
-        rejectUnauthorized: false,
-      },
+      tls: { rejectUnauthorized: false },
     });
 
     // ============================
