@@ -222,3 +222,17 @@ export async function getUsuarioAuthId(perfilUsuarioId: string | null) {
 
   return data?.auth_user_id || perfilUsuarioId;
 }
+
+export async function getPerfilById(id: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("perfiles")
+    .select("id, nombres, apellido_paterno, apellido_materno, email")
+    .eq("id", id)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}

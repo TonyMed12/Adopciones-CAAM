@@ -37,6 +37,7 @@ export async function validarHorarioCita(
         .select("id")
         .eq("fecha_cita", fecha)
         .eq("hora_cita", hora)
+        .eq("estado", "programada") 
         .neq("id", excludeId || "");
 
     if (error) throw new Error(error.message);

@@ -35,11 +35,8 @@ export default function CitaReprogramarModal({
     citas,
 }: Props) {
 
-    if (!open || !cita) return null;
+    
 
-    // ============================
-    // FECHAS PARA VALIDACIÓN
-    // ============================
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
@@ -50,18 +47,15 @@ export default function CitaReprogramarModal({
         return f;
     }, []);
 
-    // ============================
-    // FECHA SELECCIONADA
-    // ============================
+
     const dateValue = useMemo(() => {
         if (!fecha) return null;
         const [y, m, d] = fecha.split("-");
         return new Date(Number(y), Number(m) - 1, Number(d));
     }, [fecha]);
 
-    // ============================
-    // HORAS
-    // ============================
+    if (!open || !cita) return null;
+
     const horasDisponibles = [
         "08:30", "09:00", "09:30",
         "10:00", "10:30", "11:00",
@@ -73,15 +67,16 @@ export default function CitaReprogramarModal({
     const hoyStr = new Date().toISOString().slice(0, 10);
 
     const horasConEstado = horasDisponibles.map((h) => {
-        // ¿Ocupado por otra cita?
         const ocupado = citas.some(
             (c) =>
                 c.fecha_cita === fecha &&
                 c.hora_cita.slice(0, 5) === h &&
+                c.estado === "programada" &&   
                 c.id !== cita.id
         );
 
-        // ¿Hora pasada si es hoy?
+
+        
         let pasada = false;
         if (fecha === hoyStr) {
             const [hh, mm] = h.split(":").map(Number);
@@ -93,9 +88,6 @@ export default function CitaReprogramarModal({
         return { hora: h, ocupado, pasada };
     });
 
-    // ============================
-    // CAMBIO DE FECHA
-    // ============================
     const handleFecha = (date: Date | null) => {
         if (!date) return onFechaChange("");
 
@@ -107,9 +99,6 @@ export default function CitaReprogramarModal({
         onHoraChange("");
     };
 
-    // ============================
-    // RENDER
-    // ============================
     return (
         <div className="fixed inset-0 z-[999] grid place-items-center bg-black/40 backdrop-blur-sm p-4 animate-fadeIn cursor-default">
 

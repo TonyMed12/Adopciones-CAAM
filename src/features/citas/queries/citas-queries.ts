@@ -1,9 +1,6 @@
 import {
     listarCitas,
-    listarCitasRango,
     reprogramarCita,
-    actualizarEstadoCita,
-    evaluarCita,
     cancelarCita,
 } from "../actions/citas-actions";
 
@@ -63,25 +60,4 @@ export const reprogramarCitaMutation = async (
 
 export const cancelarCitaMutation = async (id: string) => {
     return await cancelarCita(id);
-};
-
-export const fetchCitasRango = async (
-    desdeISO: string,
-    hastaISO: string
-): Promise<RawCita[]> => {
-    return await listarCitasRango(desdeISO, hastaISO);
-};
-
-export const evaluarCitaMutation = async (params: {
-    id: string;
-    nuevoEstado: "programada" | "completada" | "cancelada";
-    asistencia: Cita["asistencia"];
-    interaccion: Cita["interaccion"];
-    nota: string | null;
-}): Promise<RawCita> => {
-    return await evaluarCita(params.id, params.nuevoEstado, {
-        asistencia: params.asistencia,
-        interaccion: params.interaccion,
-        nota: params.nota,
-    });
 };
