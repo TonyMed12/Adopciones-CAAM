@@ -252,7 +252,6 @@ export async function cambiarEstadoAdopcion(params: {
 
             if (errMascota)
                 console.error("⚠️ Error marcando mascota como adoptada:", errMascota.message);
-            else console.log("✅ Mascota marcada como adoptada y no disponible");
 
             // 🟢 Mover cita a tabla espejo
             const { data: cita } = await supabase
@@ -298,7 +297,6 @@ export async function cambiarEstadoAdopcion(params: {
                 }
 
                 await supabase.from("citas_adopcion").delete().eq("id", cita.id);
-                console.log("🗂️ Cita eliminada de tabla principal");
             } else {
                 console.warn("⚠️ No se encontró ninguna cita activa para mover.");
             }
@@ -313,7 +311,6 @@ export async function cambiarEstadoAdopcion(params: {
 
             if (errMascota)
                 console.error("⚠️ Error liberando mascota:", errMascota.message);
-            else console.log("✅ Mascota liberada para adopción nuevamente");
 
             // 🔴 Eliminar citas pendientes
             const { data: citasRelacionadas } = await supabase
@@ -327,7 +324,6 @@ export async function cambiarEstadoAdopcion(params: {
                     .from("citas_adopcion")
                     .delete()
                     .in("id", citasRelacionadas.map((c) => c.id));
-                console.log("🗑️ Citas pendientes eliminadas al rechazar adopción");
             }
         }
     }
