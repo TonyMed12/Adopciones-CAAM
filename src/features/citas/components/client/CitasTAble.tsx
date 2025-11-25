@@ -9,7 +9,7 @@ export type Cita = {
   hora_cita: string;
   estado: "programada" | "completada" | "cancelada";
 
-  usuario?: { nombres?: string; email?: string } | null;
+  usuario?: { nombres?: string; apellido_paterno?: string; apellido_materno?: string; email?: string } | null;
   mascotas?: { id: string; nombre: string } | null;
 
   asistencia?: "asistio" | "no_asistio_no_apto" | null;
@@ -74,7 +74,12 @@ export default function CitasTable({
             >
               {/* Usuario */}
               <p className="font-semibold text-[#2B1B12] text-base break-words max-w-full">
-                {cita.usuario?.nombres || "Usuario"}
+                {[
+                  cita.usuario?.nombres,
+                  cita.usuario?.apellido_paterno,
+                  cita.usuario?.apellido_materno,
+                ].filter(Boolean).join(" ")}
+
               </p>
               <p className="text-sm text-[#6b4f40] break-all max-w-full">
                 {cita.usuario?.email}
@@ -82,7 +87,7 @@ export default function CitasTable({
 
               {/* Mascota */}
               <p className="mt-1 text-sm font-medium text-[#2B1B12] break-normal">
-                Mascota: {cita.mascotas?.nombre ?? "—"}
+                Mascota: {cita.mascota?.nombre ?? "—"}
               </p>
 
               {/* Fecha/Hora */}
@@ -177,19 +182,30 @@ export default function CitasTable({
                 >
                   {/* Usuario */}
                   <td className="px-3 py-3 text-[#2B1B12] font-medium">
-                    {cita.usuario?.nombres || "—"}
+                    {[
+                      cita.usuario?.nombres,
+                      cita.usuario?.apellido_paterno,
+                      cita.usuario?.apellido_materno,
+                    ].filter(Boolean).join(" ")}
+
                     <div className="text-xs text-[#8b6f5d]">{cita.usuario?.email}</div>
                   </td>
 
                   {/* Mascota */}
                   <td className="px-3 py-3 text-[#2B1B12]">
-                    {cita.mascotas?.nombre || "—"}
+                    {cita.mascota?.nombre || "—"}
                   </td>
 
                   {/* Fecha */}
                   <td className="px-3 py-3 text-[#2B1B12]">
-                    {new Date(cita.fecha_cita).toLocaleDateString("es-MX")}
+                    {new Intl.DateTimeFormat("es-MX", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      timeZone: "UTC",
+                    }).format(new Date(cita.fecha_cita + "T00:00:00Z"))}
                   </td>
+
 
                   {/* Hora */}
                   <td className="px-3 py-3 text-[#2B1B12]">

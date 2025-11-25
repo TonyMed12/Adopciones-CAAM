@@ -7,6 +7,7 @@ import { getUserRole } from "@/lib/supabase/getRole";
 import AdminHeader from "@/components/layout/HeaderAd";
 import { Toaster } from "sonner";
 import Providers from "@/app/providers";
+import "react-datepicker/dist/react-datepicker.css";
 
 
 export default function AdminLayout({

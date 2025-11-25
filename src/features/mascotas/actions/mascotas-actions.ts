@@ -91,7 +91,7 @@ export async function eliminarMascota(id: string): Promise<{ success: boolean; r
 }
 
 
-// OBTENER POR ID
+// OBTENER UNA POR ID
 export async function obtenerMascotaPorId(id: string) {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -106,4 +106,20 @@ export async function obtenerMascotaPorId(id: string) {
     }
 
     return data;
+}
+
+// OBTENER VARIAS POR IDS
+export async function fetchMascotasByIds(ids: string[]) {
+    if (ids.length === 0) return [];
+
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from("mascotas")
+        .select("id, nombre")
+        .in("id", ids);
+
+    if (error) throw new Error(error.message);
+
+    return data ?? [];
 }

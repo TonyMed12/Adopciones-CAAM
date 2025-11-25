@@ -114,3 +114,17 @@ export async function listarSolicitudesActivasPorUsuario(usuarioId: string) {
 
   return solicitudes || [];
 }
+
+// Esto no lo quiten lo ocupa las citas <----
+export async function fetchUsuariosByIds(ids: string[]) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("perfiles")
+    .select("id, nombres, apellido_paterno, apellido_materno, email")
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+
+  return data ?? [];
+}

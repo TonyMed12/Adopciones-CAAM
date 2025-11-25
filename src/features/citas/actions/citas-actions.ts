@@ -1,64 +1,20 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-
-type NuevaCita = {
-  usuario_id: string;
-  mascota_id: string | null;
-  fecha_cita: string; // "YYYY-MM-DD"
-  hora_cita: string;  // "HH:mm"
-  estado?: "programada" | "completada" | "cancelada";
-};
-
-type Asistencia = "asistio" | "no_asistio_no_apto";
-type Interaccion = "buena_aprobada" | "no_apta";
-
-type EvaluacionCita = {
-  asistencia?: Asistencia | null;
-  interaccion?: Interaccion | null;
-  nota?: string | null;
-};
+import type { NuevaCita, EvaluacionCita } from "../types/cita";
+import { validarHorarioCita } from "./validations/validarHorarioCita";
 
 export async function listarCitas() {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("citas_adopcion")
-    .select(`
-      id,
-      fecha_cita,
-      hora_cita,
-      estado,
-      creada_en,
-      usuario_id,
-      mascota_id,
-      mascotas (id, nombre),
-      asistencia,
-      interaccion,
-      nota
-    `)
+    .select("*")
     .order("fecha_cita", { ascending: true });
 
   if (error) throw new Error(error.message);
 
-  // Mapear usuarios desde perfiles (batch, no 1x1)
-  const usuarioIds = [...new Set(data.map(c => c.usuario_id).filter(Boolean))];
-  let perfilesMap = new Map<string, any>();
-
-  if (usuarioIds.length > 0) {
-    const { data: perfiles, error: perfilesError } = await supabase
-      .from("perfiles")
-      .select("id, nombres, email")
-      .in("id", usuarioIds);
-
-    if (perfilesError) throw new Error(perfilesError.message);
-    perfiles?.forEach(p => perfilesMap.set(p.id, p));
-  }
-
-  return data.map(c => ({
-    ...c,
-    usuario: perfilesMap.get(c.usuario_id) || null,
-  }));
+  return data ?? [];
 }
 
 export async function listarCitasRango(desdeISO: string, hastaISO: string) {
@@ -126,45 +82,29 @@ export async function crearCita(input: NuevaCita) {
   return { ...data, usuario: perfil || null };
 }
 
-export async function reprogramarCita(
-  id: string,
-  fecha_cita: string,
-  hora_cita: string
-) {
-
+export async function reprogramarCita(id: string, fecha: string, hora: string) {
   const supabase = await createClient();
+
+  await validarHorarioCita(fecha, hora, id);
+
   const { data, error } = await supabase
     .from("citas_adopcion")
     .update({
-      fecha_cita,
-      hora_cita,
+      fecha_cita: fecha,
+      hora_cita: hora,
       actualizada_en: new Date().toISOString(),
     })
     .eq("id", id)
-    .select(`
-      id,
-      fecha_cita,
-      hora_cita,
-      estado,
-      usuario_id,
-      mascota_id,
-      mascotas (id, nombre)
-    `)
+    .select(
+      "id, fecha_cita, hora_cita, estado, usuario_id, mascota_id, asistencia, interaccion, nota"
+    )
     .single();
 
   if (error) throw new Error(error.message);
 
-  // Obtener también el usuario
-  const { data: perfil, error: perfilError } = await supabase
-    .from("perfiles")
-    .select("id, nombres, email")
-    .eq("id", data.usuario_id)
-    .single();
-
-  if (perfilError) throw new Error(perfilError.message);
-
-  return { ...data, usuario: perfil || null };
+  return data;
 }
+
 
 export async function actualizarEstadoCita(
   id: string,
