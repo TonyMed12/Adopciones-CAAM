@@ -252,10 +252,17 @@ export default function FormMascota({
               return (
                 <FieldWrapper>
                   <FieldLabel>Peso (kg)</FieldLabel>
-                  <CAAMNumberInput {...field} />
+
+                  <CAAMNumberInput
+                    value={field.value ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      field.onChange(v === "" ? null : Number(v));
+                    }}
+                  />
 
                   {errorMessage && (
-                    <p className="text-red-500 text-xs">{errorMessage}</p>
+                    <p className="text-red-500 text-xs mt-1">{errorMessage}</p>
                   )}
                 </FieldWrapper>
               );
@@ -357,7 +364,11 @@ export default function FormMascota({
               return (
                 <FieldWrapper>
                   <FieldLabel>Lugar de rescate</FieldLabel>
-                  <CAAMInput {...field} />
+
+                  <CAAMInput
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value)}
+                  />
 
                   {errorMessage && (
                     <p className="text-red-500 text-xs mt-1">{errorMessage}</p>
@@ -405,16 +416,26 @@ export default function FormMascota({
         <Controller
           control={form.control}
           name="observaciones_medicas"
-          render={({ field }) => (
-            <FieldWrapper>
-              <FieldLabel>Observaciones médicas</FieldLabel>
-              <CAAMTextarea
-                rows={4}
-                value={field.value ?? ""}
-                onChange={field.onChange}
-              />
-            </FieldWrapper>
-          )}
+          render={({ field }) => {
+            const errorMessage = form.formState.errors.observaciones_medicas
+              ?.message as string;
+
+            return (
+              <FieldWrapper>
+                <FieldLabel>Observaciones médicas</FieldLabel>
+
+                <CAAMTextarea
+                  rows={4}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                />
+
+                {errorMessage && (
+                  <p className="text-red-500 text-xs mt-1">{errorMessage}</p>
+                )}
+              </FieldWrapper>
+            );
+          }}
         />
       </FormSection>
 
