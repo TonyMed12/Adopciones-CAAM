@@ -9,8 +9,12 @@ const PersonalidadEnum = z.enum(["timido", "carinoso", "jugueton", "tranquilo", 
 export const CreateMascotaSchema = z.object({
   nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres").max(50, "El nombre es demasiado largo"),
 
-  sexo: SexoEnum,
-  tamano: TamanoEnum,
+  sexo: SexoEnum.or(z.literal("")).refine(v => v !== "", {
+    message: "Selecciona el sexo",
+  }),
+  tamano: TamanoEnum.or(z.literal("")).refine(v => v !== "", {
+    message: "Selecciona el tamaño",
+  }),
 
   disponible_adopcion: z.boolean().default(true),
 
@@ -22,9 +26,10 @@ export const CreateMascotaSchema = z.object({
     .refine((v) => Number(v) <= 300, {
       message: "Edad demasiado alta para una mascota",
     }),
-  personalidad: PersonalidadEnum.refine(() => true, {
-    message: "Debes seleccionar una personalidad para registrar la mascota",
+  personalidad: PersonalidadEnum.or(z.literal("")).refine(v => v !== "", {
+    message: "Selecciona la personalidad",
   }),
+
   imagen_url: z.string().url("Debe ser una URL válida").nullable().default(null),
 
   esterilizado: z.boolean().default(false),
