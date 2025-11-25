@@ -8,6 +8,8 @@ export function useUsuarioQuery(id: string | null) {
       const users = await fetchUsuarios();
       return users.find(u => u.id === id) ?? null;
     },
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 1000 * 30,
+    retry: 1,
   });
 }

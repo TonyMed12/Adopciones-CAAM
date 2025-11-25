@@ -1,4 +1,3 @@
-// ========================= DIRECCIÓN =========================
 export interface Direccion {
   id: string;
   usuario_id: string;
@@ -15,7 +14,6 @@ export interface Direccion {
   direccion_principal?: boolean | null;
 }
 
-// ========================= PERFIL =========================
 export interface Perfil {
   id: string;
   nombres: string;
@@ -36,8 +34,6 @@ export interface Perfil {
   updated_at?: string | null;
 }
 
-// ========================= PERFIL + DIRECCIÓN =========================
-// EL TIPO QUE AHORA SÍ USA EL ADMIN
 export interface PerfilConDireccion extends Perfil {
   direccion?: Direccion | null;
 }

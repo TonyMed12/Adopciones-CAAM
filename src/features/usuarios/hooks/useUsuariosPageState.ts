@@ -11,7 +11,6 @@ export function useUsuariosPageState(usuarios: PerfilConDireccion[], usersPerPag
   const [selected, setSelected] = useState<PerfilConDireccion | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Debounce búsqueda
   useEffect(() => {
     const handler = setTimeout(() => {
       setQuery(searchTerm);
@@ -21,7 +20,6 @@ export function useUsuariosPageState(usuarios: PerfilConDireccion[], usersPerPag
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Filtrado
   const filtrados = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return usuarios;
@@ -48,19 +46,16 @@ export function useUsuariosPageState(usuarios: PerfilConDireccion[], usersPerPag
   };
 
   return {
-    // inputs
     searchTerm,
     setSearchTerm,
     query,
 
-    // pagination
     page,
     setPage,
     paginated,
     totalPages,
     filtrados,
 
-    // modal
     selected,
     setSelected,
     modalOpen,

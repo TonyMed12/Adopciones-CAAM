@@ -1,24 +1,28 @@
 import { Sexo, Tamano, EstadoMascota } from "@/features/mascotas/types/mascotas";
 
 export interface CreateMascotaPayload {
+  id: string;
   nombre: string;
-  sexo: Sexo;
-  tamano?: Tamano;
-  edad?: string | null;
-  personalidad?: string | null;
-  descripcion_fisica?: string | null;
-  disponible_adopcion?: boolean;
-  esterilizado?: boolean;
-  peso_kg?: number | null;
-  altura_cm?: number | null;
-  colores?: string[];
-  lugar_rescate?: string | null;
-  condicion_ingreso?: string | null;
-  observaciones_medicas?: string | null;
-  raza_id?: string | null;
-  imagen_url?: string | null;
-  descripcion?: string;
+  sexo: string;
+  tamano: string;
+  raza_id: string;
+  edad: string;
+  peso_kg: string;
+  altura_cm: number;
+  personalidad: string;
+  descripcion_fisica: string;
+  esterilizado: boolean;
+  disponible_adopcion: boolean;
+  colores: string[];
+  lugar_rescate: string;
+  condicion_ingreso: string;
+  observaciones_medicas: string;
+  imagen_url: string | null;
+  qr_code: string | null;
+}
 
+export interface UpdateMascotaPayload extends CreateMascotaPayload {
+  id: string; 
 }
 
 export interface Mascota extends CreateMascotaPayload {

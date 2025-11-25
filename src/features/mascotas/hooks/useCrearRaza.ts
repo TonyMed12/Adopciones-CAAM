@@ -11,5 +11,11 @@ export function useCrearRaza() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["razas"] });
         },
+
+        onError: (error) => {
+            console.error("Error creando raza:", error.message);
+        },
+
+        retry: 1,
     });
 }

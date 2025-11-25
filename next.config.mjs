@@ -1,14 +1,31 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    // ✅ Hace que Next.js ignore los errores de tipos al compilar
     ignoreBuildErrors: true,
   },
+
   eslint: {
-    // ✅ Evita que ESLint bloquee el build
     ignoreDuringBuilds: true,
   },
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
+  },
+
   images: {
+    unoptimized: true,
+
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+
     domains: ["images.unsplash.com"],
   },
 };

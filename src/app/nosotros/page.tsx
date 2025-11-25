@@ -173,12 +173,12 @@ export default function SobreNosotros() {
                     },
                     {
                       year: "2022",
-                      title: "Más de 3,000 adopciones",
+                      title: "Más de 100 adopciones",
                       desc: "Miles de mascotas encontraron un nuevo hogar.",
                       img: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&q=70&w=1200",
                     },
                     {
-                      year: "2024",
+                      year: "2025",
                       title: "Plataforma digital",
                       desc: "Modernización y adopciones en línea.",
                       img: "https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&q=70&w=1200",

@@ -11,5 +11,10 @@ export function useEliminarRaza() {
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["razas"] });
         },
+
+        onError: (error) => {
+            console.error("Error eliminando raza:", error.message);
+        },
+        retry: 1,
     });
 }
