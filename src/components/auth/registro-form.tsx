@@ -91,8 +91,10 @@ export default function RegistroForm() {
 
   const totalSteps = 3;
   //Otra funcion para fecha
-  const formatFecha = (value: string) => {
-    const digits = value.replace(/\D/g, ""); // Solo números
+  const formatFecha = (value: string = "") => {
+    if (typeof value !== "string") return "";
+
+    const digits = value.replace(/\D/g, "");
 
     if (digits.length <= 2) return digits;
     if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
@@ -142,7 +144,7 @@ export default function RegistroForm() {
   );
   FechaInput.displayName = "FechaInput";
 
-  // Función para verificar requisitos de contraseña en tiempo real
+  //requisitos de contraseña en tiempo real
   const checkPasswordRequirements = (password: string) => {
     setPasswordRequirements({
       minLength: password.length >= 8,
@@ -152,9 +154,13 @@ export default function RegistroForm() {
     });
   };
 
-  // Función para verificar si el email existe
-  const checkEmailExists = async (email: string) => {
-    if (!email || !email.includes("@")) return;
+  //  verificar si el email existe
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    // No verificar si está vacío o incompleto
+    if (!email || !email.includes("@")) {
+      setEmailExists(false);
+      return false;
+    }
 
     setIsCheckingEmail(true);
     setEmailExists(false);
@@ -167,8 +173,10 @@ export default function RegistroForm() {
       });
 
       const data = await response.json();
+      const exists = response.ok && data.exists === true;
 
-      if (response.ok && data.exists) {
+      // estado UI
+      if (exists) {
         setEmailExists(true);
         setErrors((prev) => ({
           ...prev,
@@ -182,8 +190,13 @@ export default function RegistroForm() {
           return newErrors;
         });
       }
+
+      return exists;
     } catch (error) {
       console.error("Error verificando email:", error);
+
+      setEmailExists(false);
+      return false;
     } finally {
       setIsCheckingEmail(false);
     }
@@ -459,10 +472,25 @@ export default function RegistroForm() {
   };
 
   // Ir al siguiente paso
-  const handleNextStep = () => {
-    if (validateCurrentStep()) {
-      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+  // 🔢 ajusta este número al paso donde está el correo
+  const EMAIL_STEP = 1;
+
+  // Ir al siguiente paso
+  const handleNextStep = async () => {
+    // 1. Validar el paso actual
+    const isValid = validateCurrentStep();
+    if (!isValid) return;
+
+    // 2. Si estamos en el paso del correo, verificarlo
+    if (currentStep === EMAIL_STEP) {
+      const exists = await checkEmailExists(formData.email || "");
+
+      // 3. Si el correo ya existe, NO avanzamos
+      if (exists) return;
     }
+
+    // 4. Si todo ok, avanzamos
+    setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
   };
 
   // Ir al paso anterior
@@ -638,7 +666,7 @@ export default function RegistroForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="apellido_paterno">
+        <Label htmlFor="apellido_materno">
           Apellido Materno <span className="text-red-500">*</span>
         </Label>
         <div className="relative">
@@ -649,11 +677,19 @@ export default function RegistroForm() {
             onChange={(e) =>
               handleInputChange("apellido_materno", e.target.value)
             }
-            className="pl-10"
-            placeholder="Ej: López"
+            className={cn(
+              "pl-10",
+              errors.apellido_materno?.length > 0 && "border-red-500"
+            )}
+            placeholder="Ej: García"
             disabled={isLoading}
           />
         </div>
+        {errors.apellido_materno?.map((error, index) => (
+          <p key={index} className="text-sm text-red-600">
+            {error}
+          </p>
+        ))}
       </div>
 
       <div className="space-y-2">
@@ -738,45 +774,98 @@ export default function RegistroForm() {
         </p>
       </div>
 
+      {/* === FECHA DE NACIMIENTO === */}
       <div className="space-y-2">
         <Label htmlFor="fecha_nacimiento">
           Fecha de Nacimiento <span className="text-red-500">*</span>
         </Label>
+
+        {/* === VALIDACIÓN DE EDAD === */}
+        {/** Puedes moverla arriba si ya la tienes fuera, pero aquí queda auto-contenida */}
+        {(() => {
+          const validarEdad = (date: Date) => {
+            const today = new Date();
+            let edad = today.getFullYear() - date.getFullYear();
+            const m = today.getMonth() - date.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < date.getDate())) {
+              edad--;
+            }
+
+            setErrors((prev) => {
+              const newErrors = { ...prev };
+              delete newErrors.fecha_nacimiento;
+
+              if (edad < 18) {
+                newErrors.fecha_nacimiento = [
+                  "Debes ser mayor de 18 años para registrarte.",
+                ];
+              } else if (edad > 100) {
+                newErrors.fecha_nacimiento = [
+                  "La edad ingresada no es válida (máximo 100 años).",
+                ];
+              }
+
+              return newErrors;
+            });
+          };
+
+          // Guardamos temporalmente función en window para usarla abajo
+          (window as any).validarEdad = validarEdad;
+          return null;
+        })()}
+
         <div className="relative">
           <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none" />
+
           <DatePicker
             selected={
               formData.fecha_nacimiento
-                ? parseLocalDate(formData.fecha_nacimiento) // La función que ya te di
+                ? parseLocalDate(formData.fecha_nacimiento)
                 : null
             }
             onChange={(date: Date | null) => {
-              if (date) {
-                const y = date.getFullYear();
-                const m = String(date.getMonth() + 1).padStart(2, "0");
-                const d = String(date.getDate()).padStart(2, "0");
-
-                handleInputChange("fecha_nacimiento", `${y}-${m}-${d}`);
-              } else {
+              if (!date) {
                 handleInputChange("fecha_nacimiento", "");
+                return;
               }
+
+              (window as any).validarEdad(date);
+
+              const y = date.getFullYear();
+              const m = String(date.getMonth() + 1).padStart(2, "0");
+              const d = String(date.getDate()).padStart(2, "0");
+
+              handleInputChange("fecha_nacimiento", `${y}-${m}-${d}`);
             }}
             onChangeRaw={(e: any) => {
+              if (!e?.nativeEvent?.inputType) return;
+
               const input = e.target as HTMLInputElement;
-              if (!input) return;
+              if (!input || typeof input.value !== "string") return;
 
               const formatted = formatFecha(input.value);
               input.value = formatted;
 
               if (formatted.length === 10) {
                 const [dd, mm, yyyy] = formatted.split("/");
+                const parsed = new Date(
+                  Number(yyyy),
+                  Number(mm) - 1,
+                  Number(dd)
+                );
+
                 handleInputChange("fecha_nacimiento", `${yyyy}-${mm}-${dd}`);
+
+            
+                if (!isNaN(parsed.getTime())) {
+                  (window as any).validarEdad(parsed);
+                }
               }
             }}
             dateFormat="dd/MM/yyyy"
             placeholderText="Selecciona o escribe tu fecha de nacimiento"
             className={cn(
-              "w-full pl-10 pr-10 py-2 border rounded-md cursor-pointer",
+              "w-full pl-10 pr-10 py-2 border rounded-md",
               "hover:border-[#8B5E34] focus:border-[#8B5E34] focus:ring-2 focus:ring-[#8B5E34]/20 focus:outline-none",
               errors.fecha_nacimiento?.length > 0
                 ? "border-red-500"
@@ -793,9 +882,11 @@ export default function RegistroForm() {
             <Calendar className="h-4 w-4 text-[#8B5E34] opacity-60" />
           </div>
         </div>
+
         <p className="text-xs text-gray-500">
           Selecciona tu fecha de nacimiento del calendario
         </p>
+
         {errors.fecha_nacimiento?.map((error, index) => (
           <p key={index} className="text-sm text-red-600">
             {error}
@@ -1035,13 +1126,18 @@ export default function RegistroForm() {
       </div>
 
       <div className="space-y-3 pt-4">
+        {/* Términos */}
         <div className="flex items-start space-x-3">
-          <Checkbox
-            id="acceptTerms"
-            checked={formData.acceptTerms || false}
-            onChange={(e) => handleInputChange("acceptTerms", e.target.checked)}
-            className="mt-1"
-          />
+          <div className="pt-1">
+            <Checkbox
+              id="acceptTerms"
+              checked={formData.acceptTerms || false}
+              onChange={(e) =>
+                handleInputChange("acceptTerms", e.target.checked)
+              }
+            />
+          </div>
+
           <div className="text-sm">
             <Label htmlFor="acceptTerms" className="cursor-pointer">
               Acepto los{" "}
@@ -1056,21 +1152,25 @@ export default function RegistroForm() {
             </Label>
           </div>
         </div>
+
         {errors.acceptTerms?.map((error, index) => (
           <p key={index} className="text-sm text-red-600 ml-7">
             {error}
           </p>
         ))}
 
+        {/* Privacidad */}
         <div className="flex items-start space-x-3">
-          <Checkbox
-            id="acceptPrivacy"
-            checked={formData.acceptPrivacy || false}
-            onChange={(e) =>
-              handleInputChange("acceptPrivacy", e.target.checked)
-            }
-            className="mt-1"
-          />
+          <div className="pt-1">
+            <Checkbox
+              id="acceptPrivacy"
+              checked={formData.acceptPrivacy || false}
+              onChange={(e) =>
+                handleInputChange("acceptPrivacy", e.target.checked)
+              }
+            />
+          </div>
+
           <div className="text-sm">
             <Label htmlFor="acceptPrivacy" className="cursor-pointer">
               Acepto la{" "}
@@ -1085,6 +1185,7 @@ export default function RegistroForm() {
             </Label>
           </div>
         </div>
+
         <TerminosModal
           open={showTerminosModal}
           onClose={() => setShowTerminosModal(false)}
@@ -1162,7 +1263,8 @@ export default function RegistroForm() {
                   isCheckingEmail ||
                   emailExists ||
                   isCheckingCurp ||
-                  curpExists
+                  curpExists || 
+                  errors.fecha_nacimiento?.length > 0
                 }
                 className="bg-[#8B5E34] hover:bg-[#734C29] text-white font-semibold"
               >
