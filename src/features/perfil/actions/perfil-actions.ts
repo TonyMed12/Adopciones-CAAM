@@ -208,3 +208,17 @@ export async function obtenerMascotasAdoptadas(usuarioId: string) {
 
   return mascotas ?? [];
 }
+
+export async function getUsuarioAuthId(perfilUsuarioId: string | null) {
+  if (!perfilUsuarioId) return null;
+
+  const supabaseSrv = await createClient();
+
+  const { data } = await supabaseSrv
+    .from("perfiles")
+    .select("id, auth_user_id")
+    .eq("id", perfilUsuarioId)
+    .maybeSingle();
+
+  return data?.auth_user_id || perfilUsuarioId;
+}

@@ -18,17 +18,12 @@ type Props = {
   onRechazar?: (id: string) => void;
 };
 
-/* -------------------------------------------------- */
-/*  Helpers */
-/* -------------------------------------------------- */
-
 function Th(props: React.HTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
       {...props}
-      className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#2b1b12] ${
-        props.className || ""
-      }`}
+      className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#2b1b12] ${props.className || ""
+        }`}
     />
   );
 }
@@ -46,10 +41,6 @@ function EstadoBadge({ estado }: { estado: AdopcionAdminRow["estado"] }) {
     </span>
   );
 }
-
-/* -------------------------------------------------- */
-/*  COMPONENTE PRINCIPAL */
-/* -------------------------------------------------- */
 
 export default function AdopcionesTable({
   items,
@@ -84,10 +75,7 @@ export default function AdopcionesTable({
 
   return (
     <>
-      {/* -------------------------------------------------- */}
-      {/* 🔍 TOOLBAR (Aplica móvil + desktop) */}
-      {/* -------------------------------------------------- */}
-
+      {/* Search bar */}
       <div className="bg-white rounded-2xl border border-[#EADACB] shadow-sm p-3 mb-3">
         <div className="flex flex-wrap items-center gap-3">
           {/* Search pill */}
@@ -117,10 +105,7 @@ export default function AdopcionesTable({
         </div>
       </div>
 
-      {/* -------------------------------------------------- */}
-      {/* 📱 MOBILE VERSION — CARDS */}
-      {/* -------------------------------------------------- */}
-
+      {/*Mobile*/}
       <div className="lg:hidden space-y-4">
         {filtered.map((f) => (
           <div
@@ -201,10 +186,7 @@ export default function AdopcionesTable({
         )}
       </div>
 
-      {/* -------------------------------------------------- */}
-      {/* 🖥 DESKTOP TABLE */}
-      {/* -------------------------------------------------- */}
-
+      {/* 🖥 Desktop*/}
       <div className="hidden lg:block bg-white rounded-2xl border border-[#EADACB] shadow-sm overflow-x-auto mt-4">
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-[1]">
@@ -220,9 +202,8 @@ export default function AdopcionesTable({
             {filtered.map((f, idx) => (
               <tr
                 key={f.id}
-                className={`border-b border-[#F3E8DC] ${
-                  idx % 2 === 0 ? "bg-white" : "bg-[#FFFDF9]"
-                }`}
+                className={`border-b border-[#F3E8DC] ${idx % 2 === 0 ? "bg-white" : "bg-[#FFFDF9]"
+                  }`}
               >
                 {/* Adoptante */}
                 <td

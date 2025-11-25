@@ -107,3 +107,29 @@ export async function obtenerMascotaPorId(id: string) {
 
     return data;
 }
+
+export async function marcarMascotaAdoptada(
+  supabaseSrv: any,
+  mascotaId: string
+) {
+  const { error } = await supabaseSrv
+    .from("mascotas")
+    .update({ estado: "adoptada", disponible_adopcion: false })
+    .eq("id", mascotaId);
+
+  if (error)
+    console.error("⚠️ Error marcando mascota como adoptada:", error.message);
+}
+
+export async function marcarMascotaDisponible(
+  supabaseSrv: any,
+  mascotaId: string
+) {
+  const { error } = await supabaseSrv
+    .from("mascotas")
+    .update({ estado: "disponible", disponible_adopcion: true })
+    .eq("id", mascotaId);
+
+  if (error)
+    console.error("⚠️ Error liberando mascota:", error.message);
+}

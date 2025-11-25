@@ -21,7 +21,6 @@ export function useCambiarEstadoAdopcion() {
 
   return useMutation<Adopcion, Error, CambiarEstadoInput>({
     mutationFn: async (params) => {
-      // Confirmación
       const ok = await toastConfirm(
         params.estado === "aprobada"
           ? "¿Aprobar esta adopción?"
@@ -29,13 +28,11 @@ export function useCambiarEstadoAdopcion() {
       );
       if (!ok) throw new Error("Operación cancelada");
 
-      // Obtener usuario admin (admin_responsable)
       const supabase = createClient();
       const { data } = await supabase.auth.getUser();
       const user = data?.user;
       if (!user) throw new Error("No hay sesión activa");
 
-      // Obtener datos desde el cache (correo, nombre, etc.)
       const rows =
         qc.getQueryData<AdopcionAdminRow[]>(
           adopcionesQueries.list("admin")
@@ -50,15 +47,13 @@ export function useCambiarEstadoAdopcion() {
       const fotoMascota = adopcion.mascotaImagen ?? "";
       const adopcionId = adopcion.id;
 
-      // Ejecutar actualización en Supabase
       const result = await cambiarEstadoAdopcion({
         ...params,
-        admin_responsable: user.id, // 🔥 Se agrega AQUÍ
+        admin_responsable: user.id,
       });
 
-      // Enviar correo
       if (email) {
-        await fetch(
+        fetch(
           params.estado === "aprobada"
             ? "/api/email/adopcion-aprobada"
             : "/api/email/adopcion-rechazada",

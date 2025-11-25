@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import AdopcionesTable from "@/features/adopciones/components/client/AdopcionesTable";
 import { RechazoAdopcionModal } from "@/features/adopciones/components/client/RechazoAdopcionModal";
 import { AdopcionesKPIs } from "@/features/adopciones/components/client/AdopcionesKPIs";
-
+import AdopcionesTableSkeleton from "@/features/adopciones/components/client/AdopcionesTableSkeleton";
 import { useAdopcionesAdminQuery } from "@/features/adopciones/hooks/useAdopcionesAdminQuery";
 import { useCambiarEstadoAdopcion } from "@/features/adopciones/hooks/useCambiarEstadoAdopcion";
 
@@ -23,14 +23,12 @@ export default function GestionAdopcionesPage() {
   const [filtroEstado, setFiltroEstado] =
     useState<"todas" | "pendiente" | "aprobada" | "rechazada">("todas");
 
-  // Modal rechazo
   const [rechazoOpen, setRechazoOpen] = useState(false);
   const [rechazoMotivo, setRechazoMotivo] = useState("");
   const [rechazoId, setRechazoId] = useState<string | null>(null);
 
   const cambiarEstado = useCambiarEstadoAdopcion();
 
-  // Aprobar
   const aprobar = (id: string) => {
     cambiarEstado.mutate({
       id,
@@ -39,14 +37,12 @@ export default function GestionAdopcionesPage() {
     });
   };
 
-  // Abrir modal rechazo
   const rechazar = (id: string) => {
     setRechazoId(id);
     setRechazoMotivo("");
     setRechazoOpen(true);
   };
 
-  // Confirmar rechazo
   const confirmarRechazo = () => {
     if (!rechazoId) return;
 
@@ -59,7 +55,6 @@ export default function GestionAdopcionesPage() {
     setRechazoOpen(false);
   };
 
-  // Filtros
   const filtrados = useMemo(() => {
     const q = query.toLowerCase().trim();
 
@@ -75,7 +70,6 @@ export default function GestionAdopcionesPage() {
     });
   }, [rows, query, filtroEstado]);
 
-  // Reset paginación cuando cambian filtros
   useEffect(() => {
     setPage(1);
   }, [query, filtroEstado, isMobile]);
@@ -92,58 +86,60 @@ export default function GestionAdopcionesPage() {
     rechazadas: rows.filter((r) => r.estado === "rechazada").length,
   };
 
-  if (loading) {
-    return (
-      <div className="p-6 text-center text-sm text-[#7a5c49] animate-pulse">
-        Cargando adopciones...
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 space-y-4">
-      <RechazoAdopcionModal
-        open={rechazoOpen}
-        motivo={rechazoMotivo}
-        onChangeMotivo={setRechazoMotivo}
-        onClose={() => setRechazoOpen(false)}
-        onConfirm={confirmarRechazo}
-      />
+  <div className="p-6 space-y-4">
+    <PageHead
+      title="Gestión de Adopciones"
+      subtitle="Revisa y administra las solicitudes de adopción."
+    />
 
-      <PageHead
-        title="Gestión de Adopciones"
-        subtitle="Revisa y administra las solicitudes de adopción."
-      />
+    {loading ? (
+      <>
+        <AdopcionesKPIs.Skeleton />
+        <AdopcionesTableSkeleton />
+      </>
+    ) : (
+      <>
+        <RechazoAdopcionModal
+          open={rechazoOpen}
+          motivo={rechazoMotivo}
+          onChangeMotivo={setRechazoMotivo}
+          onClose={() => setRechazoOpen(false)}
+          onConfirm={confirmarRechazo}
+        />
 
-      <AdopcionesKPIs
-        totales={totales}
-        filtroEstado={filtroEstado}
-        onChange={setFiltroEstado}
-      />
+        <AdopcionesKPIs
+          totales={totales}
+          filtroEstado={filtroEstado}
+          onChange={setFiltroEstado}
+        />
 
-      <AdopcionesTable
-        items={paginated}
-        query={query}
-        onQueryChange={setQuery}
-        filtroEstado={filtroEstado}
-        onFiltroEstadoChange={setFiltroEstado}
-        onAprobar={aprobar}
-        onRechazar={rechazar}
-      />
+        <AdopcionesTable
+          items={paginated}
+          query={query}
+          onQueryChange={setQuery}
+          filtroEstado={filtroEstado}
+          onFiltroEstadoChange={setFiltroEstado}
+          onAprobar={aprobar}
+          onRechazar={rechazar}
+        />
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        totalItems={filtrados.length}
-        itemsPerPage={ITEMS_PER_PAGE}
-        itemsLabel="adopciones"
-        onChange={(n) => {
-          setPage(n);
-          setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }, 10);
-        }}
-      />
-    </div>
-  );
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalItems={filtrados.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          itemsLabel="adopciones"
+          onChange={(n) => {
+            setPage(n);
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }, 10);
+          }}
+        />
+      </>
+    )}
+  </div>
+);
+
 }
