@@ -7,7 +7,7 @@ export default function PageHead({
   right,
 }: {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   right?: React.ReactNode;
 }) {
   return (
@@ -25,13 +25,12 @@ export default function PageHead({
         </h1>
 
         {subtitle && (
-          <p className="m-0 text-base sm:text-lg text-[#7a5c49]">
+          <div className="m-0 text-base sm:text-lg text-[#7a5c49]">
             {subtitle}
-          </p>
+          </div>
         )}
       </div>
 
-      {/* Botón o componente lateral */}
       {right && <div className="mt-3 sm:mt-0">{right}</div>}
     </div>
   );
