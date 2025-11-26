@@ -1,152 +1,32 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import {
-  listarCitasVeterinariasAdmin,
-  cambiarEstadoCitaVeterinaria,
-} from "@/features/citas/actions/citas-veterinarias-actions";
-import { Button } from "@/components/ui/Button";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import CalendarioVeterinarias from "@/features/citas/components/client/CalendarioVeterinarias";
 import PageHead from "@/components/layout/PageHead";
+import { useCitasVeterinariasAdmin } from "@/features/citas/queries/citas-veterinarias-queries";
+import { useAccionesCitaVeterinaria } from "@/features/citas/hooks/useAccionesCitaVeterinaria";
+import { useCitasFilterState } from "@/features/citas/hooks/useCitasVeterinariasFilterState";
+import { useCitasOrdenadas } from "@/features/citas/hooks/useCitasVeterinariasOrdenadas";
+import CitasVeterinariasSkeleton from "@/features/citas/components/client/veterinarias/CitasVeterinariasSkeleton";
+import { CitasVeterinariasKPIs } from "@/features/citas/components/client/veterinarias/CitasVeterinariasKPIs";
+import { CitasVeterinariasTablaAdmin } from "@/features/citas/components/client/veterinarias/CitasVeterinariasTableAdmin";
+import { CitasVeterinariasCardsAdmin } from "@/features/citas/components/client/veterinarias/CitasVeterinariasCardsAdmin";
+import { CitasVeterinariasPanelLateral } from "@/features/citas/components/client/veterinarias/CitasVeterinariasPanelLateral";
 
 export default function GestionCitasVeterinariasPage() {
-  const [citas, setCitas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filtro, setFiltro] = useState<
-    "todas" | "pendiente" | "aprobada" | "cancelada"
-  >("todas");
-  const [query, setQuery] = useState("");
-  useEffect(() => {
-    if (citas?.length > 0) {
-      console.log("CITAS VETERINARIAS COMPLETAS:", citas);
-    }
-  }, [citas]);
+  const { filtro, setFiltro, query, setQuery } = useCitasFilterState();
+  const { data: citas = [], isLoading } = useCitasVeterinariasAdmin();
+  const { aprobar, cancelar } = useAccionesCitaVeterinaria();
 
-  useEffect(() => {
-    async function fetchCitas() {
-      try {
-        const data = await listarCitasVeterinariasAdmin();
-        setCitas(data);
-      } catch (err) {
-        console.error("Error cargando citas veterinarias:", err);
-        toast.error("Error al cargar las citas veterinarias.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchCitas();
-  }, []);
+  const citasOrdenadas = useCitasOrdenadas(citas, filtro, query);
 
-  const aprobarCita = async (id: string) => {
-    try {
-      // 1️⃣ Cambiar estado en BD
-      await cambiarEstadoCitaVeterinaria(id, "aprobada");
-
-      // 2️⃣ Actualizar UI
-      setCitas((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, estado: "aprobada" } : c))
-      );
-
-      // 3️⃣ Obtener la cita para datos del correo
-      const cita = citas.find((c) => c.id === id);
-      if (!cita) throw new Error("No se encontró la cita");
-
-      // 4️⃣ Formatear fecha
-      const fechaTexto = format(
-        new Date(cita.fecha_cita),
-        "EEEE d 'de' MMMM, h:mm a",
-        { locale: es }
-      );
-
-      // 5️⃣ Enviar correo
-      await fetch("/api/email/cita-veterinaria-aprobada", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: cita.adoptante_correo,
-          nombre: cita.adoptante_nombre,
-          nombreMascota: cita.mascota_nombre,
-          fotoMascota: cita.mascota_imagen,
-          fechaTexto,
-        }),
-      });
-
-      toast.success("Cita aprobada correctamente.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Error al aprobar la cita.");
-    }
-  };
-
-  const cancelarCita = async (id: string) => {
-    try {
-      // 1️⃣ Cambiar estado en BD
-      await cambiarEstadoCitaVeterinaria(id, "cancelada");
-
-      // 2️⃣ Actualizar UI
-      setCitas((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, estado: "cancelada" } : c))
-      );
-
-      // 3️⃣ Obtener cita para datos del correo
-      const cita = citas.find((c) => c.id === id);
-      if (!cita) throw new Error("No se encontró la cita");
-
-      // 4️⃣ Formatear fecha
-      const fechaTexto = format(
-        new Date(cita.fecha_cita),
-        "EEEE d 'de' MMMM, h:mm a",
-        { locale: es }
-      );
-
-      // 5️⃣ Enviar correo de cancelación
-      await fetch("/api/email/cita-veterinaria-cancelada", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: cita.adoptante_correo,
-          nombre: cita.adoptante_nombre,
-          nombreMascota: cita.mascota_nombre,
-          fotoMascota: cita.mascota_imagen,
-          motivo: cita.motivo,
-          fechaTexto,
-        }),
-      });
-
-      toast.success("Cita cancelada correctamente.");
-    } catch (err) {
-      console.error(err);
-      toast.error("Error al cancelar la cita.");
-    }
-  };
-
-  const citasOrdenadas = useMemo(() => {
-    const filtradas =
-      filtro === "todas" ? citas : citas.filter((c) => c.estado === filtro);
-
-    const buscadas = query
-      ? filtradas.filter(
-          (c) =>
-            c.mascota_nombre.toLowerCase().includes(query.toLowerCase()) ||
-            c.adoptante_nombre.toLowerCase().includes(query.toLowerCase())
-        )
-      : filtradas;
-
-    return [...buscadas].sort(
-      (a, b) =>
-        new Date(a.fecha_cita).getTime() - new Date(b.fecha_cita).getTime()
-    );
-  }, [citas, filtro, query]);
-
-  if (loading)
-    return (
-      <div className="p-6 text-center text-[#8B4513] animate-pulse">
-        Cargando citas veterinarias...
-      </div>
-    );
+  if (isLoading)
+    return 
+    <>
+      <PageHead
+        title="Citas Veterinarias"
+        subtitle="Administra las citas veterinarias agendadas por los adoptantes."
+      />
+      <CitasVeterinariasSkeleton />
+    </>;
 
   const totales = {
     pendientes: citas.filter((c) => c.estado === "pendiente").length,
@@ -154,254 +34,30 @@ export default function GestionCitasVeterinariasPage() {
     canceladas: citas.filter((c) => c.estado === "cancelada").length,
   };
 
-  const proximasCitas = citasOrdenadas
+  const proximas = citasOrdenadas
     .filter((c) => new Date(c.fecha_cita) > new Date())
     .slice(0, 4);
 
   return (
     <div className="p-6 space-y-6">
-      <PageHead
-        title="Citas Veterinarias"
-        subtitle="Administra las citas veterinarias agendadas por los adoptantes."
-      />
+      <PageHead title="Citas Veterinarias" subtitle="Administra citas veterinarias" />
 
-      {/* KPIs */}
-      <div className="flex flex-wrap gap-2">
-        <span className="px-2 py-1 text-sm rounded-md border bg-yellow-50 text-yellow-700">
-          Pendientes: {totales.pendientes}
-        </span>
-        <span className="px-2 py-1 text-sm rounded-md border bg-green-50 text-green-700">
-          Aprobadas: {totales.aprobadas}
-        </span>
-        <span className="px-2 py-1 text-sm rounded-md border bg-red-50 text-red-700">
-          Canceladas: {totales.canceladas}
-        </span>
-      </div>
+      <CitasVeterinariasKPIs totales={totales} />
 
-      {/* Layout principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 items-start">
-        {/* 🧾 Tabla en ESCRITORIO */}
-        <div className="hidden lg:block bg-white rounded-xl shadow-md overflow-x-auto">
-          <table className="min-w-[900px] w-full text-sm text-left text-gray-700 align-top">
-            <thead className="bg-[#FFF6E5] text-[#8B4513]">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Adoptante</th>
-                <th className="px-4 py-3 font-semibold">Mascota</th>
-                <th className="px-4 py-3 font-semibold">Fecha</th>
-                <th className="px-4 py-3 font-semibold">Motivo</th>
-                <th className="px-4 py-3 font-semibold">Estado</th>
-                <th className="px-4 py-3 font-semibold text-center">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_0.8fr] gap-6 items-start">
+        <CitasVeterinariasTablaAdmin
+          citas={citasOrdenadas}
+          onAprobar={aprobar}
+          onCancelar={cancelar}
+        />
 
-            <tbody className="divide-y divide-[#f5e6d3]">
-              {citasOrdenadas.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-[#FFF8F0] transition-colors"
-                >
-                  <td className="px-4 py-3">{item.adoptante_nombre}</td>
-                  <td className="px-4 py-3 flex items-center gap-2">
-                    {item.mascota_imagen && (
-                      <img
-                        src={item.mascota_imagen}
-                        alt={item.mascota_nombre}
-                        className="w-8 h-8 rounded-md object-cover"
-                      />
-                    )}
-                    <span>{item.mascota_nombre}</span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">
-                    {format(
-                      new Date(item.fecha_cita),
-                      "EEEE d 'de' MMMM, h:mm a",
-                      { locale: es }
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">{item.motivo}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                        item.estado === "pendiente"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : item.estado === "aprobada"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {item.estado.charAt(0).toUpperCase() +
-                        item.estado.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {item.estado === "pendiente" ? (
-                      <div className="flex justify-center gap-2">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => aprobarCita(item.id)}
-                        >
-                          Aprobar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => cancelarCita(item.id)}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic">
-                        {item.estado}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <CitasVeterinariasCardsAdmin
+          citas={citasOrdenadas}
+          onAprobar={aprobar}
+          onCancelar={cancelar}
+        />
 
-        {/* 📱 TARJETAS en MOVIL */}
-        <div className="lg:hidden space-y-4">
-          {citasOrdenadas.map((c) => (
-            <div
-              key={c.id}
-              className="bg-white rounded-xl border border-[#EADACB] p-4 shadow-sm space-y-3"
-            >
-              {/* Encabezado */}
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-[#8B4513] text-base">
-                  {c.mascota_nombre}
-                </div>
-
-                <span
-                  className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                    c.estado === "pendiente"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : c.estado === "aprobada"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {c.estado.charAt(0).toUpperCase() + c.estado.slice(1)}
-                </span>
-              </div>
-
-              {/* Imagen e info */}
-              <div className="flex items-center gap-3">
-                {c.mascota_imagen && (
-                  <img
-                    src={c.mascota_imagen}
-                    alt={c.mascota_nombre}
-                    className="w-12 h-12 rounded-md object-cover"
-                  />
-                )}
-
-                <div className="text-sm text-gray-700">
-                  <p className="font-semibold text-[#8B4513]">
-                    {c.adoptante_nombre}
-                  </p>
-
-                  <p className="text-xs mt-1">
-                    {format(
-                      new Date(c.fecha_cita),
-                      "EEEE d 'de' MMMM, h:mm a",
-                      {
-                        locale: es,
-                      }
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              {/* Motivo */}
-              <p className="text-sm text-gray-600">
-                <span className="font-semibold text-[#8B4513]">Motivo: </span>
-                {c.motivo}
-              </p>
-
-              {/* Acciones */}
-              {c.estado === "pendiente" && (
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => aprobarCita(c.id)}
-                    className="flex-1"
-                  >
-                    Aprobar
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => cancelarCita(c.id)}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* 📆 Panel lateral */}
-        <div className="flex flex-col gap-4 self-start">
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <h2 className="text-lg font-semibold text-[#8B4513] mb-3">
-              Calendario de citas
-            </h2>
-            <CalendarioVeterinarias citas={citasOrdenadas} vistaCompacta />
-          </div>
-
-          {/* 🐾 Próximas citas */}
-          <div className="bg-white rounded-xl shadow-md p-4">
-            <h2 className="text-lg font-semibold text-[#8B4513] mb-3">
-              Próximas citas
-            </h2>
-            {proximasCitas.length === 0 ? (
-              <p className="text-sm text-gray-500">No hay citas próximas.</p>
-            ) : (
-              <ul className="divide-y divide-[#FDE68A]">
-                {proximasCitas.map((c) => (
-                  <li
-                    key={c.id}
-                    className="py-3 flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="font-medium text-[#8B4513]">
-                        {c.mascota_nombre}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {format(
-                          new Date(c.fecha_cita),
-                          "EEEE d 'de' MMMM, h:mm a",
-                          { locale: es }
-                        )}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-xs font-semibold ${
-                        c.estado === "aprobada"
-                          ? "text-green-700"
-                          : c.estado === "pendiente"
-                          ? "text-yellow-700"
-                          : "text-red-700"
-                      }`}
-                    >
-                      {c.estado.charAt(0).toUpperCase() + c.estado.slice(1)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+        <CitasVeterinariasPanelLateral citas={citasOrdenadas} proximas={proximas} />
       </div>
     </div>
   );

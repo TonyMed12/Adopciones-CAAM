@@ -1,8 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import {
+  obtenerAdopcionesIdsPorUsuario,
+  obtenerAdopcionesConMascotaYAdoptante,
+} from "@/features/adopciones/actions/adopciones-actions";
 
-// 🩺 Tipos base
 export type CitaVeterinaria = {
   id: string;
   adopcion_id: string;
@@ -12,11 +15,9 @@ export type CitaVeterinaria = {
   created_at: string;
 };
 
-// 🐾 Listar todas las citas veterinarias (solo admin)
 export async function listarCitasVeterinariasAdmin() {
   const supabase = await createClient();
 
-  // 1️⃣ Traer todas las citas veterinarias
   const { data: citas, error } = await supabase
     .from("citas_veterinarias")
     .select(`
@@ -34,85 +35,69 @@ export async function listarCitasVeterinariasAdmin() {
   if (error) throw new Error(error.message);
   if (!citas?.length) return [];
 
-  // 2️⃣ Traer las adopciones asociadas (ya con mascota y adoptante)
   const adopcionIds = citas.map((c) => c.adopcion_id);
+  const adopciones = await obtenerAdopcionesConMascotaYAdoptante(adopcionIds);
 
-  const { data: adopciones, error: adopError } = await supabase
-    .from("adopciones")
-    .select(`
-      id,
-      estado,
-      mascotas!mascota_id ( id, nombre, imagen_url ),
-      perfiles!adoptante_id ( id, nombres, apellido_paterno, apellido_materno, email )
-    `)
-    .in("id", adopcionIds);
+  return citas.map((c) => {
+    const adop = adopciones.find((a) => a.id === c.adopcion_id);
 
-  if (adopError) throw new Error(adopError.message);
-
-  // 3️⃣ Unir las citas con su adopción correspondiente
-  const citasCompletas = citas.map((cita) => {
-    const adopcion = adopciones.find((a) => a.id === cita.adopcion_id);
-
-    const adoptante = adopcion?.perfiles
-      ? `${adopcion.perfiles.nombres} ${adopcion.perfiles.apellido_paterno || ""} ${adopcion.perfiles.apellido_materno || ""}`.trim()
+    const adoptante = adop?.perfiles
+      ? `${adop.perfiles.nombres} ${adop.perfiles.apellido_paterno || ""} ${
+          adop.perfiles.apellido_materno || ""
+        }`.trim()
       : "Desconocido";
 
     return {
-      ...cita,
-      mascota_nombre: adopcion?.mascotas?.nombre || "Desconocida",
-      mascota_imagen: adopcion?.mascotas?.imagen_url || null,
+      ...c,
+      mascota_nombre: adop?.mascotas?.nombre || "Desconocida",
+      mascota_imagen: adop?.mascotas?.imagen_url || null,
       adoptante_nombre: adoptante,
-      adoptante_correo: adopcion?.perfiles?.email || "No disponible",
-      estado_adopcion: adopcion?.estado || "sin estado",
+      adoptante_correo: adop?.perfiles?.email || "No disponible",
+      estado_adopcion: adop?.estado || "sin estado",
     };
   });
-
-  return citasCompletas;
 }
 
-
-
-
-// 🩺 Cambiar estado de una cita (aprobar o cancelar)
 export async function cambiarEstadoCitaVeterinaria(
   id: string,
   nuevoEstado: "pendiente" | "aprobada" | "cancelada"
 ) {
   const supabase = await createClient();
+
   const { error } = await supabase
     .from("citas_veterinarias")
     .update({ estado: nuevoEstado })
     .eq("id", id);
 
   if (error) throw new Error(error.message);
+
   return true;
 }
 
-// 🐕 Listar citas por adoptante (vista del usuario)
 export async function listarCitasVeterinariasUsuario(auth_id: string) {
   const supabase = await createClient();
 
-  const { data: adopciones, error: adopError } = await supabase
-    .from("adopciones")
-    .select("id")
-    .eq("adoptante_auth_id", auth_id);
+  const adopcionIds = await obtenerAdopcionesIdsPorUsuario(auth_id);
+  if (!adopcionIds.length) return [];
 
-  if (adopError) throw new Error(adopError.message);
-  const adopcionIds = adopciones?.map((a) => a.id) || [];
-
-  if (adopcionIds.length === 0) return [];
-
-  const { data: citas, error } = await supabase
+  const { data, error } = await supabase
     .from("citas_veterinarias")
-    .select("*")
+    .select(`
+      id,
+      adopcion_id,
+      fecha_cita,
+      motivo,
+      estado,
+      created_at
+    `)
     .in("adopcion_id", adopcionIds)
     .order("fecha_cita", { ascending: true });
 
   if (error) throw new Error(error.message);
-  return citas;
+
+  return data || [];
 }
 
-// 🩺 Crear nueva cita veterinaria (desde el usuario)
 export async function crearCitaVeterinaria({
   adopcion_id,
   fecha_cita,
@@ -136,5 +121,6 @@ export async function crearCitaVeterinaria({
     .single();
 
   if (error) throw new Error(error.message);
+
   return data;
 }
