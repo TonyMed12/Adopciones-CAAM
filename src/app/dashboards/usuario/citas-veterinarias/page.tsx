@@ -1,10 +1,5 @@
 "use client";
 
-import PageHead from "@/components/layout/PageHead";
-
-import { ClipboardList, PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-
 import { useUsuarioAuth } from "@/features/usuarios/hooks/useUsuarioAuth";
 
 import { useMascotasAdoptadasUsuario } from "@/features/citas/hooks/useMascotasAdoptadasUsuario";
@@ -17,8 +12,8 @@ import { useCrearCitaVeterinaria } from "@/features/citas/hooks/useCrearCitaVete
 import CitasVeterinariasUsuarioLista from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioLista";
 import { CitasVeterinariasUsuarioAgendar } from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioAgendar";
 import CitasVeterinariasUsuarioSkeleton from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioSkeleton";
+import { CitasVeterinariasUsuarioHeader } from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioHeader";
 
-// 🔥 FIX: función para crear fecha local correctamente
 function crearFechaLocal(fechaStr: string, horaStr: string) {
   const [y, m, d] = fechaStr.split("-").map(Number);
   const [hh, mm] = horaStr.split(":").map(Number);
@@ -81,41 +76,32 @@ export default function CitasVeterinariasPage() {
     mascotas.find((m) => m.adopcion_id === adopcion_id)?.mascota_nombre ||
     "Desconocida";
 
+  const prioridad = {
+    pendiente: 1,
+    aprobada: 2,
+    cancelada: 3,
+  };
+
+  const citasOrdenadas = [...citas].sort((a, b) => {
+    const pa = prioridad[a.estado] ?? 99;
+    const pb = prioridad[b.estado] ?? 99;
+
+    if (pa !== pb) return pa - pb;
+
+    return (
+      new Date(a.fecha_cita).getTime() -
+      new Date(b.fecha_cita).getTime()
+    );
+  });
+
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-3xl p-5 sm:p-8">
-      {/* HEADER */}
-      <PageHead
-        title="Citas Veterinarias"
-        subtitle="Agenda nuevas citas y revisa el estado de las existentes."
+      <CitasVeterinariasUsuarioHeader
+        modo={modo}
+        setModo={setModo}
+        bloqueado={bloqueado}
+        setMensaje={setMensaje}
       />
-
-      {/* BOTONES */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 text-center sm:text-left">
-        <div className="flex flex-wrap justify-center sm:justify-end gap-3 w-full sm:w-auto">
-          <Button
-            variant={modo === "lista" ? "primary" : "ghost"}
-            onClick={() => setModo("lista")}
-          >
-            <ClipboardList className="w-4 h-4 mr-2" /> Mis citas
-          </Button>
-
-          <Button
-            variant={modo === "agendar" ? "primary" : "ghost"}
-            onClick={() => {
-              if (bloqueado) {
-                setMensaje(
-                  "Ya tienes una cita pendiente. Espera la confirmación del CAAM antes de agendar otra."
-                );
-                return;
-              }
-              setMensaje(null);
-              setModo("agendar");
-            }}
-          >
-            <PlusCircle className="w-4 h-4 mr-2" /> Agendar nueva cita
-          </Button>
-        </div>
-      </div>
 
       {/* MENSAJE GLOBAL */}
       {mensaje && (
@@ -135,7 +121,7 @@ export default function CitasVeterinariasPage() {
         <CitasVeterinariasUsuarioSkeleton />
       ) : modo === "lista" ? (
         <CitasVeterinariasUsuarioLista
-          citas={citas}
+          citas={citasOrdenadas}  
           filtro={filtro}
           setFiltro={setFiltro}
           obtenerMascota={obtenerMascota}

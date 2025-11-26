@@ -22,21 +22,16 @@ export function CitasVeterinariasUsuarioHeader({
         subtitle="Agenda nuevas citas y revisa el estado de las existentes."
       />
 
+      {/* BOTONES */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 text-center sm:text-left">
         <div className="flex flex-wrap justify-center sm:justify-end gap-3 w-full sm:w-auto">
-          
-          {/* Botón Mis citas */}
           <Button
             variant={modo === "lista" ? "primary" : "ghost"}
-            onClick={() => {
-              setMensaje(null);
-              setModo("lista");
-            }}
+            onClick={() => setModo("lista")}
           >
             <ClipboardList className="w-4 h-4 mr-2" /> Mis citas
           </Button>
 
-          {/* Botón Agendar */}
           <Button
             variant={modo === "agendar" ? "primary" : "ghost"}
             onClick={() => {
@@ -52,7 +47,6 @@ export function CitasVeterinariasUsuarioHeader({
           >
             <PlusCircle className="w-4 h-4 mr-2" /> Agendar nueva cita
           </Button>
-
         </div>
       </div>
     </>
