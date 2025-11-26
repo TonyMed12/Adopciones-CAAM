@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchMascotasAdoptadas } from "../queries/usuarios-queries";
+import { fetchMascotasAdoptadas } from "../queries/mascotas-queries";
 
 export function useMascotasAdoptadasQuery() {
   return useQuery({

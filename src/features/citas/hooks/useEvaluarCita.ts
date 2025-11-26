@@ -1,14 +1,14 @@
 "use client";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { evaluarCita } from "../actions/citas-actions";
-import { citasKeys } from "../queries/citas-queries";
-import { mapCita } from "../mappers/cita.mapper";
+import { citasKeys } from "../queries/citas-keys";
+import type { Cita } from "../types/cita";
 
-type EvalPayload = {
+type Params = {
     id: string;
-    nuevoEstado: "programada" | "completada" | "cancelada";
-    asistencia: string | null;
-    interaccion: string | null;
+    asistencia: Cita["asistencia"];
+    interaccion: Cita["interaccion"];
     nota: string | null;
 };
 
@@ -16,21 +16,20 @@ export function useEvaluarCita() {
     const qc = useQueryClient();
 
     return useMutation({
-        mutationFn: async (input: EvalPayload) => {
-            const data = await evaluarCita(
-                input.id,
-                input.nuevoEstado,
-                {
-                    asistencia: input.asistencia,
-                    interaccion: input.interaccion,
-                    nota: input.nota,
-                }
-            );
-
-            return mapCita(data);
+        mutationFn: async (params: Params) => {
+            return await evaluarCita(params.id, {
+                asistencia: params.asistencia,
+                interaccion: params.interaccion,
+                nota: params.nota,
+            });
         },
-        onSuccess() {
+
+        onSuccess: () => {
             qc.invalidateQueries({ queryKey: citasKeys.list() });
+        },
+
+        onError: (err) => {
+            console.error("Error evaluando cita:", err);
         },
     });
 }

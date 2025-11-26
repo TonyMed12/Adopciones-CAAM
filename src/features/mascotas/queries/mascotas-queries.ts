@@ -5,6 +5,7 @@ import {
     actualizarMascota,
     eliminarMascota,
 } from "../actions/mascotas-actions";
+import { obtenerMascotasAdoptadas } from "@/features/usuarios/actions/usuario-mascotas-actions";
 import type { Mascota } from "../types/mascotas";
 import type { CreateMascotaPayload, UpdateMascotaPayload } from "../data/types";
 
@@ -31,3 +32,7 @@ export const updateMascotaMutation = async (
 export const deleteMascotaMutation = async (id: string) => {
     return await eliminarMascota(id);
 };
+
+export async function fetchMascotasAdoptadas() {
+    return await obtenerMascotasAdoptadas();
+}

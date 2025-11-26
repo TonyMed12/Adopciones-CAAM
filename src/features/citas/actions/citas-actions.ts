@@ -1,8 +1,14 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import type { NuevaCita, EvaluacionCita } from "../types/cita";
+import type { NuevaCita } from "../types/cita";
 import { validarHorarioCita } from "./validations/validarHorarioCita";
+import { validarEvaluacionCita } from "./validations/validarEvaluacionCita";
+import type { EvaluacionInput } from "./validations/validarEvaluacionCita";
+import { resolverLogicaEvaluacionCita } from "./../helpers/resolverLogicaEvaluacionCita";
+import { actualizarSolicitudEstado } from "@/features/solicitudes/actions/solicitudes-actions";
+import { marcarMascotaDisponible } from "@/features/mascotas";
+import { getPerfilById } from "@/features/perfil/actions/perfil-actions";
 
 export async function listarCitas() {
   const supabase = await createClient();
@@ -50,7 +56,7 @@ export async function cancelarCita(id: string) {
       actualizada_en: new Date().toISOString(),
     })
     .eq("id", id)
-    .select("id, estado") // solo lo necesario
+    .select("id, estado")
     .single();
 
   if (error) throw new Error(error.message);
@@ -58,44 +64,79 @@ export async function cancelarCita(id: string) {
   return data;
 }
 
-export async function listarCitasRango(desdeISO: string, hastaISO: string) {
+async function obtenerCita(id: string) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("citas_adopcion")
-    .select(`
-      id,
-      fecha_cita,
-      hora_cita,
-      estado,
-      creada_en,
-      usuario_id,
-      mascota_id,
-      mascotas (id, nombre)
-    `)
-    .gte("fecha_cita", desdeISO)
-    .lte("fecha_cita", hastaISO)
-    .order("fecha_cita", { ascending: true });
+    .select("id, solicitud_id, mascota_id, usuario_id")
+    .eq("id", id)
+    .single();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Cita no encontrada");
 
-  const usuarioIds = [...new Set(data.map(c => c.usuario_id).filter(Boolean))];
-  let perfilesMap = new Map<string, any>();
+  return data as {
+    id: string;
+    solicitud_id: string | null;
+    mascota_id: string | null;
+    usuario_id: string | null;
+  };
+}
 
-  if (usuarioIds.length > 0) {
-    const { data: perfiles, error: perfilesError } = await supabase
-      .from("perfiles")
-      .select("id, nombres, email")
-      .in("id", usuarioIds);
+export async function evaluarCita(id: string, input: EvaluacionInput) {
+  const supabase = await createClient();
 
-    if (perfilesError) throw new Error(perfilesError.message);
-    perfiles?.forEach(p => perfilesMap.set(p.id, p));
+  const check = validarEvaluacionCita(input);
+  if (!check.ok) throw new Error(check.errores.join(" | "));
+
+  const cita = await obtenerCita(id);
+  const r = resolverLogicaEvaluacionCita(input);
+
+  const { data: updated, error: errUpdate } = await supabase
+    .from("citas_adopcion")
+    .update({
+      estado: r.estadoCita,
+      asistencia: r.asistencia,
+      interaccion: r.interaccion,
+      nota: r.nota,
+      actualizada_en: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select(`
+        id,
+        fecha_cita,
+        hora_cita,
+        estado,
+        usuario_id,
+        mascota_id,
+        asistencia,
+        interaccion,
+        nota,
+        mascota:mascota_id (id, nombre)
+    `)
+    .single();
+
+  if (errUpdate) throw new Error(errUpdate.message);
+
+  if (cita.solicitud_id && r.estadoSolicitud !== null) {
+    await actualizarSolicitudEstado(cita.solicitud_id, r.estadoSolicitud);
   }
 
-  return data.map(c => ({
-    ...c,
-    usuario: perfilesMap.get(c.usuario_id) || null,
-  }));
+  if (
+    r.asistencia === "asistio" &&
+    r.interaccion === "no_apta" &&
+    cita.mascota_id
+  ) {
+    await marcarMascotaDisponible(cita.mascota_id);
+  }
+
+  const usuario = await getPerfilById(updated.usuario_id);
+
+  return {
+    ...updated,
+    usuario: usuario ?? null,
+  };
 }
 
 export async function crearCita(input: NuevaCita) {
@@ -122,153 +163,4 @@ export async function crearCita(input: NuevaCita) {
 
   return { ...data, usuario: perfil || null };
 }
-
-
-
-
-export async function actualizarEstadoCita(
-  id: string,
-  nuevoEstado: "programada" | "completada" | "cancelada"
-) {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("citas_adopcion")
-    .update({
-      estado: nuevoEstado,
-      actualizada_en: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select(`
-      id,
-      fecha_cita,
-      hora_cita,
-      estado,
-      usuario_id,
-      mascota_id,
-      mascotas (id, nombre)
-    `)
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  const { data: perfil, error: perfilError } = await supabase
-    .from("perfiles")
-    .select("id, nombres, email")
-    .eq("id", data.usuario_id)
-    .single();
-
-  if (perfilError) throw new Error(perfilError.message);
-
-  return { ...data, usuario: perfil || null };
-}
-
-export async function evaluarCita(
-  id: string,
-  _nuevoEstado: "programada" | "completada" | "cancelada",
-  evaluacion: EvaluacionCita
-) {
-  const supabase = await createClient();
-
-  const { data: cita, error: errCita } = await supabase
-    .from("citas_adopcion")
-    .select("id, solicitud_id")
-    .eq("id", id)
-    .single();
-
-  if (errCita) throw new Error(errCita.message);
-
-  const solicitudId = cita?.solicitud_id ?? null;
-
-  const asistencia = evaluacion.asistencia;
-  const interaccion = evaluacion.interaccion;
-
-  let estadoCita: "completada" | "cancelada" = "cancelada";
-  let estadoSolicitud: string | null = null;
-
-  if (asistencia === "asistio" && interaccion === "buena_aprobada") {
-    estadoCita = "completada";
-    estadoSolicitud = "en_proceso";
-  }
-
-  if (asistencia === "asistio" && interaccion === "no_apta") {
-    estadoCita = "cancelada";
-    estadoSolicitud = "rechazada";
-  }
-
-  if (asistencia === "no_asistio_no_apto") {
-    estadoCita = "cancelada";
-    estadoSolicitud = "pendiente";
-  }
-
-  const payload = {
-    estado: estadoCita,
-    asistencia: evaluacion.asistencia ?? null,
-    interaccion: evaluacion.interaccion ?? null,
-    nota: evaluacion.nota ?? null,
-    actualizada_en: new Date().toISOString(),
-  };
-
-  const { data, error } = await supabase
-    .from("citas_adopcion")
-    .update(payload)
-    .eq("id", id)
-    .select(`
-      id,
-      fecha_cita,
-      hora_cita,
-      estado,
-      usuario_id,
-      mascota_id,
-      asistencia,
-      interaccion,
-      nota,
-      mascotas (id, nombre)
-    `)
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  if (solicitudId && estadoSolicitud !== null) {
-    // 1. Actualizar solicitud
-    const { error: errSol } = await supabase
-      .from("solicitudes_adopcion")
-      .update({
-        estado: estadoSolicitud,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", solicitudId);
-
-    if (errSol) throw new Error(errSol.message);
-
-    // 2. Si asistió pero NO fue apto → liberar mascota
-    if (
-      evaluacion.asistencia === "asistio" &&
-      evaluacion.interaccion === "no_apta"
-    ) {
-      const { error: errMascota } = await supabase
-        .from("mascotas")
-        .update({
-          estado: "disponible",
-          disponible_adopcion: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", data.mascota_id);
-
-      if (errMascota) throw new Error(errMascota.message);
-    }
-  }
-
-  const { data: perfil, error: perfilError } = await supabase
-    .from("perfiles")
-    .select("id, nombres, email")
-    .eq("id", data.usuario_id)
-    .single();
-
-  if (perfilError) throw new Error(perfilError.message);
-
-  return { ...data, usuario: perfil || null };
-}
-
-
 

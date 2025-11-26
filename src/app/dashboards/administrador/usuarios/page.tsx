@@ -16,8 +16,9 @@ import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 
 import { useUsuariosQuery } from "@/features/usuarios/hooks/useUsuariosQuery";
-import { useUsuarioAdopcionesQuery } from "@/features/usuarios/hooks/useUsuarioAdopcionesQuery";
-import { useUsuarioSolicitudesQuery } from "@/features/usuarios/hooks/useUsuarioSolicitudesQuery";
+import { useUsuarioAdopcionesQuery } from "@/features/adopciones/hooks/useUsuarioAdopcionesQuery";
+import { useUsuarioSolicitudesQuery } from "@/features/solicitudes/hooks/useUsuarioSolicitudesQuery";
+import { useUsuarioDireccionQuery } from "@/features/usuarios/hooks/useUsuarioDireccionQuery";
 
 import { useUsuariosPageState } from "@/features/usuarios/hooks/useUsuariosPageState";
 
@@ -46,6 +47,7 @@ export default function UsuariosPage() {
   const selectedId = selected?.id ?? "";
   const { data: adopcionesData = [], isLoading: loadingAdopciones } = useUsuarioAdopcionesQuery(selectedId);
   const { data: solicitudesData = [], isLoading: loadingSolicitudes } = useUsuarioSolicitudesQuery(selectedId);
+  const { data: direccionData } = useUsuarioDireccionQuery(selectedId);
 
   useBodyScrollLock(modalOpen);
 
@@ -99,6 +101,7 @@ export default function UsuariosPage() {
             <UserModal
               open={modalOpen}
               user={selected}
+              direccion={direccionData}
               isLoading={loadingAdopciones || loadingSolicitudes || !selected}
               solicitudesActivas={solicitudesData}
               adopciones={adopcionesData}

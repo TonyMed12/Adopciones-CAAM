@@ -1,5 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import { CheckCircle2, ThumbsUp, ThumbsDown, XCircle, BadgeCheck, X } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -7,9 +9,11 @@ type Props = {
   onConfirm: (payload: {
     asistencia: "asistio" | "no_asistio_no_apto";
     interaccion: "buena_aprobada" | "no_apta" | null;
-    nota?: string;
+    nota: string | null;
   }) => void;
+
   citaLabel: string;
+
   defaultAsistencia?: "asistio" | "no_asistio_no_apto" | null;
   defaultInteraccion?: "buena_aprobada" | "no_apta" | null;
   defaultNota?: string;
@@ -24,13 +28,15 @@ export default function CitaEvalModal({
   defaultInteraccion = null,
   defaultNota = "",
 }: Props) {
-  const [asistencia, setAsistencia] = useState<"asistio" | "no_asistio_no_apto">("asistio");
-  const [interaccion, setInteraccion] = useState<"buena_aprobada" | "no_apta" | null>("buena_aprobada");
+
+  const [asistencia, setAsistencia] =
+    useState<"asistio" | "no_asistio_no_apto">("asistio");
+  const [interaccion, setInteraccion] =
+    useState<"buena_aprobada" | "no_apta" | null>("buena_aprobada");
   const [nota, setNota] = useState(defaultNota);
 
   useEffect(() => {
     if (defaultAsistencia) setAsistencia(defaultAsistencia);
-    // permitir null como valor inicial válido
     if (defaultInteraccion !== undefined) setInteraccion(defaultInteraccion ?? null);
     setNota(defaultNota ?? "");
   }, [defaultAsistencia, defaultInteraccion, defaultNota]);
@@ -38,84 +44,182 @@ export default function CitaEvalModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-[#EADACB] bg-white p-5 shadow-lg">
-        <h3 className="text-lg font-extrabold text-[#2B1B12] mb-1">Evaluar cita</h3>
-        <p className="text-sm text-[#6b4f40] mb-4">{citaLabel}</p>
+    <div className="fixed inset-0 z-[999] grid place-items-center bg-black/40 backdrop-blur-sm p-4 animate-fadeIn">
 
-        <div className="space-y-4">
-          {/* Asistencia */}
+      {/* CONTENEDOR */}
+      <div className="w-full max-w-lg rounded-2xl bg-white border border-[#EADACB] shadow-2xl overflow-hidden animate-slideUp">
+
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#EADACB] bg-[#FFF8F2]">
+          <div className="flex items-center gap-2">
+            <BadgeCheck className="w-5 h-5 text-[#BC5F36]" />
+            <h3 className="text-lg font-extrabold text-[#2B1B12]">Evaluar cita</h3>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md hover:bg-gray-100 transition cursor-pointer"
+          >
+            <X className="w-5 h-5 text-[#6b4f40]" />
+          </button>
+        </div>
+
+        {/* CONTENIDO */}
+        <div className="px-6 py-5 space-y-6">
+
+          {/* INFO */}
+          <div className="bg-[#FFF4E7] border border-[#EADACB] rounded-xl px-4 py-3">
+            <p className="text-sm leading-snug">
+              <span className="font-semibold text-[#2B1B12]">{citaLabel}</span>
+            </p>
+            <p className="text-xs text-[#6b4f40] mt-1">Ingresa evaluación de la cita.</p>
+          </div>
+
+          {/* ASISTENCIA */}
           <div>
-            <p className="text-sm font-semibold text-[#2B1B12] mb-1">Asistencia</p>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
+            <label className="text-xs font-semibold text-[#2B1B12]">
+              Asistencia
+            </label>
+
+            <div className="grid gap-2 mt-2">
+
+              {/* Asistió */}
+              <label
+                className={`
+                    flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition
+                    ${asistencia === "asistio"
+                    ? "border-green-500 bg-green-50"
+                    : "border-[#EADACB] hover:bg-[#FFF8F1]"
+                  }
+                  `}
+              >
                 <input
                   type="radio"
                   name="asistencia"
+                  className="accent-green-600"
                   checked={asistencia === "asistio"}
                   onChange={() => setAsistencia("asistio")}
                 />
-                <span>✅ Asistió</span>
+                <CheckCircle2 className="text-green-600 w-5 h-5" />
+                <span className="text-sm font-medium text-[#2B1B12]">
+                  Asistió
+                </span>
               </label>
-              <label className="flex items-center gap-2">
+
+              {/* No asistió */}
+              <label
+                className={`
+                    flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition
+                    ${asistencia === "no_asistio_no_apto"
+                    ? "border-red-500 bg-red-50"
+                    : "border-[#EADACB] hover:bg-[#FFF8F1]"
+                  }
+                  `}
+              >
                 <input
                   type="radio"
                   name="asistencia"
+                  className="accent-red-600"
                   checked={asistencia === "no_asistio_no_apto"}
-                  onChange={() => setAsistencia("no_asistio_no_apto")}
+                  onChange={() => {
+                    setAsistencia("no_asistio_no_apto");
+                    setInteraccion(null);
+                  }}
                 />
-                <span>❌ No asistió / No apto</span>
+                <XCircle className="text-red-600 w-5 h-5" />
+                <span className="text-sm font-medium text-[#2B1B12]">
+                  No asistió / No apto
+                </span>
               </label>
             </div>
           </div>
 
-          {/* Interacción (solo si asistió) */}
+          {/* INTERACCIÓN */}
           {asistencia === "asistio" && (
             <div>
-              <p className="text-sm font-semibold text-[#2B1B12] mb-1">Interacción</p>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-[#2B1B12]">
+                Interacción
+              </label>
+
+              <div className="grid gap-2 mt-2">
+
+                {/* Buena */}
+                <label
+                  className={`
+                      flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition
+                      ${interaccion === "buena_aprobada"
+                      ? "border-yellow-500 bg-yellow-50"
+                      : "border-[#EADACB] hover:bg-[#FFF8F1]"
+                    }
+                    `}
+                >
                   <input
                     type="radio"
                     name="interaccion"
+                    className="accent-yellow-500"
                     checked={interaccion === "buena_aprobada"}
                     onChange={() => setInteraccion("buena_aprobada")}
                   />
-                  <span>👍 Buena (aprobada)</span>
+
+                  <ThumbsUp className="text-yellow-600 w-5 h-5" />
+                  <span className="text-sm font-medium text-[#2B1B12]">
+                    Buena (aprobada)
+                  </span>
                 </label>
-                <label className="flex items-center gap-2">
+
+                {/* No apta */}
+                <label
+                  className={`
+                      flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition
+                      ${interaccion === "no_apta"
+                      ? "border-gray-500 bg-gray-100"
+                      : "border-[#EADACB] hover:bg-[#FFF8F1]"
+                    }
+                    `}
+                >
                   <input
                     type="radio"
                     name="interaccion"
+                    className="accent-gray-500"
                     checked={interaccion === "no_apta"}
                     onChange={() => setInteraccion("no_apta")}
                   />
-                  <span>👎 No apta</span>
+
+                  <ThumbsDown className="text-gray-600 w-5 h-5" />
+                  <span className="text-sm font-medium text-[#2B1B12]">
+                    No apta
+                  </span>
                 </label>
               </div>
             </div>
           )}
 
-          {/* Nota */}
+          {/* NOTA */}
           <div>
-            <p className="text-sm font-semibold text-[#2B1B12] mb-1">Nota (opcional)</p>
+            <label className="text-xs font-semibold text-[#2B1B12]">
+              Nota (opcional)
+            </label>
+
             <textarea
-              className="w-full rounded-md border border-[#EADACB] px-3 py-2 text-sm"
-              rows={3}
+              rows={4}
               value={nota}
               onChange={(e) => setNota(e.target.value)}
               placeholder="Observaciones…"
+              className="mt-2 w-full rounded-xl border border-[#EADACB] bg-[#FFFAF5] px-3 py-2 text-sm 
+              focus:ring-2 focus:ring-[#BC5F36] outline-none resize-none"
             />
           </div>
         </div>
 
-        <div className="mt-4 flex justify-end gap-2">
+        {/* FOOTER */}
+        <div className="px-6 py-4 border-t border-[#EADACB] bg-[#FFFDF9] flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-lg border border-[#EADACB] bg-white px-3 py-1.5 text-sm font-semibold text-[#2B1B12] hover:bg-[#FFF4E7] transition-all"
+            className="px-4 py-2 rounded-lg border text-sm text-[#2B1B12] hover:bg-gray-100 transition"
           >
             Cancelar
           </button>
+
           <button
             onClick={() =>
               onConfirm({
@@ -124,9 +228,9 @@ export default function CitaEvalModal({
                 nota,
               })
             }
-            className="rounded-lg bg-[#BC5F36] px-3 py-1.5 text-sm font-semibold text-white hover:opacity-95 transition-all"
+            className="px-4 py-2 rounded-lg bg-[#BC5F36] text-white text-sm font-semibold hover:bg-[#a44f2e] transition"
           >
-            Guardar
+            Guardar evaluación
           </button>
         </div>
       </div>

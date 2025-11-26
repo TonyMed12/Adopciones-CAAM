@@ -59,7 +59,7 @@ export default function MisMascotasPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center">
         <p className="text-lg mb-4">Aún no has adoptado ninguna mascota 🐾</p>
-        <Link href="/usuario/mascotas">
+        <Link href="dashboards/usuario/adopcion">
           <Button>Ir a adoptar</Button>
         </Link>
       </div>

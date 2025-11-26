@@ -66,3 +66,13 @@ export type AdopcionAdminRow = {
     observaciones_usuario: string | null;
     observaciones_admin: string | null;
 };
+
+export interface AdopcionUsuario {
+    id: string;
+    numero_adopcion: string;
+    fecha_adopcion: string;
+    fecha_adopcion_raw: string;
+    estado: string;
+    mascota_nombre: string;
+    imagen_url: string | null;
+}

@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Calendar } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { localizer } from "@/utils/calendarLocalizer";
-import {
-  actualizarEstadoCita,
-  evaluarCita,
-} from "@/features/citas/actions/citas-actions";
+
 import { useCitas } from "@/features/citas/hooks/useCitas";
 import { useReprogramarCita } from "@/features/citas/hooks/useReprogramarCita";
 import { useCancelarCita } from "@/features/citas/hooks/useCancelarCita";
+import { useEvaluarCita } from "@/features/citas/hooks/useEvaluarCita";
+
 import { Search, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
@@ -24,6 +23,7 @@ import Pagination from "@/components/ui/Pagination";
 import CitaReprogramarModal from "@/features/citas/components/client/CitaReprogramarModal";
 import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import UserTableSkeleton from "@/features/usuarios/components/client/UserTableSkeleton";
 
 type Cita = CitaType;
 
@@ -34,6 +34,7 @@ export default function GestionCitasPage() {
   const { data: citas = [], isLoading } = useCitas();
   const { mutate: reprogramar, isPending: isReprogramando } = useReprogramarCita();
   const { mutate: cancelar, isPending: isCancelando } = useCancelarCita();
+  const { mutate: evaluar, isPending: isEvaluando } = useEvaluarCita();
 
   const [query, setQuery] = useState("");
   const [filtroEstado, setFiltroEstado] =
@@ -51,8 +52,7 @@ export default function GestionCitasPage() {
   const [evalOpen, setEvalOpen] = useState(false);
   const [evalTarget, setEvalTarget] = useState<Cita | null>(null);
 
-  useBodyScrollLock(modalOpen);
-
+  useBodyScrollLock(modalOpen || evalOpen);
 
   /* FILTROS + BÚSQUEDA */
   const citasFiltradas = useMemo(() => {
@@ -174,46 +174,39 @@ export default function GestionCitasPage() {
     setEvalOpen(true);
   };
 
-  const applyEvaluation = async (payload: any) => {
+  const applyEvaluation = (payload: {
+    asistencia: Cita["asistencia"];
+    interaccion: Cita["interaccion"];
+    nota: string | null;
+  }) => {
     if (!evalTarget) return;
 
-    const nuevoEstado =
-      payload.asistencia === "asistio" ? "completada" : "cancelada";
-
-    // Optimista
-    setCitas((prev) =>
-      prev.map((c) =>
-        c.id === evalTarget.id
-          ? {
-            ...c,
-            asistencia: payload.asistencia,
-            interaccion: payload.interaccion,
-            nota: payload.nota ?? null,
-            estado: nuevoEstado,
-          }
-          : c
-      )
+    evaluar(
+      {
+        id: evalTarget.id,
+        asistencia: payload.asistencia,
+        interaccion: payload.interaccion,
+        nota: payload.nota,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Evaluación guardada");
+          setEvalOpen(false);
+          setEvalTarget(null);
+        },
+        onError: (err) => {
+          console.error(err);
+          toast.error("Error al guardar la evaluación");
+        },
+      }
     );
-
-    setEvalOpen(false);
-    setEvalTarget(null);
-
-    // Servidor
-    try {
-      const updated = await evaluarCita(evalTarget.id, nuevoEstado, payload);
-      setCitas((prev) =>
-        prev.map((c) => (c.id === evalTarget.id ? (updated as any) : c))
-      );
-      toast.success("Evaluación guardada");
-    } catch {
-      toast.error("No se pudo guardar");
-    }
   };
+
 
   if (isLoading)
     return (
-      <div className="py-12 text-center text-[#6b4f40]">
-        Cargando citas...
+      <div className="py-12">
+        <UserTableSkeleton />
       </div>
     );
 
@@ -403,22 +396,29 @@ export default function GestionCitasPage() {
 
 
       {/* MODAL EVALUACIÓN */}
-      <CitaEvalModal
-        open={evalOpen}
-        onClose={() => {
-          setEvalOpen(false);
-          setEvalTarget(null);
-        }}
-        onConfirm={applyEvaluation}
-        citaLabel={
-          evalTarget
-            ? `${evalTarget.usuario?.nombres} — ${evalTarget.mascotas?.nombre}`
-            : ""
-        }
-        defaultAsistencia={evalTarget?.asistencia ?? null}
-        defaultInteraccion={evalTarget?.interaccion ?? null}
-        defaultNota={evalTarget?.nota ?? ""}
-      />
+      {evalOpen &&
+        createPortal(
+          <CitaEvalModal
+            open={evalOpen}
+            onClose={() => {
+              setEvalOpen(false);
+              setEvalTarget(null);
+            }}
+            onConfirm={applyEvaluation}
+            citaLabel={
+              evalTarget
+                ? `${evalTarget.usuario?.nombres ?? ""} ${evalTarget.usuario?.apellido_paterno ?? ""} ${evalTarget.usuario?.apellido_materno ?? ""} — ${evalTarget.mascota?.nombre ?? ""}`
+                : ""
+            }
+            defaultAsistencia={evalTarget?.asistencia ?? null}
+            defaultInteraccion={evalTarget?.interaccion ?? null}
+            defaultNota={evalTarget?.nota ?? ""}
+          />,
+          document.body
+        )
+      }
+
+
     </div>
   );
 }

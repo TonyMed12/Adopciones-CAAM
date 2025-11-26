@@ -72,3 +72,19 @@ export type RawCita = {
         email: string;
     } | null;
 };
+
+export type MascotaUsuario = {
+  mascota_id: string;
+  mascota_nombre: string;
+  imagen_url: string | null;
+  adopcion_id: string;
+  estado_mascota: string;
+};
+
+export type CitaVeterinariaUsuario = {
+  id: string;
+  adopcion_id: string;
+  fecha_cita: string;
+  motivo: string;
+  estado: "pendiente" | "aprobada" | "cancelada";
+};

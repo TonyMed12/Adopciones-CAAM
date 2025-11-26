@@ -74,7 +74,11 @@ export default function FormMascota({
 
             <CAAMSelect
               value={especieUI}
-              onChange={(v) => setEspecieUI(v)}
+              onChange={(v) => {
+                setEspecieUI(v);
+                form.setValue("raza_id", ""); 
+                form.trigger("raza_id"); 
+              }}
               options={[
                 { label: "Perro", value: "perro" },
                 { label: "Gato", value: "gato" },
@@ -149,9 +153,12 @@ export default function FormMascota({
             render={({ field }) => {
               const { data: razas = [], isLoading } = useRazasQuery();
 
-              const filtradas = especieUI
+              const especieBase =
+                especieUI || mascota?.raza?.especie?.toLowerCase() || "";
+
+              const filtradas = especieBase
                 ? razas.filter(
-                    (r) => r.especie.toLowerCase() === especieUI.toLowerCase()
+                    (r) => r.especie.toLowerCase() === especieBase.toLowerCase()
                   )
                 : [];
 
@@ -159,6 +166,9 @@ export default function FormMascota({
                 label: r.nombre,
                 value: r.id,
               }));
+
+              const errorMessage = form.formState.errors.raza_id
+                ?.message as string;
 
               return (
                 <FieldWrapper>
@@ -170,15 +180,22 @@ export default function FormMascota({
                     </div>
                   ) : (
                     <CAAMRazaCombobox
-                      value={field.value ?? ""}
-                      onChange={(v) => field.onChange(v === "" ? null : v)}
+                      value={field.value || ""}
+                      onChange={(v) => {
+                        field.onChange(v);
+                        form.trigger("raza_id");
+                      }}
                       options={options}
                       placeholder={
-                        especieUI
+                        especieBase
                           ? "Selecciona una raza..."
                           : "Primero selecciona una especie"
                       }
                     />
+                  )}
+
+                  {errorMessage && (
+                    <p className="text-red-500 text-xs mt-1">{errorMessage}</p>
                   )}
                 </FieldWrapper>
               );

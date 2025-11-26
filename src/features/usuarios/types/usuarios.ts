@@ -1,3 +1,10 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | Json[]
+  | { [key: string]: Json };
 export interface Direccion {
   id: string;
   usuario_id: string;
@@ -26,13 +33,15 @@ export interface Perfil {
   activo: boolean;
   avatar_url?: string | null;
   bio?: string | null;
-  preferencias?: Record<string, any> | null;
+  preferencias?: Json | null;
+
   email: string;
   rol_id: number;
   created_by?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }
+
 
 export interface PerfilConDireccion extends Perfil {
   direccion?: Direccion | null;

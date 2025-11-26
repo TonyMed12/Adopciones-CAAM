@@ -124,27 +124,35 @@ export async function fetchMascotasByIds(ids: string[]) {
     return data ?? [];
 }
 export async function marcarMascotaAdoptada(
-  supabaseSrv: any,
-  mascotaId: string
+    supabaseSrv: any,
+    mascotaId: string
 ) {
-  const { error } = await supabaseSrv
-    .from("mascotas")
-    .update({ estado: "adoptada", disponible_adopcion: false })
-    .eq("id", mascotaId);
+    const { error } = await supabaseSrv
+        .from("mascotas")
+        .update({ estado: "adoptada", disponible_adopcion: false })
+        .eq("id", mascotaId);
 
-  if (error)
-    console.error("⚠️ Error marcando mascota como adoptada:", error.message);
+    if (error)
+        console.error("⚠️ Error marcando mascota como adoptada:", error.message);
 }
 
-export async function marcarMascotaDisponible(
-  supabaseSrv: any,
-  mascotaId: string
-) {
-  const { error } = await supabaseSrv
-    .from("mascotas")
-    .update({ estado: "disponible", disponible_adopcion: true })
-    .eq("id", mascotaId);
 
-  if (error)
-    console.error("⚠️ Error liberando mascota:", error.message);
+export async function marcarMascotaDisponible(mascotaId: string) {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from("mascotas")
+        .update({
+            estado: "disponible",
+            disponible_adopcion: true,
+            updated_at: new Date().toISOString(),
+        })
+        .eq("id", mascotaId);
+
+    if (error) {
+        console.error("⚠️ Error liberando mascota:", error.message);
+        throw new Error("No se pudo liberar la mascota");
+    }
+
+    return true;
 }
