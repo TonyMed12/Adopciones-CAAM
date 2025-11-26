@@ -41,7 +41,7 @@ export default function UserTable({
                 </div>
                 <div>
                   <p className="font-semibold text-[#2B1B12] leading-tight">
-                    {u.nombres} {u.apellido_paterno} {u.apellido_materno}
+                    {u.nombres} {u.apellido_paterno} {u.apellido_materno ?? ""}
                   </p>
                   <p className="text-[11px] text-[#8B6F5D]">
                     ID {u.id.slice(0, 6)}
@@ -61,11 +61,10 @@ export default function UserTable({
               <div className="text-xs text-[#8B6F5D] mt-1">Estado:</div>
               <div className="flex justify-start">
                 <span
-                  className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                    u.activo
-                      ? "bg-green-50 text-green-700"
-                      : "bg-red-50 text-red-600"
-                  }`}
+                  className={`text-xs font-semibold px-2 py-1 rounded-full ${u.activo
+                    ? "bg-green-50 text-green-700"
+                    : "bg-red-50 text-red-600"
+                    }`}
                 >
                   {u.activo ? "Activo" : "Inactivo"}
                 </span>
@@ -80,7 +79,7 @@ export default function UserTable({
                 </div>
                 <div className="leading-tight">
                   <div className="font-medium text-[#2B1B12] text-sm">
-                    {u.nombres} {u.apellido_paterno}
+                    {u.nombres} {u.apellido_paterno} {u.apellido_materno ?? ""}
                   </div>
                   <div className="text-[10px] text-[#8B6F5D]">
                     ID {u.id.slice(0, 6)}
@@ -96,11 +95,10 @@ export default function UserTable({
 
               <div>
                 <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    u.activo
-                      ? "bg-green-50 text-green-700"
-                      : "bg-red-50 text-red-600"
-                  }`}
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full ${u.activo
+                    ? "bg-green-50 text-green-700"
+                    : "bg-red-50 text-red-600"
+                    }`}
                 >
                   {u.activo ? "Activo" : "Inactivo"}
                 </span>

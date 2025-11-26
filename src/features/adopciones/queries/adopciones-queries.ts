@@ -1,3 +1,5 @@
+import { listarAdopcionesPorUsuario } from "../actions/adopciones-actions";
+
 export const adopcionesQueries = {
   all: ["adopciones"] as const,
   lists: () => [...adopcionesQueries.all, "list"] as const,
@@ -7,3 +9,8 @@ export const adopcionesQueries = {
   details: () => [...adopcionesQueries.all, "detail"] as const,
   detail: (id: string) => [...adopcionesQueries.details(), id] as const,
 };
+
+export async function fetchAdopcionesUsuario(usuarioId: string) {
+  if (!usuarioId) return [];
+  return await listarAdopcionesPorUsuario(usuarioId);
+}

@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export default function UserModal({
     open,
     user,
+    direccion,
     adopciones,
     solicitudesActivas,
     isLoading,
@@ -22,6 +23,7 @@ export default function UserModal({
 }: {
     open: boolean;
     user: any;
+    direccion: any;         // <- AGREGADO
     adopciones: any[];
     solicitudesActivas: any[];
     isLoading: boolean;
@@ -133,23 +135,24 @@ export default function UserModal({
 
                                             <div className="flex items-start gap-3">
                                                 <MapPin className="h-4 w-4 mt-1 text-[#BC5F36]" />
-                                                {user.direccion ? (
+                                                {direccion ? (
                                                     <div className="leading-tight">
                                                         <p>
-                                                            {user.direccion.calle}{" "}
-                                                            {user.direccion.numero_exterior}{" "}
-                                                            {user.direccion.colonia}
+                                                            {direccion.calle}{" "}
+                                                            {direccion.numero_exterior}{" "}
+                                                            {direccion.colonia}
                                                         </p>
                                                         <p>
-                                                            {user.direccion.municipio},{" "}
-                                                            {user.direccion.estado},{" "}
-                                                            CP {user.direccion.codigo_postal}
+                                                            {direccion.municipio},{" "}
+                                                            {direccion.estado},{" "}
+                                                            CP {direccion.codigo_postal}
                                                         </p>
                                                     </div>
                                                 ) : (
                                                     <p className="text-[#8B6F5D]">Sin dirección registrada.</p>
                                                 )}
                                             </div>
+
                                         </div>
                                     </motion.div>
                                 )}

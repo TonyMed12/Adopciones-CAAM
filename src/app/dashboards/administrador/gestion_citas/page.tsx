@@ -23,6 +23,7 @@ import Pagination from "@/components/ui/Pagination";
 import CitaReprogramarModal from "@/features/citas/components/client/CitaReprogramarModal";
 import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import UserTableSkeleton from "@/features/usuarios/components/client/UserTableSkeleton";
 
 type Cita = CitaType;
 
@@ -204,8 +205,8 @@ export default function GestionCitasPage() {
 
   if (isLoading)
     return (
-      <div className="py-12 text-center text-[#6b4f40]">
-        Cargando citas...
+      <div className="py-12">
+        <UserTableSkeleton />
       </div>
     );
 

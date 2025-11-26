@@ -19,6 +19,7 @@ import { mapAdopcionesAdminRows } from "./helpers/mapAdopcionesAdminRows";
 import { throwIf } from "./helpers/throwIf";
 import { updateSolicitudEstado } from "@/features/solicitudes/actions/solicitudes-actions";
 import { getUsuarioAuthId } from "@/features/perfil/actions/perfil-actions";
+import { mapAdopcionUsuario } from "../mappers/adopciones-mappers";
 
 export async function listarAdopciones(): Promise<Adopcion[]> {
   const { data, error } = await supabase
@@ -263,4 +264,29 @@ export async function obtenerAdopcionesConMascotaYAdoptante(ids: string[]) {
   if (error) throw new Error(error.message);
 
   return data || [];
+}
+
+
+export async function listarAdopcionesPorUsuario(adoptanteId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("adopciones")
+    .select(`
+      id,
+      numero_adopcion,
+      fecha_adopcion,
+      estado,
+      mascota:mascotas (
+        id,
+        nombre,
+        imagen_url
+      )
+    `)
+    .eq("adoptante_id", adoptanteId)
+    .order("fecha_adopcion", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map(mapAdopcionUsuario);
 }
