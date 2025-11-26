@@ -45,10 +45,11 @@ function StatCard({
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl border p-5 transition hover:shadow-md cursor-pointer ${hasAlert
-        ? "border-[#BC5F36]/40 bg-[#fff8f4]"
-        : "border-slate-100 bg-white"
-        }`}
+      className={`rounded-2xl border p-5 transition hover:shadow-md cursor-pointer ${
+        hasAlert
+          ? "border-[#BC5F36]/40 bg-[#fff8f4]"
+          : "border-slate-100 bg-white"
+      }`}
       style={{ boxShadow: "0 10px 30px rgba(2,6,23,.05)" }}
     >
       <div className="flex items-center justify-between">
@@ -57,8 +58,9 @@ function StatCard({
           <h3 className="text-3xl font-bold text-slate-800 mt-1">{value}</h3>
         </div>
         <div
-          className={`p-3 rounded-xl ${color ?? "bg-orange-100 text-[#BC5F36]"
-            }`}
+          className={`p-3 rounded-xl ${
+            color ?? "bg-orange-100 text-[#BC5F36]"
+          }`}
         >
           {icon}
         </div>
@@ -109,6 +111,9 @@ export default function AdminDashboard() {
     citasSemana: 0,
     usuariosProceso: 0,
     mascotasAdoptables: 0,
+
+    citasAdopPend: 0,
+    citasVetPend: 0,
   });
   const [pendientes, setPendientes] = useState<
     { id: number; descripcion: string; link: string }[]
@@ -133,68 +138,109 @@ export default function AdminDashboard() {
         const finSemana = new Date(inicioSemana);
         finSemana.setDate(inicioSemana.getDate() + 6);
 
+        /* -------------------- DOCUMENTOS PENDIENTES -------------------- */
         const { count: docs } = await supabase
           .from("documentos")
           .select("*", { count: "exact", head: true })
           .eq("status", "pendiente");
 
         const hoyStr = hoy.toISOString().split("T")[0];
-        const { count: citasHoy } = await supabase
-          .from("citas")
+
+        /* -------------------- CITAS DE ADOPCIÓN HOY -------------------- */
+        const { count: citasAdopHoy } = await supabase
+          .from("citas_adopcion")
           .select("*", { count: "exact", head: true })
           .eq("fecha_cita", hoyStr);
 
-        const { count: citasSemana } = await supabase
-          .from("citas")
+        /* -------------------- CITAS VETERINARIAS HOY -------------------- */
+        const { count: citasVetHoy } = await supabase
+          .from("citas_veterinarias")
+          .select("*", { count: "exact", head: true })
+          .gte("fecha_cita", hoyStr + "T00:00:00")
+          .lte("fecha_cita", hoyStr + "T23:59:59");
+
+        const citasHoy = (citasAdopHoy ?? 0) + (citasVetHoy ?? 0);
+
+        /* -------------------- CITAS SEMANA (AMBOS TIPOS) -------------------- */
+        const { count: citasAdopSemana } = await supabase
+          .from("citas_adopcion")
           .select("*", { count: "exact", head: true })
           .gte("fecha_cita", inicioSemana.toISOString().split("T")[0])
           .lte("fecha_cita", finSemana.toISOString().split("T")[0]);
 
+        const { count: citasVetSemana } = await supabase
+          .from("citas_veterinarias")
+          .select("*", { count: "exact", head: true })
+          .gte("fecha_cita", inicioSemana.toISOString())
+          .lte("fecha_cita", finSemana.toISOString());
+
+        const citasSemana = (citasAdopSemana ?? 0) + (citasVetSemana ?? 0);
+
+        /* -------------------- USUARIOS EN REVISIÓN -------------------- */
         const { count: usuarios } = await supabase
           .from("perfiles")
           .select("*", { count: "exact", head: true })
           .eq("estado_proceso", "en_revision");
 
+        /* -------------------- MASCOTAS ADOPTABLES -------------------- */
         const { count: adoptables } = await supabase
           .from("mascotas")
           .select("*", { count: "exact", head: true })
           .eq("estado", "disponible");
 
+        /* -------------------- CITAS PENDIENTES POR APROBAR -------------------- */
+        const { count: citasAdopPend } = await supabase
+          .from("citas_adopcion")
+          .select("*", { count: "exact", head: true })
+          .eq("estado", "programada");
+
+        const { count: citasVetPend } = await supabase
+          .from("citas_veterinarias")
+          .select("*", { count: "exact", head: true })
+          .eq("estado", "pendiente");
+
+        /* -------------------- SET STATS -------------------- */
         setStats({
           documentosPendientes: docs ?? 0,
           citasHoy: citasHoy ?? 0,
           citasSemana: citasSemana ?? 0,
           usuariosProceso: usuarios ?? 0,
           mascotasAdoptables: adoptables ?? 0,
+          citasAdopPend: citasAdopPend ?? 0,
+          citasVetPend: citasVetPend ?? 0,
         });
 
+        /* -------------------- ARMADO DE TAREAS PENDIENTES -------------------- */
         const tareas = [
-          docs && docs > 0
+          docs! > 0
             ? {
-              id: 1,
-              descripcion: `${docs} documentos por validar`,
-              link: "/dashboards/administrador/documentos",
-            }
+                id: 1,
+                descripcion: `${docs} documentos por validar`,
+                link: "/dashboards/administrador/documentos",
+              }
             : null,
-          citasHoy && citasHoy > 0
+          citasAdopPend! > 0
             ? {
-              id: 2,
-              descripcion: `${citasHoy} citas programadas para hoy`,
-              link: "/dashboards/administrador/gestion_citas",
-            }
+                id: 2,
+                descripcion: `${citasAdopPend} citas de adopción por aprobar`,
+                link: "/dashboards/administrador/gestion_citas",
+              }
             : null,
-          usuarios && usuarios > 0
+          citasVetPend! > 0
             ? {
-              id: 3,
-              descripcion: `${usuarios} usuarios con proceso en revisión`,
-              link: "/dashboards/administrador/usuarios",
-            }
+                id: 3,
+                descripcion: `${citasVetPend} citas veterinarias por aprobar`,
+                link: "/dashboards/administrador/gestion_citas",
+              }
             : null,
-        ].filter(Boolean) as {
-          id: number;
-          descripcion: string;
-          link: string;
-        }[];
+          usuarios! > 0
+            ? {
+                id: 4,
+                descripcion: `${usuarios} usuarios con proceso en revisión`,
+                link: "/dashboards/administrador/usuarios",
+              }
+            : null,
+        ].filter(Boolean) as any;
 
         setPendientes(tareas);
       } catch (err) {
@@ -208,7 +254,31 @@ export default function AdminDashboard() {
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, []);
+  /* ------------------------------------------------------------------ */
+  /* Cargar nombre del usuario logueado */
+  /* ------------------------------------------------------------------ */
+  useEffect(() => {
+    async function fetchUsuario() {
+      const supabase = createClient();
 
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const { data: perfil } = await supabase
+        .from("perfiles")
+        .select("nombres")
+        .eq("id", user.id)
+        .single();
+
+      if (perfil?.nombres) setNombreUsuario(perfil.nombres);
+    }
+
+    fetchUsuario();
+  }, []);
+  const [nombreUsuario, setNombreUsuario] = useState<string | null>(null);
   /* ------------------------------------------------------------------ */
   /* Cargar actividad reciente + realtime */
   /* ------------------------------------------------------------------ */
@@ -228,24 +298,71 @@ export default function AdminDashboard() {
           docs?.forEach((d) =>
             eventos.push({
               tipo: "documento",
-              mensaje: `${d.perfiles?.nombres || "Un usuario"} subió ${d.tipo}`,
+              mensaje: `${d.perfiles?.nombres || "Un usuario"} ha subido su ${
+                d.tipo
+              }`,
               fecha: d.created_at,
             })
           );
         }
 
-        // Citas
+        // Citas (veterinarias + adopción)
         if (filtro === "todo" || filtro === "cita") {
-          const { data: citas } = await supabase
-            .from("citas")
-            .select("created_at, estado, perfiles(nombres), mascotas(nombre)")
-            .order("created_at", { ascending: false })
+          /* --------------------- CITAS DE ADOPCIÓN --------------------- */
+          const { data: citasAdop } = await supabase
+            .from("citas_adopcion")
+            .select(
+              `
+      id,
+      estado,
+      fecha_cita,
+      hora_cita,
+      creada_en,
+      perfiles:usuario_id(nombres),
+      mascotas:mascota_id(nombre)
+    `
+            )
+            .order("creada_en", { ascending: false })
             .limit(5);
-          citas?.forEach((c) =>
+
+          citasAdop?.forEach((c) =>
             eventos.push({
               tipo: "cita",
-              mensaje: `${c.perfiles?.nombres || "Un usuario"} ${c.estado === "programada" ? "agendó" : "actualizó"
-                } una cita para "${c.mascotas?.nombre || "una mascota"}"`,
+              mensaje: `${c.perfiles?.nombres || "Un adoptante"} ${
+                c.estado === "programada" ? "agendó" : "actualizó"
+              } una **cita de adopción** para "${
+                c.mascotas?.nombre || "una mascota"
+              }"`,
+              fecha: c.creada_en,
+            })
+          );
+
+          /* --------------------- CITAS VETERINARIAS --------------------- */
+          const { data: citasVet } = await supabase
+            .from("citas_veterinarias")
+            .select(
+              `
+      id,
+      estado,
+      fecha_cita,
+      created_at,
+      adopciones:adopcion_id(
+        adoptante:adoptante_id(nombres),
+        mascota:mascota_id(nombre)
+      )
+    `
+            )
+            .order("created_at", { ascending: false })
+            .limit(5);
+
+          citasVet?.forEach((c) =>
+            eventos.push({
+              tipo: "cita",
+              mensaje: `${c.adopciones?.adoptante?.nombres || "Un usuario"} ${
+                c.estado === "pendiente" ? "agendó" : "actualizó"
+              } una cita veterinaria para "${
+                c.adopciones?.mascota?.nombre || "una mascota"
+              }."`,
               fecha: c.created_at,
             })
           );
@@ -262,7 +379,7 @@ export default function AdminDashboard() {
           masc?.forEach((m) =>
             eventos.push({
               tipo: "mascota",
-              mensaje: `Mascota "${m.nombre}" fue marcada como adoptada`,
+              mensaje: `Mascota "${m.nombre}" ha sido adoptada!`,
               fecha: m.updated_at,
             })
           );
@@ -281,7 +398,7 @@ export default function AdminDashboard() {
 
     fetchActividad();
 
-    // 🔴 Suscripción en tiempo real
+    // Suscripción en tiempo real
     const channel = supabase
       .channel("realtime-actividad")
       .on(
@@ -312,27 +429,19 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       <PageHead
-        title="Panel de gestión 🐾"
-        subtitle="Bienvenido, administrador. Revisa los pendientes del día."
+        title={nombreUsuario ? `Panel de gestión` : "Panel de gestión"}
+        subtitle={
+          nombreUsuario ? (
+            <>
+              Bienvenido a tu panel de gestión,{" "}
+              <span className="font-bold text-[#BC5F36]">{nombreUsuario}</span>.
+              Revisa los pendientes del día.
+            </>
+          ) : (
+            "Bienvenido a tu panel de gestión. Revisa los pendientes del día."
+          )
+        }
       />
-      {/* Indicador de pendientes global */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl bg-[#fff4ed] border border-[#eadacb] p-3 shadow-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-[#BC5F36] font-semibold">🔔 Pendientes:</span>
-          <span className="text-slate-700 text-sm">
-            {stats.documentosPendientes + stats.citasHoy + stats.usuariosProceso > 0
-              ? `${stats.documentosPendientes + stats.citasHoy + stats.usuariosProceso} tareas por revisar`
-              : "Sin pendientes"}
-          </span>
-        </div>
-
-        {/* badges compactos y que envuelven */}
-        <div className="flex flex-wrap gap-2 text-xs text-[#7a5c49]">
-          <span>📄 {stats.documentosPendientes} docs</span>
-          <span>📅 {stats.citasHoy} citas</span>
-          <span>👥 {stats.usuariosProceso} usuarios</span>
-        </div>
-      </div>
 
       {/* Botones de acción rápida */}
       <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
@@ -440,18 +549,19 @@ export default function AdminDashboard() {
                 <button
                   key={f}
                   onClick={() => setFiltro(f)}
-                  className={`whitespace-nowrap px-4 py-1.5 rounded-t-md text-sm font-semibold transition-all duration-200 border-b-2 ${filtro === f
+                  className={`whitespace-nowrap px-4 py-1.5 rounded-t-md text-sm font-semibold transition-all duration-200 border-b-2 ${
+                    filtro === f
                       ? "border-[#BC5F36] text-[#BC5F36] bg-[#fff8f4]"
                       : "border-transparent text-[#7a5c49] hover:text-[#BC5F36]"
-                    }`}
+                  }`}
                 >
                   {f === "todo"
                     ? "Todo"
                     : f === "documento"
-                      ? "Documentos"
-                      : f === "cita"
-                        ? "Citas"
-                        : "Mascotas"}
+                    ? "Documentos"
+                    : f === "cita"
+                    ? "Citas"
+                    : "Mascotas"}
                 </button>
               ))}
             </div>
