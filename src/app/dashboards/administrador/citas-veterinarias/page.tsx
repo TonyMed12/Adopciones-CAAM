@@ -18,15 +18,17 @@ export default function GestionCitasVeterinariasPage() {
 
   const citasOrdenadas = useCitasOrdenadas(citas, filtro, query);
 
-  if (isLoading)
-    return 
-    <>
-      <PageHead
-        title="Citas Veterinarias"
-        subtitle="Administra las citas veterinarias agendadas por los adoptantes."
-      />
-      <CitasVeterinariasSkeleton />
-    </>;
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-4">
+        <PageHead
+          title="Citas Veterinarias"
+          subtitle="Administra las citas veterinarias agendadas por los adoptantes."
+        />
+        <CitasVeterinariasSkeleton />
+      </div>
+    );
+  }
 
   const totales = {
     pendientes: citas.filter((c) => c.estado === "pendiente").length,

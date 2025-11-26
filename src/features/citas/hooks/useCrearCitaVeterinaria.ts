@@ -43,9 +43,6 @@ export function useCrearCitaVeterinaria({
   const qc = useQueryClient();
 
   return useMutation({
-    // --------------------------------
-    // 🔥 REGISTRAR EN BASE (idéntico)
-    // --------------------------------
     mutationFn: async ({
       adopcion_id,
       fecha_cita,
@@ -61,14 +58,12 @@ export function useCrearCitaVeterinaria({
         motivo,
       });
 
-      // 📧  Obtener usuario actual
       const { data: userData } = await supabase.auth.getUser();
       const email = userData?.user?.email || "";
       const nombre = userData?.user?.user_metadata?.full_name || "Usuario";
 
       const fechaObj = new Date(fecha_cita);
 
-      // 📩 Enviar correo
       await fetch("/api/email/citaVeterinaria", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,9 +89,6 @@ export function useCrearCitaVeterinaria({
       return data;
     },
 
-    // ------------------------------
-    // 🟢 AL ÉXITO → RESET + MENSAJE
-    // ------------------------------
     onSuccess: () => {
       setModo("lista");
       setMotivo("");
@@ -109,9 +101,6 @@ export function useCrearCitaVeterinaria({
       qc.invalidateQueries();
     },
 
-    // ------------------------------
-    // 🔴 ERROR
-    // ------------------------------
     onError: () => {
       setMensaje("Ocurrió un error al registrar la cita.");
     },

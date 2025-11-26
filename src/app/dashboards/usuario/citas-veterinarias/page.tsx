@@ -18,6 +18,13 @@ import CitasVeterinariasUsuarioLista from "@/features/citas/components/client/ve
 import { CitasVeterinariasUsuarioAgendar } from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioAgendar";
 import CitasVeterinariasUsuarioSkeleton from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioSkeleton";
 
+// 🔥 FIX: función para crear fecha local correctamente
+function crearFechaLocal(fechaStr: string, horaStr: string) {
+  const [y, m, d] = fechaStr.split("-").map(Number);
+  const [hh, mm] = horaStr.split(":").map(Number);
+  return new Date(y, m - 1, d, hh, mm, 0);
+}
+
 export default function CitasVeterinariasPage() {
   const authId = useUsuarioAuth();
 
@@ -38,7 +45,6 @@ export default function CitasVeterinariasPage() {
     setMotivo,
   } = useCitasVeterinariasUsuarioPageState();
 
-  // QUERIES
   const { data: mascotas = [] } = useMascotasAdoptadasUsuario(authId || "");
   const {
     data: citas = [],
@@ -162,9 +168,16 @@ export default function CitasVeterinariasPage() {
               return;
             }
 
+            const fechaLocal = crearFechaLocal(
+              fechaSeleccionada,
+              horaSeleccionada
+            );
+
+            const fecha_cita = fechaLocal.toISOString();
+
             crearCita.mutate({
               adopcion_id: mascotaSeleccionada.adopcion_id,
-              fecha_cita: `${fechaSeleccionada}T${horaSeleccionada}:00`,
+              fecha_cita,
               motivo,
             });
           }}
