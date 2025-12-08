@@ -40,11 +40,9 @@ export async function listarMascotas({
     }
 
     if (sexo && sexo !== "Todos") {
-        query = query.eq("sexo", sexo);
+        query = query.eq("sexo", sexo.toLowerCase());
     }
-
-
-
+    
     // Cursor
     if (cursor) {
         query = query.lt("created_at", cursor);
