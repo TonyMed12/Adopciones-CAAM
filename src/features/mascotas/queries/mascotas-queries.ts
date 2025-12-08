@@ -1,5 +1,4 @@
 import {
-    listarMascotas,
     obtenerMascotaPorId,
     crearMascota,
     actualizarMascota,
@@ -9,9 +8,6 @@ import { obtenerMascotasAdoptadas } from "@/features/usuarios/actions/usuario-ma
 import type { Mascota } from "../types/mascotas";
 import type { CreateMascotaPayload, UpdateMascotaPayload } from "../data/types";
 
-export const fetchMascotas = async (): Promise<Mascota[]> => {
-    return await listarMascotas();
-};
 
 export const fetchMascotaById = async (id: string): Promise<Mascota | null> => {
     return await obtenerMascotaPorId(id);

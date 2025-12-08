@@ -35,7 +35,7 @@ export function useActividadRealtime(filtro: string) {
             )
             .on(
                 "postgres_changes",
-                { event: "update", schema: "public", table: "mascotas" },
+                { event: "*", schema: "public", table: "mascotas" },
                 () => {
                     queryClient.invalidateQueries({ queryKey: ["dashboard", "actividad", filtro] });
                 }

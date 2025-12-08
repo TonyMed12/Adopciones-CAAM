@@ -7,18 +7,66 @@ import { deleteMascotaImagen } from "./storage/deleteMascotaImagen";
 import { deleteMascotaQR } from "./storage/deleteMascotaQR";
 import { validarMascotaEliminable } from "./helpers/validarMascotaEliminable";
 
-export async function listarMascotas() {
+
+const PAGE_SIZE = 10;
+
+// Cuando cambie la busqueda se resetea el page
+// El page depende de la pagina en la que se encuentre el usuario
+export async function listarMascotas({
+    cursor,
+    search,
+    especie,
+    sexo,
+}: {
+    cursor?: string | null;
+    search?: string;
+    especie?: string;
+    sexo?: string;
+}) {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
+    let query = supabase
         .from("mascotas")
-        .select("*, raza:raza_id(id, nombre, especie)")
-        .order("created_at", { ascending: false });
+        .select("*, raza:raza_id!inner(id, nombre, especie)", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+
+    if (search && search.trim() !== "") {
+        query = query.ilike("nombre", `%${search}%`);
+    }
+
+    if (especie && especie !== "Todas") {
+        query = query.eq("raza.especie", especie);
+    }
+
+    if (sexo && sexo !== "Todos") {
+        query = query.eq("sexo", sexo);
+    }
+
+
+
+    // Cursor
+    if (cursor) {
+        query = query.lt("created_at", cursor);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) throw new Error(error.message);
 
-    return data;
+    const nextCursor =
+        data?.length === PAGE_SIZE
+            ? data[data.length - 1].created_at
+            : null;
+
+    return {
+        items: data,
+        nextCursor,
+        total: count,
+    };
 }
+
+
 
 /* ======================== CREAR ======================== */
 export async function crearMascota(input: unknown): Promise<Mascota> {
