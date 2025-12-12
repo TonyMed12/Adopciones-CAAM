@@ -13,6 +13,9 @@ export const usuariosInfiniteQuery = ({
   initialPageParam: null as string | null,
   getNextPageParam: (lastPage: ListarUsuariosResult) =>
     lastPage.nextCursor,
+
+  staleTime: 1000 * 30,      
+  gcTime: 1000 * 60 * 5,
 });
 
 export async function fetchDireccionUsuario(usuarioId: string) {

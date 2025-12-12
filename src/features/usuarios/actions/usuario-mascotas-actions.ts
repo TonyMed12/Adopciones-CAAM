@@ -1,8 +1,12 @@
 "use server";
+
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function obtenerMascotasAdoptadas() {
   const supabase = await createClient();
+
+  logger.info("obtenerMascotasAdoptadas:start");
 
   const {
     data: { user },
@@ -10,31 +14,45 @@ export async function obtenerMascotasAdoptadas() {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    console.error("❌ Usuario no autenticado:", userError?.message);
+    logger.warn("obtenerMascotasAdoptadas:not_authenticated", {
+      message: userError?.message,
+    });
     throw new Error("No se pudo obtener el usuario actual");
   }
 
-  // Leer desde la VISTA
-  const { data, error } = await supabase
-    .from("mascotas_adoptadas_detalle")
-    .select("*")
-    .order("fecha_adopcion", { ascending: false });
+  logger.info("obtenerMascotasAdoptadas:user_ok", {
+    userId: user.id,
+  });
 
-  if (error) {
-    console.error("❌ Error leyendo vista mascotas_adoptadas:", error.message);
-    throw new Error("Error al obtener mascotas adoptadas");
+  try {
+    const { data, error } = await supabase
+      .from("mascotas_adoptadas_detalle")
+      .select("*")
+      .order("fecha_adopcion", { ascending: false });
+
+    if (error) {
+      logger.error("obtenerMascotasAdoptadas:supabase_error", {
+        message: error.message,
+        userId: user.id,
+      });
+      throw new Error("Error al obtener mascotas adoptadas");
+    }
+
+    const mias = (data || []).filter(
+      (r) => r.adoptante_auth_id === user.id
+    );
+
+    logger.info("obtenerMascotasAdoptadas:success", {
+      userId: user.id,
+      total: mias.length,
+    });
+
+    return mias;
+  } catch (err) {
+    logger.error("obtenerMascotasAdoptadas:unexpected_error", {
+      userId: user.id,
+      error: err instanceof Error ? err.message : err,
+    });
+    throw err;
   }
-
-  // Filtrar solo las del usuario logueado (id = perfiles.id = auth.users.id)
-  const mias = (data || []).filter((r) => r.adoptante_auth_id === user.id);
-
-  console.table(
-    mias.map((x) => ({
-      mascota: x.mascota_nombre, 
-      adopcion_id: x.adopcion_id,
-      fecha: x.fecha_adopcion,
-    }))
-  );
-
-  return mias;
 }
