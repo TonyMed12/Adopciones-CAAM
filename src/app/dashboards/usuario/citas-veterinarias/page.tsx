@@ -106,11 +106,10 @@ export default function CitasVeterinariasPage() {
       {/* MENSAJE GLOBAL */}
       {mensaje && (
         <div
-          className={`mt-4 text-center text-sm p-3 rounded-lg ${
-            mensaje.startsWith("✅")
+          className={`mt-4 text-center text-sm p-3 rounded-lg ${mensaje.startsWith("✅")
               ? "bg-green-50 text-green-700 border border-green-200"
               : "bg-yellow-50 text-yellow-800 border border-yellow-200"
-          }`}
+            }`}
         >
           {mensaje}
         </div>
@@ -121,7 +120,7 @@ export default function CitasVeterinariasPage() {
         <CitasVeterinariasUsuarioSkeleton />
       ) : modo === "lista" ? (
         <CitasVeterinariasUsuarioLista
-          citas={citasOrdenadas}  
+          citas={citasOrdenadas}
           filtro={filtro}
           setFiltro={setFiltro}
           obtenerMascota={obtenerMascota}

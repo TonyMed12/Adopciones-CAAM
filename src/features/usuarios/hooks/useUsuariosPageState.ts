@@ -1,65 +1,48 @@
-"use client";
+import { useState, useEffect } from "react";
+import type { Perfil } from "../types/usuarios";
 
-import { useState, useEffect, useMemo } from "react";
-import type { PerfilConDireccion } from "../types/usuarios";
-
-export function useUsuariosPageState(usuarios: PerfilConDireccion[], usersPerPage: number) {
+export function useUsuariosPageState() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
 
-  const [selected, setSelected] = useState<PerfilConDireccion | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [activo, setActivo] = useState<boolean | null>(null);
+  const [conDireccion, setConDireccion] = useState<boolean | null>(null);
+
+  const [uiPage, setUiPage] = useState(1);
+
+  const [selected, setSelected] = useState<Perfil | null>(null);
+  const modalOpen = !!selected;
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setQuery(searchTerm);
-      setPage(1);
+    const t = setTimeout(() => {
+      setSearch(searchTerm);
+      setUiPage(1);
     }, 350);
 
-    return () => clearTimeout(handler);
+    return () => clearTimeout(t);
   }, [searchTerm]);
 
-  const filtrados = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return usuarios;
-
-    return usuarios.filter((u) =>
-      [u.nombres, u.apellido_paterno, u.apellido_materno, u.email]
-        .filter(Boolean)
-        .some((campo) => campo!.toLowerCase().includes(q))
-    );
-  }, [query, usuarios]);
-
-  const totalPages = Math.ceil(filtrados.length / usersPerPage) || 1;
-
-  const paginated = useMemo(() => {
-    return filtrados.slice(
-      (page - 1) * usersPerPage,
-      page * usersPerPage
-    );
-  }, [filtrados, page, usersPerPage]);
-
-  const abrirUsuario = (user: PerfilConDireccion) => {
-    setSelected(user);
-    setModalOpen(true);
-  };
+  useEffect(() => {
+    setUiPage(1);
+  }, [activo, conDireccion]);
 
   return {
     searchTerm,
     setSearchTerm,
-    query,
+    search,
 
-    page,
-    setPage,
-    paginated,
-    totalPages,
-    filtrados,
+    activo,
+    setActivo,
+    conDireccion,
+    setConDireccion,
+
+    uiPage,
+    setUiPage,
 
     selected,
     setSelected,
     modalOpen,
-    setModalOpen,
-    abrirUsuario,
+
+    abrirUsuario: (u: Perfil) => setSelected(u),
   };
 }

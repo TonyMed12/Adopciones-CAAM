@@ -1,9 +1,19 @@
 import { listarUsuarios } from "../actions/usuarios-actions";
 import { obtenerDireccionPrincipal } from "../actions/usuario-direcciones-actions";
+import type { ListarUsuariosResult } from "../types/usuarios";
 
-export async function fetchUsuarios() {
-  return await listarUsuarios();
-}
+export const usuariosInfiniteQuery = ({
+  search,
+}: {
+  search?: string;
+}) => ({
+  queryKey: ["usuarios", { search }],
+  queryFn: ({ pageParam }: { pageParam?: string | null }) =>
+    listarUsuarios({ cursor: pageParam, search }),
+  initialPageParam: null as string | null,
+  getNextPageParam: (lastPage: ListarUsuariosResult) =>
+    lastPage.nextCursor,
+});
 
 export async function fetchDireccionUsuario(usuarioId: string) {
   return await obtenerDireccionPrincipal(usuarioId);

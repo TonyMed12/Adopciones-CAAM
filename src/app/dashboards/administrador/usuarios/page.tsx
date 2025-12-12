@@ -1,53 +1,82 @@
 "use client";
 
 import React from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
 import PageHead from "@/components/layout/PageHead";
-
 import UserTable from "@/features/usuarios/components/client/UserTable";
 import UserModal from "@/features/usuarios/components/client/UserModal";
-import Pagination from "@/components/ui/Pagination";
-import { useIsMobile } from "@/hooks/useIsMobile";
-
-import UserModalSkeleton from "@/features/usuarios/components/client/UserModalSkeleton";
 import UserTableSkeleton from "@/features/usuarios/components/client/UserTableSkeleton";
+import UserFilters from "@/features/usuarios/components/client/UserFilters";
+import Pagination from "@/components/ui/Pagination";
+
 import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
-
 import { useUsuariosQuery } from "@/features/usuarios/hooks/useUsuariosQuery";
-import { useUsuarioAdopcionesQuery } from "@/features/adopciones/hooks/useUsuarioAdopcionesQuery";
-import { useUsuarioSolicitudesQuery } from "@/features/solicitudes/hooks/useUsuarioSolicitudesQuery";
-import { useUsuarioDireccionQuery } from "@/features/usuarios/hooks/useUsuarioDireccionQuery";
-
+import { useUsuarioDetalle } from "@/features/usuarios/hooks/useUsuarioDetalle";
 import { useUsuariosPageState } from "@/features/usuarios/hooks/useUsuariosPageState";
 
+const USERS_PER_PAGE = 10;
+
 export default function UsuariosPage() {
-  const isMobile = useIsMobile();
-  const USERS_PER_PAGE = isMobile ? 5 : 10;
-
-  const { data: usuariosData, isLoading: loadingUsuarios } = useUsuariosQuery();
-  const usuarios = usuariosData ?? [];
-
-  // Hook nuevo que concentra toda la lógica
   const {
+    search,
     searchTerm,
     setSearchTerm,
-    page,
-    setPage,
-    paginated,
-    totalPages,
-    filtrados,
+    uiPage,
+    setUiPage,
     selected,
+    setSelected,
     modalOpen,
-    setModalOpen,
     abrirUsuario,
-  } = useUsuariosPageState(usuarios, USERS_PER_PAGE);
+  } = useUsuariosPageState();
 
-  const selectedId = selected?.id ?? "";
-  const { data: adopcionesData = [], isLoading: loadingAdopciones } = useUsuarioAdopcionesQuery(selectedId);
-  const { data: solicitudesData = [], isLoading: loadingSolicitudes } = useUsuarioSolicitudesQuery(selectedId);
-  const { data: direccionData } = useUsuarioDireccionQuery(selectedId);
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useUsuariosQuery({ search });
+
+  const usuarios =
+    data?.pages.flatMap((page) => page.items) ?? [];
+
+  const pagesLoaded = data?.pages.length ?? 1;
+
+  const totalPages = hasNextPage
+    ? pagesLoaded + 1
+    : pagesLoaded;
+
+  const paginatedUsuarios = usuarios.slice(
+    (uiPage - 1) * USERS_PER_PAGE,
+    uiPage * USERS_PER_PAGE
+  );
+
+  const handlePageChange = async (nextPage: number) => {
+    if (nextPage < uiPage) {
+      setUiPage(nextPage);
+      return;
+    }
+
+    if (
+      nextPage > pagesLoaded &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      await fetchNextPage();
+    }
+
+    setUiPage(nextPage);
+  };
+
+  const selectedId = selected?.id ?? null;
+
+  const {
+    adopciones,
+    solicitudes,
+    direccion,
+    isLoading: isLoadingModal,
+  } = useUsuarioDetalle(selectedId);
 
   useBodyScrollLock(modalOpen);
 
@@ -55,41 +84,27 @@ export default function UsuariosPage() {
     <div className="space-y-6">
       <PageHead title="Usuarios" subtitle="Listado general de adoptantes." />
 
-      {/* Buscador */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-1 max-w-md rounded-2xl border border-[#EADACB] bg-white px-3 py-2">
-          <Search className="h-4 w-4 text-[#8B6F5D]" />
-          <input
-            placeholder="Buscar usuario..."
-            className="flex-1 bg-transparent text-sm focus:outline-none text-[#2B1B12]"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      <UserFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
 
-        <button className="flex items-center gap-1 border border-[#EADACB] rounded-2xl bg-[#FFF9F3] px-3 py-2 text-sm text-[#BC5F36] font-semibold">
-          <SlidersHorizontal className="h-4 w-4" />
-          Filtros
-        </button>
-      </div>
-
-      {/* Tabla o Skeleton */}
-      {loadingUsuarios ? (
+      {isLoading ? (
         <UserTableSkeleton />
       ) : (
         <>
-          <UserTable usuarios={paginated} onSelect={abrirUsuario} />
+          <UserTable
+            usuarios={paginatedUsuarios}
+            onSelect={abrirUsuario}
+          />
 
           <Pagination
-            page={page}
+            page={uiPage}
             totalPages={totalPages}
-            totalItems={filtrados.length}
+            onChange={handlePageChange}
             itemsPerPage={USERS_PER_PAGE}
+            totalItems={usuarios.length}
             itemsLabel="usuarios"
-            onChange={(n) => {
-              setPage(n);
-              setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 10);
-            }}
           />
         </>
       )}
@@ -99,18 +114,17 @@ export default function UsuariosPage() {
         createPortal(
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center px-4 py-8">
             <UserModal
-              open={modalOpen}
+              open
               user={selected}
-              direccion={direccionData}
-              isLoading={loadingAdopciones || loadingSolicitudes || !selected}
-              solicitudesActivas={solicitudesData}
-              adopciones={adopcionesData}
-              onClose={() => setModalOpen(false)}
+              direccion={direccion}
+              solicitudesActivas={solicitudes}
+              adopciones={adopciones}
+              isLoading={isLoadingModal}
+              onClose={() => setSelected(null)}
             />
           </div>,
           document.body
         )}
-
     </div>
   );
 }

@@ -3,19 +3,48 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Perfil } from "../types/usuarios";
 
+const PAGE_SIZE = 10;
 
-export async function listarUsuarios(): Promise<Perfil[]> {
+export async function listarUsuarios({
+  cursor,
+  search,
+}: {
+  cursor?: string | null;
+  search?: string;
+}) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("perfiles")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("rol_id", 2)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
+
+  if (search && search.trim() !== "") {
+    query = query.or(
+      `nombres.ilike.%${search}%,email.ilike.%${search}%`
+    );
+  }
+
+  if (cursor) {
+    query = query.lt("created_at", cursor);
+  }
+
+  const { data, error, count } = await query;
 
   if (error) throw new Error(error.message);
 
-  return (data ?? []) as Perfil[];
+  const nextCursor =
+    data && data.length === PAGE_SIZE
+      ? data[data.length - 1].created_at
+      : null;
+
+  return {
+    items: data ?? [],
+    nextCursor,
+    total: count,
+  };
 }
 
 export async function contarUsuarios(): Promise<number> {
