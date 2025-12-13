@@ -44,7 +44,6 @@ export default function MascotasPage() {
   const [selectedMascota, setSelectedMascota] = useState<Mascota | null>(null);
 
   const [gateOpen, setGateOpen] = useState(false);
-  const [mascotaGate, setMascotaGate] = useState<Mascota | null>(null);
 
   /* ---------------- overlay ---------------- */
   const [adopcionEnProgreso, setAdopcionEnProgreso] = useState(false);
@@ -159,7 +158,7 @@ export default function MascotasPage() {
       {/* Modal documentos */}
       <ModalValidacionDocumentos
         open={gateOpen}
-        mascota={mascotaGate}
+        mascota={selectedMascota}
         onClose={() => setGateOpen(false)}
       />
 
