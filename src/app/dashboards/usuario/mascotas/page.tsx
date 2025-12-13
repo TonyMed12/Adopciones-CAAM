@@ -6,27 +6,18 @@ import ReactDOM from "react-dom";
 
 import PageHead from "@/components/layout/PageHead";
 import Filters from "@/features/mascotas/components/client/Filters";
-import MascotaCard from "@/features/mascotas/components/client/MascotaCard";
 import MascotaCardUsuario from "@/features/mascotas/components/client/MascotaCardUsuario";
 import { Button } from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import { createClient } from "@/lib/supabase/client";
-import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { ESPECIES } from "@/features/mascotas/data/constants";
-import type { Mascota } from "@/features/mascotas/data/types";
-
-import { useMascotasPublicasInfiniteQuery } from "@/features/mascotas/hooks/useMascotasPublicasInfiniteQuery";
-
-
-type DocEstado = "aprobado" | "en_revision" | "rechazado" | "sin_documentos";
+import type { Mascota } from "@/features/mascotas/types/mascotas";
+import MascotasFeed from "@/features/mascotas/components/client/MascotasFeed";
+import { useIniciarAdopcionMascota } from "@/features/usuarios/hooks/useIniciarAdopcionMascota";
 
 export default function MascotasPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const especieQS = searchParams.get("especie");
-  const supabase = createClient();
-  const [showCancelSolicitudModal, setShowCancelSolicitudModal] =
-    useState(false);
   const [q, setQ] = useState("");
   const [especie, setEspecie] = useState<string>(() => {
     const val = (especieQS || "").trim();
@@ -38,27 +29,6 @@ export default function MascotasPage() {
     return "Todas";
   });
   const [sexo, setSexo] = useState<string>("Todos");
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-  } = useMascotasPublicasInfiniteQuery({
-    search: q,
-    especie,
-    sexo,
-  });
-
-  const loadMoreRef = useInfiniteScroll({
-    hasNextPage,
-    isFetchingNextPage,
-    onLoadMore: fetchNextPage,
-  });
-
-
-  // Estado de documentos del usuario
-  const [docEstado, setDocEstado] = useState<DocEstado>("sin_documentos");
 
   // Estados de modales
   const [gateOpen, setGateOpen] = useState(false);
@@ -70,7 +40,14 @@ export default function MascotasPage() {
   const [adopcionEnProgreso, setAdopcionEnProgreso] = useState(false);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
-  // 🔒 Bloquear scroll del body cuando el visor está abierto
+  const {
+    iniciarAdopcion,
+    isLoading: isIniciandoAdopcion,
+    data: adopcionResult,
+    error: adopcionError,
+  } = useIniciarAdopcionMascota();
+
+  // Bloquear scroll del body cuando el visor está abierto
   useEffect(() => {
     if (typeof window === "undefined") return;
     const body = document.body;
@@ -100,165 +77,61 @@ export default function MascotasPage() {
     }
   }, [openCard]);
 
-  // 📑 Estado de documentos del usuario
+  // Estado de documentos del usuario
   useEffect(() => {
-    async function fetchEstado() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+    if (!adopcionResult) return;
 
-      const { data: docs, error } = await supabase
-        .from("documentos")
-        .select("status")
-        .eq("perfil_id", user.id);
+    if (adopcionResult.ok) {
+      setAdopcionEnProgreso(true);
+      setMensajeExito(`Procesando solicitud para ${adopcionResult.mascotaNombre}...`);
 
-      if (error) {
-        console.error("Error al obtener estado de documentos:", error);
-        return;
-      }
-
-      if (!docs || docs.length === 0) {
-        setDocEstado("sin_documentos");
-        return;
-      }
-
-      const estados = docs.map((d) => d.status);
-      if (estados.every((s) => s === "aprobado")) setDocEstado("aprobado");
-      else if (estados.some((s) => s === "rechazado"))
-        setDocEstado("rechazado");
-      else setDocEstado("en_revision");
+      router.push(
+        `/dashboards/usuario/adopcion?paso=2&from=${adopcionResult.mascotaId}`
+      );
+      return;
     }
 
-    fetchEstado();
-  }, []);
+    // Casos controlados desde el backend
+    switch (adopcionResult.reason) {
+      case "DOCS_INCOMPLETOS": setSelected(adopcionResult.mascota);
+        setGateOpen(true);
+        break;
 
-  // --------------------------------------------------------
-  // 🐶 Obtener mascotas disponibles
-  // --------------------------------------------------------
+      case "SOLICITUD_ACTIVA":
+        mostrarToast("Ya tienes una adopción en curso.");
+        router.push("/dashboards/usuario/adopcion");
+        break;
+
+      case "CITA_ACTIVA":
+        mostrarToast("Ya tienes una cita de adopción programada.");
+        break;
+
+      default:
+        mostrarToast("No se pudo iniciar la adopción.");
+    }
+  }, [adopcionResult]);
+
+  useEffect(() => {
+    if (!adopcionError) return;
+
+    mostrarToast(
+      "Ocurrió un error inesperado. Intenta nuevamente.",
+      "#fff5f5",
+      "#7f1d1d",
+      "#fecaca"
+    );
+  }, [adopcionError]);
+
 
 
   // Adopción
-  async function handleAdopt(m: Mascota) {
-    try {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        mostrarToast("Debes iniciar sesión para adoptar una mascota.");
-        return;
-      }
-
-      // 📄 Validar documentos una sola vez
-      if (docEstado !== "aprobado") {
-        setSelected(m);
-        setGateOpen(true);
-        return;
-      }
-
-      // 🚫 VALIDAR SI YA TIENE UNA SOLICITUD ACTIVA
-      const { data: solicitudesActivas, error: solicitudesError } =
-        await supabase
-          .from("solicitudes_adopcion")
-          .select("id, estado")
-          .eq("usuario_id", user.id)
-          .in("estado", ["pendiente", "en_proceso"])
-          .limit(1);
-
-      if (solicitudesError) {
-        console.error(
-          "Error consultando solicitudes activas:",
-          solicitudesError
-        );
-        mostrarToast(
-          "No se pudo verificar tu solicitud actual. Inténtalo de nuevo en unos minutos."
-        );
-        return;
-      }
-
-      if (solicitudesActivas && solicitudesActivas.length > 0) {
-        mostrarToast(
-          "Ya tienes una adopción en curso. Termina la adopción actual antes de iniciar otra."
-        );
-        router.push("/dashboards/usuario/adopcion");
-        return;
-      }
-
-      // 🚫 VALIDAR SI YA TIENE UNA CITA ACTIVA
-      const { data: citasActivas, error: citasError } = await supabase
-        .from("citas_adopcion")
-        .select("id, estado")
-        .eq("usuario_id", user.id)
-        .in("estado", ["programada"])
-        .limit(1);
-
-      if (citasError) {
-        console.error("Error consultando citas activas:", citasError);
-        mostrarToast(
-          "No se pudo verificar tus citas de adopción. Inténtalo de nuevo en unos minutos."
-        );
-        return;
-      }
-
-      if (citasActivas && citasActivas.length > 0) {
-        mostrarToast(
-          "Ya tienes una cita de adopción programada. Concluye ese proceso antes de iniciar una nueva adopción."
-        );
-        // Si quieres, también puedes redirigir:
-        // router.push("/dashboards/usuario/adopcion?paso=2");
-        return;
-      }
-
-      // 🧭 Feedback instantáneo
-      setAdopcionEnProgreso(true);
-      setMensajeExito(`Procesando solicitud para ${m.nombre}...`);
-
-      // 🔁 Redirigir rápido al paso siguiente (sin esperar Supabase)
-      setTimeout(() => {
-        router.push(
-          `/dashboards/usuario/adopcion?paso=2&from=${m.id
-          }&nombre=${encodeURIComponent(m.nombre)}`
-        );
-      }, 1200);
-
-      // 🧱 Crear solicitud y actualizar mascota en paralelo (sin bloquear UI)
-      const numero = "SOL-" + Math.floor(100000 + Math.random() * 900000);
-
-      const [insertSolicitud, updateMascota] = await Promise.all([
-        supabase.from("solicitudes_adopcion").insert([
-          {
-            numero_solicitud: numero,
-            usuario_id: user.id,
-            mascota_id: m.id,
-            motivo_adopcion: "Pendiente de llenar",
-            estado: "pendiente",
-          },
-        ]),
-        supabase
-          .from("mascotas")
-          .update({
-            estado: "en_proceso",
-            disponible_adopcion: false,
-          })
-          .eq("id", m.id),
-      ]);
-
-      if (insertSolicitud.error)
-        console.warn("⚠️ Error creando solicitud:", insertSolicitud.error);
-      if (updateMascota.error)
-        console.warn("⚠️ Error actualizando mascota:", updateMascota.error);
-    } catch (err) {
-      console.error("Error al procesar adopción:", err);
-      mostrarToast(
-        "❌ Ocurrió un problema al procesar tu solicitud. Intenta nuevamente."
-      );
-    }
+  function handleAdopt(m: Mascota) {
+    iniciarAdopcion(m);
   }
 
+
   // ----------------------------------------------------
-  // 🌈 Helper para mostrar mensajes visuales tipo Toast
+  // Helper para mostrar mensajes visuales tipo Toast
   // ----------------------------------------------------
   function mostrarToast(
     mensaje: string,
@@ -290,74 +163,13 @@ export default function MascotasPage() {
     setTimeout(() => toast.remove(), 5000);
   }
 
-  // --------------------------------------------------------
-  // 🎨 Texto del estado de documentos
-  // --------------------------------------------------------
-  const estadoText: Record<
-    DocEstado,
-    { title: string; desc: string; tone: "info" | "warn" | "ok" | "error" }
-  > = {
-    sin_documentos: {
-      title:
-        "Necesitas validar tus documentos para poder solicitar una adopción",
-      desc: "Sube identificación, domicilio y carta compromiso.",
-      tone: "warn",
-    },
-    en_revision: {
-      title: "Documentos en revisión",
-      desc: "Un administrador está revisando tus archivos.",
-      tone: "info",
-    },
-    rechazado: {
-      title: "Documentos con observaciones",
-      desc: "Corrige lo indicado y vuelve a enviar.",
-      tone: "error",
-    },
-    aprobado: {
-      title: "Validación completa",
-      desc: "Ya puedes iniciar el proceso de adopción.",
-      tone: "ok",
-    },
-  };
-
-  const toneClasses = {
-    info: "border-[#eadacb] bg-[#fff4e7]",
-    warn: "border-[#eadacb] bg-[#fff4e7]",
-    ok: "border-[#dbead3] bg-[#f3fff3]",
-    error: "border-[#f2d6d6] bg-[#fff5f5]",
-  } as const;
-
-  // --------------------------------------------------------
-  // 🔍 Filtrar las mascotas visibles
-  // --------------------------------------------------------
-  const mascotas = data?.pages.flatMap((page) => page.items) ?? [];
-
-  // 💅 Render principal
+  // Render principal
   return (
     <>
       <PageHead
         title="Mascotas"
         subtitle="Encuentra a tu nuevo mejor amigo 🐾"
       />
-      {docEstado !== "aprobado" && (
-        <div
-          className={`mb-4 rounded-xl border px-4 py-3 ${toneClasses[estadoText[docEstado].tone]
-            } text-sm`}
-        >
-          <p className="font-extrabold text-[#2b1b12]">
-            {estadoText[docEstado].title}
-          </p>
-          <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[#7a5c49]">
-            <span>{estadoText[docEstado].desc}</span>
-            <Button
-              className="px-3 py-2"
-              onClick={() => router.push("/dashboards/usuario/adopcion")}
-            >
-              Completar verificación
-            </Button>
-          </div>
-        </div>
-      )}
       <div className="sticky top-[5.5rem] z-20 bg-white/80 backdrop-blur-md py-2 rounded-xl shadow-sm">
         <Filters
           q={q}
@@ -369,56 +181,17 @@ export default function MascotasPage() {
           ESPECIES={ESPECIES}
         />
       </div>
-      {/* Filtrado de mascotas */}
-      {isLoading ? (
-        <div className="py-10 text-center text-[#7a5c49]">
-          Cargando mascotas...
-        </div>
-      ) : (
-        <>
-          <section
-            className="
-        grid gap-3
-        [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]
-        transition-opacity duration-300
-      "
-          >
-            {mascotas.map((m) => (
-              <MascotaCard
-                key={m.id}
-                m={m}
-                onView={() => {
-                  setSelectedMascota(m);
-                  setOpenCard(true);
-                }}
-                onAdopt={() => handleAdopt(m)}
-              />
-            ))}
 
-            {mascotas.length === 0 && (
-              <div className="col-span-full py-10 text-center text-[#7a5c49]">
-                <div className="text-4xl mb-2 opacity-80">🔎</div>
-                <p className="font-semibold mb-3">
-                  No encontramos mascotas con esos filtros
-                </p>
-              </div>
-            )}
-          </section>
-
-          <div
-            ref={loadMoreRef}
-            className="h-8 pointer-events-none"
-          />
-
-
-          {isFetchingNextPage && (
-            <div className="py-8 flex justify-center opacity-40 transition-opacity duration-300">
-              <div className="w-4 h-4 border-2 border-[#BC5F36] border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-        </>
-      )}
-
+      <MascotasFeed
+        search={q}
+        especie={especie}
+        sexo={sexo}
+        onView={(m) => {
+          setSelectedMascota(m);
+          setOpenCard(true);
+        }}
+        onAdopt={handleAdopt}
+      />
 
       {/* Modal bloqueo adopción */}
       <Modal
@@ -474,7 +247,7 @@ export default function MascotasPage() {
       )}
 
 
-      {/* 🧡 Modal info mascota a pantalla completa (portal) */}
+      {/* Modal info mascota a pantalla completa (portal) */}
       {openCard &&
         typeof window !== "undefined" &&
         ReactDOM.createPortal(
