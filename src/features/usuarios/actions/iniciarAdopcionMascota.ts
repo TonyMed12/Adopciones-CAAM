@@ -24,7 +24,7 @@ export async function iniciarAdopcionMascota(
         const usuarioId = await getUsuarioAuthId(user.id);
         if (!usuarioId) return { ok: false, reason: "NO_AUTH" };
 
-        // 1️⃣ Documentos
+        // Documentos
         const documentos = await listarDocumentosPorUsuario(usuarioId);
         if (documentos.length === 0) {
             return {
@@ -34,13 +34,13 @@ export async function iniciarAdopcionMascota(
             };
         }
 
-        // 2️⃣ Solicitudes activas
+        // Solicitudes activas
         const solicitudes = await listarSolicitudesActivasPorUsuario(usuarioId);
         if (solicitudes.length > 0) {
             return { ok: false, reason: "SOLICITUD_ACTIVA" };
         }
 
-        // 3️⃣ Cita activa
+        // Cita activa
         const citas = await listarCitas();
         const citaActiva = citas.find(
             (c) => c.usuario_id === usuarioId && c.estado === "programada"
@@ -50,7 +50,7 @@ export async function iniciarAdopcionMascota(
             return { ok: false, reason: "CITA_ACTIVA" };
         }
 
-        // 4️⃣ Todo OK
+        // Todo OK
         return {
             ok: true,
             mascotaId: mascota.id,

@@ -13,6 +13,7 @@ import { ESPECIES } from "@/features/mascotas/data/constants";
 import type { Mascota } from "@/features/mascotas/types/mascotas";
 import MascotasFeed from "@/features/mascotas/components/client/MascotasFeed";
 import { useIniciarAdopcionMascota } from "@/features/usuarios/hooks/useIniciarAdopcionMascota";
+import { useCrearSolicitudAdopcion } from "@/features/solicitudes/hooks/useCrearSolicitudAdopcion";
 
 export default function MascotasPage() {
   const router = useRouter();
@@ -46,6 +47,12 @@ export default function MascotasPage() {
     data: adopcionResult,
     error: adopcionError,
   } = useIniciarAdopcionMascota();
+
+  const {
+    crearSolicitud,
+    isLoading: isCreandoSolicitud,
+    error: crearSolicitudError,
+  } = useCrearSolicitudAdopcion();
 
   // Bloquear scroll del body cuando el visor está abierto
   useEffect(() => {
@@ -84,6 +91,8 @@ export default function MascotasPage() {
     if (adopcionResult.ok) {
       setAdopcionEnProgreso(true);
       setMensajeExito(`Procesando solicitud para ${adopcionResult.mascotaNombre}...`);
+
+      crearSolicitud(adopcionResult.mascotaId);
 
       router.push(
         `/dashboards/usuario/adopcion?paso=2&from=${adopcionResult.mascotaId}`
