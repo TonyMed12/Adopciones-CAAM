@@ -30,13 +30,10 @@ export default function SeguimientoAdminPage() {
     sexo,
   });
 
-  /** 🔽 Aplanar páginas */
   const mascotas = data?.pages.flatMap((p) => p.items) ?? [];
 
-  /** 🔢 Total real (para paginación) */
   const totalItems = data?.pages?.[0]?.total ?? 0;
 
-  /** ⏭️ Cargar más páginas cuando se necesite */
   useEffect(() => {
     const ITEMS_PER_PAGE = 10;
     const totalNecesario = page * ITEMS_PER_PAGE;
@@ -50,7 +47,6 @@ export default function SeguimientoAdminPage() {
     }
   }, [page, mascotas.length, hasNextPage, isFetchingNextPage]);
 
-  /** 🧩 Formateo para tabla */
   const dataTabla = useMemo(() => {
     return mascotas.map(formatearMascotaParaTabla);
   }, [mascotas]);

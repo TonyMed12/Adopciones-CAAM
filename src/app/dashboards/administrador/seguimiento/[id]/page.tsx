@@ -37,7 +37,6 @@ export default function SeguimientoPorMascotaPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 pb-20">
 
-      {/* BOTÓN REGRESAR */}
       <button
         onClick={() => router.push("/dashboards/administrador/seguimiento")}
         className="group flex items-center gap-2 text-[#8B4513] mb-4 font-medium cursor-pointer"

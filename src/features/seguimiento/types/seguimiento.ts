@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export interface Seguimiento {
   id: string;
   adopcion_id: string | null;
@@ -41,3 +43,14 @@ export interface MascotaSeguimiento {
     especie: string;
   } | null;
 }
+
+export type CrearSeguimientoDBInput = {
+  adopcionId: string;
+  fechaProgramada: string;
+  observaciones: string;
+  recomendaciones?: string | null;
+  satisfaccion_adoptante: number;
+  estado_mascota: string;
+  problemas_reportados: string[];
+  fotosUrls: string[];
+};
