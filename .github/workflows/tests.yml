@@ -1,0 +1,28 @@
+name: CI - Tests
+
+on:
+  push:
+    branches: [ "main", "godav" ]
+  pull_request:
+    branches: [ "main", "godav" ]
+
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Next.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar tests
+        run: echo "Todavía no hay tests jdksafkja te amo pacheco gracias por todo"
