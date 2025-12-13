@@ -32,3 +32,20 @@ export const deleteMascotaMutation = async (id: string) => {
 export async function fetchMascotasAdoptadas() {
     return await obtenerMascotasAdoptadas();
 }
+
+export const mascotasPublicasKeys = {
+    all: ["mascotas-publicas"] as const,
+
+    infinite: (params: {
+        search?: string;
+        especie?: string;
+        sexo?: string;
+    }) =>
+        [
+            ...mascotasPublicasKeys.all,
+            "infinite",
+            params.search ?? "",
+            params.especie ?? "Todas",
+            params.sexo ?? "Todos",
+        ] as const,
+};

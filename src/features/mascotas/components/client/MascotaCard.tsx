@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import type { Mascota } from "@/features/mascotas/data/types";
+import type { Mascota } from "@/features/mascotas/types/mascotas";
 import { Button } from "@/components/ui/Button";
 
 type Props = {
@@ -16,16 +16,12 @@ export default function MascotaCard({
   onAdopt,
   adoptDisabled = false,
 }: Props) {
-  const fotoSrc =
-    (m as any).foto ||
-    (m as any).fotoUrl ||
-    (m as any).imagen ||
-    (m as any).image ||
-    (m as any).img ||
-    null;
+  // Imagen (fuente única y tipada)
+  const fotoSrc = m.imagen_url ?? null;
 
   const estado = m.estado?.toLowerCase() ?? "disponible";
-  const disponible = m.disponible_adopcion !== false && estado === "disponible";
+  const disponible =
+    m.disponible_adopcion !== false && estado === "disponible";
 
   let botonTexto = "Adoptar";
   let disabled = adoptDisabled;
@@ -42,12 +38,12 @@ export default function MascotaCard({
   }
 
   return (
-    <article className="masc-card group">
+    <article className="masc-card group animate-fade-in">
       {/* Imagen */}
       <div className="media">
         {fotoSrc ? (
           <img
-            src={String(fotoSrc)}
+            src={fotoSrc}
             alt={m.nombre}
             className="media-img group-hover:scale-105 transition-transform duration-500"
             onClick={onView}
@@ -58,15 +54,15 @@ export default function MascotaCard({
 
         {/* Sexo */}
         <span className={`sex ${m.sexo === "hembra" ? "f" : "m"}`}>
-          {m.sexo.charAt(0).toUpperCase() + m.sexo.slice(1).toLowerCase()}
+          {m.sexo.charAt(0).toUpperCase() +
+            m.sexo.slice(1).toLowerCase()}
         </span>
 
         {/* Estado */}
         {estado !== "disponible" && (
           <span
-            className={`estado-tag ${
-              estado === "adoptada" ? "adoptada" : "proceso"
-            }`}
+            className={`estado-tag ${estado === "adoptada" ? "adoptada" : "proceso"
+              }`}
           >
             {botonTexto}
           </span>
@@ -79,25 +75,35 @@ export default function MascotaCard({
           <h3 className="name" title={m.nombre}>
             {m.nombre}
           </h3>
-          <span className="pill">{m.especie}</span>
+          <span className="pill">
+            {m.raza?.especie ?? "Desconocido"}
+          </span>
         </div>
 
         <div className="meta">
           <span>
-            <strong>Raza:</strong> {m.raza || "Criollo"}
+            <strong>Raza:</strong>{" "}
+            {m.raza?.nombre ?? "Criollo"}
           </span>
+
           <span>
             <strong>Tamaño:</strong>{" "}
             {m.tamano
               ? m.tamano.charAt(0).toUpperCase() +
-                m.tamano.slice(1).toLowerCase()
+              m.tamano.slice(1).toLowerCase()
               : "—"}
           </span>
+
           <span>
-            <strong>Edad:</strong> {m.edadMeses}
+            <strong>Edad:</strong>{" "}
+            {m.edad ?? "—"}
           </span>
+
           <span>
-            <strong>Pers:</strong> {m.descripcion}
+            <strong>Pers:</strong>{" "}
+            {m.personalidad ||
+              m.descripcion_fisica ||
+              "—"}
           </span>
         </div>
 
@@ -173,10 +179,10 @@ export default function MascotaCard({
         }
 
         .sex.f {
-          background: #ec4899; /* rosa */
+          background: #ec4899;
         }
         .sex.m {
-          background: #3b82f6; /* azul */
+          background: #3b82f6;
         }
 
         /* ESTADO */
@@ -251,16 +257,25 @@ export default function MascotaCard({
           min-width: 75px;
         }
 
-        .desc {
-          color: #2b1b12;
-          font-size: 14px;
-        }
-
         .actions {
           display: flex;
           gap: 10px;
           margin-top: 12px;
         }
+
+       @keyframes feedReveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.feed-item {
+  opacity: 0;
+  animation: feedReveal 0.9s ease-out forwards;
+}
       `}</style>
     </article>
   );

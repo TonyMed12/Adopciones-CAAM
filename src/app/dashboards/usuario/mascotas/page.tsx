@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ReactDOM from "react-dom";
 
@@ -11,10 +11,12 @@ import MascotaCardUsuario from "@/features/mascotas/components/client/MascotaCar
 import { Button } from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { createClient } from "@/lib/supabase/client";
-
-import { listarMascotas } from "@/features/mascotas/actions/mascotas-actions";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { ESPECIES } from "@/features/mascotas/data/constants";
 import type { Mascota } from "@/features/mascotas/data/types";
+
+import { useMascotasPublicasInfiniteQuery } from "@/features/mascotas/hooks/useMascotasPublicasInfiniteQuery";
+
 
 type DocEstado = "aprobado" | "en_revision" | "rechazado" | "sin_documentos";
 
@@ -25,8 +27,6 @@ export default function MascotasPage() {
   const supabase = createClient();
   const [showCancelSolicitudModal, setShowCancelSolicitudModal] =
     useState(false);
-  const [items, setItems] = useState<Mascota[]>([]);
-  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [especie, setEspecie] = useState<string>(() => {
     const val = (especieQS || "").trim();
@@ -38,6 +38,24 @@ export default function MascotasPage() {
     return "Todas";
   });
   const [sexo, setSexo] = useState<string>("Todos");
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useMascotasPublicasInfiniteQuery({
+    search: q,
+    especie,
+    sexo,
+  });
+
+  const loadMoreRef = useInfiniteScroll({
+    hasNextPage,
+    isFetchingNextPage,
+    onLoadMore: fetchNextPage,
+  });
+
 
   // Estado de documentos del usuario
   const [docEstado, setDocEstado] = useState<DocEstado>("sin_documentos");
@@ -118,48 +136,7 @@ export default function MascotasPage() {
   // --------------------------------------------------------
   // 🐶 Obtener mascotas disponibles
   // --------------------------------------------------------
-  useEffect(() => {
-    async function fetchMascotas() {
-      try {
-        setLoading(true);
-        const data = await listarMascotas();
 
-        const disponibles = (data || []).filter(
-          (m) =>
-            m.disponible_adopcion || m.estado?.toLowerCase() === "disponible"
-        );
-
-        const formateadas = disponibles.map((m) => {
-          const totalMeses = Number(m.edad ?? 0);
-          const años = Math.floor(totalMeses / 12);
-          const meses = totalMeses % 12;
-          const edadFormateada =
-            años > 0
-              ? `${años} año${años > 1 ? "s" : ""}${
-                  meses > 0 ? ` y ${meses} mes${meses > 1 ? "es" : ""}` : ""
-                }`
-              : `${meses} mes${meses !== 1 ? "es" : ""}`;
-
-          return {
-            ...m,
-            edadMeses: edadFormateada,
-            especie: m.raza?.especie || m.especie || "Desconocido",
-            raza: m.raza?.nombre || "Mestizo",
-            descripcion: m.personalidad || m.descripcion_fisica || "",
-            foto: m.imagen_url,
-          };
-        });
-
-        setItems(formateadas);
-      } catch (err) {
-        console.error("Error al listar mascotas:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchMascotas();
-  }, []);
 
   // Adopción
   async function handleAdopt(m: Mascota) {
@@ -241,8 +218,7 @@ export default function MascotasPage() {
       // 🔁 Redirigir rápido al paso siguiente (sin esperar Supabase)
       setTimeout(() => {
         router.push(
-          `/dashboards/usuario/adopcion?paso=2&from=${
-            m.id
+          `/dashboards/usuario/adopcion?paso=2&from=${m.id
           }&nombre=${encodeURIComponent(m.nombre)}`
         );
       }, 1200);
@@ -354,19 +330,7 @@ export default function MascotasPage() {
   // --------------------------------------------------------
   // 🔍 Filtrar las mascotas visibles
   // --------------------------------------------------------
-  const data = useMemo(() => {
-    return items.filter((m) => {
-      const matchesQ = [m.nombre, m.raza, m.descripcion, m.especie].some((v) =>
-        v?.toLowerCase().includes(q.toLowerCase())
-      );
-
-      const matchesEsp = especie === "Todas" || m.especie === especie;
-      const matchesSexo =
-        sexo === "Todos" || m.sexo?.toLowerCase() === sexo.toLowerCase();
-
-      return matchesQ && matchesEsp && matchesSexo;
-    });
-  }, [items, q, especie, sexo]);
+  const mascotas = data?.pages.flatMap((page) => page.items) ?? [];
 
   // 💅 Render principal
   return (
@@ -377,9 +341,8 @@ export default function MascotasPage() {
       />
       {docEstado !== "aprobado" && (
         <div
-          className={`mb-4 rounded-xl border px-4 py-3 ${
-            toneClasses[estadoText[docEstado].tone]
-          } text-sm`}
+          className={`mb-4 rounded-xl border px-4 py-3 ${toneClasses[estadoText[docEstado].tone]
+            } text-sm`}
         >
           <p className="font-extrabold text-[#2b1b12]">
             {estadoText[docEstado].title}
@@ -407,57 +370,56 @@ export default function MascotasPage() {
         />
       </div>
       {/* Filtrado de mascotas */}
-      {loading ? (
+      {isLoading ? (
         <div className="py-10 text-center text-[#7a5c49]">
           Cargando mascotas...
         </div>
       ) : (
-        <section className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
-          {data.map((m) => (
-            <MascotaCard
-              key={m.id}
-              m={m}
-              onView={() => {
-                setSelectedMascota(m);
-                setOpenCard(true);
-              }}
-              onAdopt={() => handleAdopt(m)}
-            />
-          ))}
-          {data.length === 0 && (
-            <div className="col-span-full py-10 text-center text-[#7a5c49]">
-              <div className="text-4xl mb-2 opacity-80">🔎</div>
-              <p className="font-semibold mb-3">
-                No encontramos mascotas con esos filtros
-              </p>
-
-              <button
-                onClick={() => {
-                  setQ("");
-                  setEspecie("Todas");
-                  setSexo("Todos");
+        <>
+          <section
+            className="
+        grid gap-3
+        [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]
+        transition-opacity duration-300
+      "
+          >
+            {mascotas.map((m) => (
+              <MascotaCard
+                key={m.id}
+                m={m}
+                onView={() => {
+                  setSelectedMascota(m);
+                  setOpenCard(true);
                 }}
-                className="
-      px-4 py-2 
-      bg-[#BC5F36] 
-      text-white 
-      rounded-full 
-      text-sm 
-      font-semibold 
-      shadow-md 
-      hover:bg-[#a24f2d] 
-      hover:shadow-lg 
-      transition-all 
-      duration-200
-      cursor-pointer
-    "
-              >
-                Limpiar filtros
-              </button>
+                onAdopt={() => handleAdopt(m)}
+              />
+            ))}
+
+            {mascotas.length === 0 && (
+              <div className="col-span-full py-10 text-center text-[#7a5c49]">
+                <div className="text-4xl mb-2 opacity-80">🔎</div>
+                <p className="font-semibold mb-3">
+                  No encontramos mascotas con esos filtros
+                </p>
+              </div>
+            )}
+          </section>
+
+          <div
+            ref={loadMoreRef}
+            className="h-8 pointer-events-none"
+          />
+
+
+          {isFetchingNextPage && (
+            <div className="py-8 flex justify-center opacity-40 transition-opacity duration-300">
+              <div className="w-4 h-4 border-2 border-[#BC5F36] border-t-transparent rounded-full animate-spin" />
             </div>
           )}
-        </section>
+        </>
       )}
+
+
       {/* Modal bloqueo adopción */}
       <Modal
         open={gateOpen}
@@ -510,6 +472,8 @@ export default function MascotasPage() {
           </div>
         </div>
       )}
+
+
       {/* 🧡 Modal info mascota a pantalla completa (portal) */}
       {openCard &&
         typeof window !== "undefined" &&
