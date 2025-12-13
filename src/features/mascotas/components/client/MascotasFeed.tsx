@@ -14,7 +14,10 @@ type Props = {
     sexo: string;
     onView: (m: Mascota) => void;
     onAdopt: (m: Mascota) => void;
+    limit?: number;          
+    disableInfinite?: boolean; 
 };
+
 
 export default function MascotasFeed({
     search,
@@ -53,10 +56,13 @@ export default function MascotasFeed({
         <>
             <section
                 className="
-          grid gap-3
-          [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]
-        "
+    grid gap-4
+    grid-cols-1
+    sm:grid-cols-2
+    lg:grid-cols-3
+  "
             >
+
                 {mascotas.map((m) => (
                     <MascotaCard
                         key={m.id}
@@ -75,6 +81,7 @@ export default function MascotasFeed({
                     </div>
                 )}
             </section>
+
 
             {/* Sentinel */}
             {hasNextPage && (

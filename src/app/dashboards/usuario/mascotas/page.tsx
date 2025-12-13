@@ -119,6 +119,7 @@ export default function MascotasPage() {
 
   /* ---------------- handlers ---------------- */
   function handleAdopt(mascota: Mascota) {
+    setHandledResult(false);
     iniciarAdopcion(mascota);
   }
 
@@ -131,7 +132,7 @@ export default function MascotasPage() {
       />
 
       {/* Filtros */}
-      <div className="sticky top-[5.5rem] z-20 bg-white/80 backdrop-blur-md py-2 rounded-xl shadow-sm">
+      <div className="mb-6">
         <Filters
           q={q}
           onQ={setQ}
