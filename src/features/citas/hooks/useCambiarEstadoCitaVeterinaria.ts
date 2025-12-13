@@ -16,17 +16,13 @@ export function useCambiarEstadoCita() {
       estado: "pendiente" | "aprobada" | "cancelada";
     }) => cambiarEstadoCitaVeterinaria(id, estado),
 
-    // ⭐ OPTIMISTIC UPDATE
     onMutate: async ({ id, estado }) => {
-      // 1. Cancelar posibles refetch en curso
       await qc.cancelQueries({
         queryKey: CitasVeterinariasKeys.admin.all(),
       });
 
-      // 2. Guardar estado anterior (para rollback si falla)
       const previous = qc.getQueryData(CitasVeterinariasKeys.admin.all());
 
-      // 3. Actualizar UI inmediatamente
       qc.setQueryData(
         CitasVeterinariasKeys.admin.all(),
         (old: any[] = []) =>
@@ -38,7 +34,6 @@ export function useCambiarEstadoCita() {
       return { previous };
     },
 
-    // ❌ Revertir si algo falla
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) {
         qc.setQueryData(
@@ -48,7 +43,6 @@ export function useCambiarEstadoCita() {
       }
     },
 
-    // 🔄 Sincronizar datos reales al finalizar
     onSettled: () => {
       qc.invalidateQueries({
         queryKey: CitasVeterinariasKeys.admin.all(),
