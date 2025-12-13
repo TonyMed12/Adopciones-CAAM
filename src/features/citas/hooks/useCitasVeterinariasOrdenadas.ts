@@ -15,9 +15,22 @@ export function useCitasOrdenadas(citas: any[], filtro: string, query: string) {
         )
       : filtradas;
 
-    return [...buscadas].sort(
-      (a, b) =>
-        new Date(a.fecha_cita).getTime() - new Date(b.fecha_cita).getTime()
-    );
+    const prioridad: Record<string, number> = {
+      pendiente: 1,
+      aprobada: 2,
+      cancelada: 3,
+    };
+
+    return [...buscadas].sort((a, b) => {
+      const pa = prioridad[a.estado] ?? 99;
+      const pb = prioridad[b.estado] ?? 99;
+
+      if (pa !== pb) return pa - pb;
+
+      return (
+        new Date(a.fecha_cita).getTime() -
+        new Date(b.fecha_cita).getTime()
+      );
+    });
   }, [citas, filtro, query]);
 }

@@ -1,12 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchUsuarios } from "../queries/usuarios-queries";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { usuariosInfiniteQuery } from "../queries/usuarios-queries";
 
-export function useUsuariosQuery() {
-  return useQuery({
-    queryKey: ["usuarios"],
-    queryFn: fetchUsuarios,
-    staleTime: 10000,
-    gcTime: 1000 * 60 * 5,
-    retry: 1,
-  });
+export function useUsuariosQuery(params: { search?: string }) {
+  return useInfiniteQuery(usuariosInfiniteQuery(params));
 }
+

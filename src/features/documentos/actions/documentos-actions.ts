@@ -74,7 +74,7 @@ export async function aprobarDocumento(id: string) {
     docsUsuario && docsUsuario.every((d: any) => d.status === "aprobado");
 
   if (todosAprobados) {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL; 
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
     await fetch(`${baseUrl}/api/email/documento`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -122,7 +122,7 @@ export async function rechazarDocumento(id: string, motivo: string) {
 
   if (!doc?.perfiles?.email) return true;
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL; 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
   await fetch(`${baseUrl}/api/email/documento`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -136,4 +136,21 @@ export async function rechazarDocumento(id: string, motivo: string) {
   });
 
   return true;
+}
+
+export async function listarDocumentosPorUsuario(perfilId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("documentos")
+    .select("id, status")
+    .eq("perfil_id", perfilId)
+    .eq("status", "aprobado");
+
+  if (error) {
+    console.error("Error listando documentos del usuario:", error.message);
+    throw new Error("No se pudieron obtener los documentos del usuario");
+  }
+
+  return data ?? [];
 }

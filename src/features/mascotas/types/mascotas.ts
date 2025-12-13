@@ -34,3 +34,24 @@ export interface Mascota {
     raza?: verRaza | null;
 }
 
+export interface ListarMascotasPublicasParams {
+    cursor?: string | null;
+    search?: string;
+    especie?: string;
+    sexo?: string;
+}
+
+export interface MascotasPaginadasResult {
+    items: Mascota[];
+    nextCursor: string | null;
+    total: number;
+}
+
+export interface ListarMascotasParams {
+    cursor?: string | null;
+    search?: string;
+    especie?: string;
+    sexo?: string;
+}
+
+

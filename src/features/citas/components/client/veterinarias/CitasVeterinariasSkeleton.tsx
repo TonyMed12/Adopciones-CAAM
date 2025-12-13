@@ -2,12 +2,15 @@
 
 export default function CitasVeterinariasSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse w-full block lg:block">
+    <div className="p-6 space-y-6 animate-pulse">
 
       {/* ===== KPIs ===== */}
       <div className="flex flex-wrap gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-7 w-32 bg-[#f4e7d8] rounded-md" />
+          <div
+            key={i}
+            className="h-7 w-32 bg-[#f4e7d8] rounded-md"
+          />
         ))}
       </div>
 
@@ -16,17 +19,22 @@ export default function CitasVeterinariasSkeleton() {
 
         {/* ===== Tabla Desktop ===== */}
         <div className="hidden lg:block bg-white rounded-xl shadow-md overflow-hidden border border-[#eedfcc]">
+          {/* Header */}
           <div className="bg-[#FFF6E5] py-3 px-4 grid grid-cols-6 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-4 bg-[#f4e7d8] rounded-md" />
             ))}
           </div>
 
+          {/* 6 filas fake */}
           <div className="divide-y divide-[#f5e6d3]">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="grid grid-cols-6 gap-4 px-4 py-4">
                 {Array.from({ length: 6 }).map((_, j) => (
-                  <div key={j} className="h-4 bg-[#f9f1e7] rounded-md" />
+                  <div
+                    key={j}
+                    className="h-4 bg-[#f9f1e7] rounded-md"
+                  />
                 ))}
               </div>
             ))}
@@ -70,9 +78,13 @@ export default function CitasVeterinariasSkeleton() {
           <div className="bg-white rounded-xl shadow-md p-4 space-y-4">
             <div className="h-5 w-40 bg-[#f4e7d8] rounded-md" />
 
+            {/* Calendar grid */}
             <div className="grid grid-cols-7 gap-2">
               {Array.from({ length: 14 }).map((_, i) => (
-                <div key={i} className="h-10 bg-[#f9f1e7] rounded-md" />
+                <div
+                  key={i}
+                  className="h-10 bg-[#f9f1e7] rounded-md"
+                />
               ))}
             </div>
           </div>

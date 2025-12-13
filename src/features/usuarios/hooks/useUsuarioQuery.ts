@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchUsuarios } from "../queries/usuarios-queries";
+import { fetchUsuariosByIds } from "../actions/usuarios-actions";
 
 export function useUsuarioQuery(id: string | null) {
   return useQuery({
     queryKey: ["usuario", id],
     queryFn: async () => {
-      const users = await fetchUsuarios();
-      return users.find(u => u.id === id) ?? null;
+      const [usuario] = await fetchUsuariosByIds([id!]);
+      return usuario ?? null;
     },
     enabled: !!id,
     staleTime: 1000 * 30,

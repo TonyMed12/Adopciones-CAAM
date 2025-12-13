@@ -17,7 +17,6 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
-  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const verifyRole = async () => {
@@ -29,13 +28,12 @@ export default function AdminLayout({
         router.push("/dashboards/usuario");
       }
 
-      setChecking(false);
+      
     };
 
     verifyRole();
   }, [router]);
 
-  if (checking) return <p className="p-10">Cargando...</p>;
   if (!allowed) return null;
 
   return (

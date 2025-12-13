@@ -2,23 +2,101 @@
 import { createClient } from "@/lib/supabase/server";
 import { CreateMascotaSchema, UpdateMascotaSchema, DeleteMascotaSchema } from "../schemas/mascotas-schemas";
 import type { Mascota } from "../types/mascotas";
-
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { deleteMascotaImagen } from "./storage/deleteMascotaImagen";
 import { deleteMascotaQR } from "./storage/deleteMascotaQR";
 import { validarMascotaEliminable } from "./helpers/validarMascotaEliminable";
+import { baseMascotasQuery, PAGE_SIZE } from "./helpers/baseMascotasQuery";
+import type { ListarMascotasParams, ListarMascotasPublicasParams, MascotasPaginadasResult } from "../types/mascotas";
 
-export async function listarMascotas() {
+/* ======================== LISTAR ======================== */
+// Cuando cambie la busqueda se resetea el page
+// El page depende de la pagina en la que se encuentre el usuario
+export async function listarMascotas(
+    { cursor, search, especie, sexo }: ListarMascotasParams
+) {
     const supabase = await createClient();
+    let query = baseMascotasQuery(supabase);
 
-    const { data, error } = await supabase
-        .from("mascotas")
-        .select("*, raza:raza_id(id, nombre, especie)")
-        .order("created_at", { ascending: false });
+    if (search?.trim()) {
+        query = query.ilike("nombre", `%${search}%`);
+    }
 
+    if (especie && especie !== "Todas") {
+        query = query.eq("raza.especie", especie);
+    }
+
+    if (sexo && sexo !== "Todos") {
+        query = query.eq("sexo", sexo.toLowerCase());
+    }
+
+    if (cursor) {
+        query = query.lt("created_at", cursor);
+    }
+
+    const { data, error, count } = await query;
     if (error) throw new Error(error.message);
 
-    return data;
+    const nextCursor =
+        data && data.length === PAGE_SIZE
+            ? data[data.length - 1].created_at
+            : null;
+
+    return {
+        items: data ?? [],
+        nextCursor,
+        total: count ?? 0,
+    };
 }
+
+export async function listarMascotasPublicas(
+    {
+        cursor,
+        search,
+        especie,
+        sexo,
+    }: ListarMascotasPublicasParams
+): Promise<MascotasPaginadasResult> {
+    const supabase = await createClient();
+
+    let query = baseMascotasQuery(supabase)
+        .eq("disponible_adopcion", true)
+        .eq("estado", "disponible");
+
+    if (search?.trim()) {
+        query = query.ilike("nombre", `%${search}%`);
+    }
+
+    if (especie && especie !== "Todas") {
+        query = query.eq("raza.especie", especie);
+    }
+
+    if (sexo && sexo !== "Todos") {
+        query = query.eq("sexo", sexo.toLowerCase());
+    }
+
+    if (cursor) {
+        query = query.lt("created_at", cursor);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    const nextCursor =
+        data && data.length === PAGE_SIZE
+            ? data[data.length - 1].created_at ?? null
+            : null;
+
+    return {
+        items: data ?? [],
+        nextCursor,
+        total: count ?? 0,
+    };
+}
+
 
 /* ======================== CREAR ======================== */
 export async function crearMascota(input: unknown): Promise<Mascota> {
@@ -124,7 +202,7 @@ export async function fetchMascotasByIds(ids: string[]) {
     return data ?? [];
 }
 export async function marcarMascotaAdoptada(
-    supabaseSrv: any,
+    supabaseSrv: SupabaseClient,
     mascotaId: string
 ) {
     const { error } = await supabaseSrv
@@ -132,8 +210,12 @@ export async function marcarMascotaAdoptada(
         .update({ estado: "adoptada", disponible_adopcion: false })
         .eq("id", mascotaId);
 
-    if (error)
-        console.error("⚠️ Error marcando mascota como adoptada:", error.message);
+    if (error) {
+        console.error(
+            "⚠️ Error marcando mascota como adoptada:",
+            error.message
+        );
+    }
 }
 
 

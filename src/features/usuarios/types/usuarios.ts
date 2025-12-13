@@ -42,7 +42,12 @@ export interface Perfil {
   updated_at?: string | null;
 }
 
-
 export interface PerfilConDireccion extends Perfil {
   direccion?: Direccion | null;
 }
+
+export type ListarUsuariosResult = {
+  items: Perfil[];
+  nextCursor: string | null;
+  total: number | null;
+};

@@ -1,12 +1,9 @@
 "use client";
 
-import PageHead from "@/components/layout/PageHead";
-
-import { ClipboardList, PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import React, { useEffect } from "react";
+import Pagination from "@/components/ui/Pagination";
 
 import { useUsuarioAuth } from "@/features/usuarios/hooks/useUsuarioAuth";
-
 import { useMascotasAdoptadasUsuario } from "@/features/citas/hooks/useMascotasAdoptadasUsuario";
 import { useCitasVeterinariasUsuario } from "@/features/citas/queries/citas-veterinarias-queries";
 
@@ -17,6 +14,15 @@ import { useCrearCitaVeterinaria } from "@/features/citas/hooks/useCrearCitaVete
 import CitasVeterinariasUsuarioLista from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioLista";
 import { CitasVeterinariasUsuarioAgendar } from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioAgendar";
 import CitasVeterinariasUsuarioSkeleton from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioSkeleton";
+import { CitasVeterinariasUsuarioHeader } from "@/features/citas/components/client/veterinarias/CitasVeterinariasUsuarioHeader";
+
+const ITEMS_PER_PAGE = 10;
+
+function crearFechaLocal(fechaStr: string, horaStr: string) {
+  const [y, m, d] = fechaStr.split("-").map(Number);
+  const [hh, mm] = horaStr.split(":").map(Number);
+  return new Date(y, m - 1, d, hh, mm, 0);
+}
 
 export default function CitasVeterinariasPage() {
   const authId = useUsuarioAuth();
@@ -38,14 +44,75 @@ export default function CitasVeterinariasPage() {
     setMotivo,
   } = useCitasVeterinariasUsuarioPageState();
 
-  // QUERIES
   const { data: mascotas = [] } = useMascotasAdoptadasUsuario(authId || "");
+
   const {
-    data: citas = [],
+    data,
     isLoading: loadingCitas,
-  } = useCitasVeterinariasUsuario(authId || "");
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useCitasVeterinariasUsuario(authId);
+
+  const [uiPage, setUiPage] = React.useState(1);
+
+  const citas = data?.pages.flatMap((p) => p.items) ?? [];
+
+  const totalCitas =
+    data?.pages?.[0]?.total ?? citas.length;
 
   const bloqueado = citas.some((c) => c.estado === "pendiente");
+
+  const prioridad = {
+    pendiente: 1,
+    aprobada: 2,
+    cancelada: 3,
+  };
+
+  const citasOrdenadas = [...citas].sort((a, b) => {
+    const pa = prioridad[a.estado] ?? 99;
+    const pb = prioridad[b.estado] ?? 99;
+    if (pa !== pb) return pa - pb;
+    return (
+      new Date(a.fecha_cita).getTime() -
+      new Date(b.fecha_cita).getTime()
+    );
+  });
+
+  const pagesLoaded = data?.pages.length ?? 1;
+
+  const totalPages = hasNextPage
+    ? pagesLoaded + 1
+    : pagesLoaded;
+
+  const paginatedCitas = citasOrdenadas.slice(
+    (uiPage - 1) * ITEMS_PER_PAGE,
+    uiPage * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = async (nextPage: number) => {
+    if (nextPage < uiPage) {
+      setUiPage(nextPage);
+      return;
+    }
+
+    if (
+      nextPage > pagesLoaded &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      await fetchNextPage();
+    }
+
+    setUiPage(nextPage);
+  };
+
+  // 🔹 Ocultar mensaje después de 5 segundos
+  useEffect(() => {
+    if (!mensaje) return;
+    const t = setTimeout(() => setMensaje(null), 5000);
+    return () => clearTimeout(t);
+  }, [mensaje, setMensaje]);
 
   const {
     horasDisponibles,
@@ -77,41 +144,13 @@ export default function CitasVeterinariasPage() {
 
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-3xl p-5 sm:p-8">
-      {/* HEADER */}
-      <PageHead
-        title="Citas Veterinarias"
-        subtitle="Agenda nuevas citas y revisa el estado de las existentes."
+      <CitasVeterinariasUsuarioHeader
+        modo={modo}
+        setModo={setModo}
+        bloqueado={bloqueado}
+        setMensaje={setMensaje}
       />
 
-      {/* BOTONES */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 text-center sm:text-left">
-        <div className="flex flex-wrap justify-center sm:justify-end gap-3 w-full sm:w-auto">
-          <Button
-            variant={modo === "lista" ? "primary" : "ghost"}
-            onClick={() => setModo("lista")}
-          >
-            <ClipboardList className="w-4 h-4 mr-2" /> Mis citas
-          </Button>
-
-          <Button
-            variant={modo === "agendar" ? "primary" : "ghost"}
-            onClick={() => {
-              if (bloqueado) {
-                setMensaje(
-                  "Ya tienes una cita pendiente. Espera la confirmación del CAAM antes de agendar otra."
-                );
-                return;
-              }
-              setMensaje(null);
-              setModo("agendar");
-            }}
-          >
-            <PlusCircle className="w-4 h-4 mr-2" /> Agendar nueva cita
-          </Button>
-        </div>
-      </div>
-
-      {/* MENSAJE GLOBAL */}
       {mensaje && (
         <div
           className={`mt-4 text-center text-sm p-3 rounded-lg ${
@@ -124,16 +163,28 @@ export default function CitasVeterinariasPage() {
         </div>
       )}
 
-      {/* LOADING – SIN EARLY RETURN */}
       {loadingCitas ? (
         <CitasVeterinariasUsuarioSkeleton />
       ) : modo === "lista" ? (
-        <CitasVeterinariasUsuarioLista
-          citas={citas}
-          filtro={filtro}
-          setFiltro={setFiltro}
-          obtenerMascota={obtenerMascota}
-        />
+        <>
+          <CitasVeterinariasUsuarioLista
+            citas={paginatedCitas}
+            filtro={filtro}
+            setFiltro={setFiltro}
+            obtenerMascota={obtenerMascota}
+          />
+
+          {totalCitas > ITEMS_PER_PAGE && (
+            <Pagination
+              page={uiPage}
+              totalPages={totalPages}
+              onChange={handlePageChange}
+              itemsPerPage={ITEMS_PER_PAGE}
+              totalItems={totalCitas}
+              itemsLabel="citas"
+            />
+          )}
+        </>
       ) : (
         <CitasVeterinariasUsuarioAgendar
           mascotas={mascotas}
@@ -162,9 +213,14 @@ export default function CitasVeterinariasPage() {
               return;
             }
 
+            const fechaLocal = crearFechaLocal(
+              fechaSeleccionada,
+              horaSeleccionada
+            );
+
             crearCita.mutate({
               adopcion_id: mascotaSeleccionada.adopcion_id,
-              fecha_cita: `${fechaSeleccionada}T${horaSeleccionada}:00`,
+              fecha_cita: fechaLocal.toISOString(),
               motivo,
             });
           }}

@@ -1,6 +1,9 @@
 "use client";
 
+import { useState, useMemo, useEffect } from "react";
 import { Filter } from "lucide-react";
+import Pagination from "@/components/ui/Pagination";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export default function CitasVeterinariasUsuarioLista({
   citas,
@@ -13,14 +16,35 @@ export default function CitasVeterinariasUsuarioLista({
   setFiltro: (f: any) => void;
   obtenerMascota: (id: string) => string;
 }) {
+  const isMobile = useIsMobile();
+  const ITEMS_PER_PAGE = isMobile ? 5 : 10;
+
   const estadoColor = {
     pendiente: "text-orange-700 bg-orange-50",
     aprobada: "text-green-700 bg-green-50",
     cancelada: "text-red-700 bg-red-50",
   } as const;
 
-  const citasFiltradas =
-    filtro === "todas" ? citas : citas.filter((c) => c.estado === filtro);
+  const [page, setPage] = useState(1);
+
+  const citasFiltradas = useMemo(() => {
+    if (filtro === "todas") return citas;
+    return citas.filter((c) => c.estado === filtro);
+  }, [citas, filtro]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filtro, citas, isMobile]);
+
+  const totalPages = Math.ceil(citasFiltradas.length / ITEMS_PER_PAGE);
+
+  const paginated = useMemo(() => {
+    return citasFiltradas.slice(
+      (page - 1) * ITEMS_PER_PAGE,
+      page * ITEMS_PER_PAGE
+    );
+  }, [citasFiltradas, page, ITEMS_PER_PAGE]);
+
 
   return (
     <div>
@@ -55,7 +79,7 @@ export default function CitasVeterinariasUsuarioLista({
           </thead>
 
           <tbody>
-            {citasFiltradas.map((cita) => {
+            {paginated.map((cita) => {
               const fecha = new Date(cita.fecha_cita);
               const fechaStr = fecha.toLocaleDateString("es-MX", {
                 year: "numeric",
@@ -95,7 +119,7 @@ export default function CitasVeterinariasUsuarioLista({
 
       {/* Cards Mobile */}
       <div className="grid sm:hidden gap-4 mt-4">
-        {citasFiltradas.map((cita) => {
+        {paginated.map((cita) => {
           const fecha = new Date(cita.fecha_cita);
           const fechaStr = fecha.toLocaleDateString("es-MX", {
             year: "numeric",
@@ -138,6 +162,25 @@ export default function CitasVeterinariasUsuarioLista({
           );
         })}
       </div>
+
+      {/* PAGINACIÓN */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={citasFiltradas.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            itemsLabel="citas"
+            onChange={(n) => {
+              setPage(n);
+              setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }, 10);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

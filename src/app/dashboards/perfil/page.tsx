@@ -1,46 +1,16 @@
 "use client";
 
-import useSWR from "swr";
-import { obtenerPerfilActual } from "@/features/perfil/actions/perfil-actions";
-import PerfilCard from "@/features/perfil/components/client/PerfilCard";
 import HeaderAd from "@/components/layout/HeaderAd";
 import HeaderUsr from "@/components/layout/HeaderUsr";
-import { Loader2 } from "lucide-react";
 import PageHead from "@/components/layout/PageHead";
-
-const fetcher = async () => {
-  const data = await obtenerPerfilActual();
-  return data;
-};
+import PerfilCard from "@/features/perfil/components/client/PerfilCard";
+import { usePerfilQuery } from "@/features/perfil/hooks/usePerfilQuery";
 
 export default function PerfilPage() {
-  const { data, error, isLoading, } = useSWR("/perfil", fetcher, {
-    revalidateOnFocus: false, 
-    dedupingInterval: 60000, 
-  });
+  const { data } = usePerfilQuery();
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-[#8b4513]">
-        <Loader2 className="animate-spin h-8 w-8 mb-2" />
-        <p>Cargando perfil...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-red-600">
-        <p>❌ Error cargando el perfil</p>
-        <pre className="text-xs text-gray-600">{error.message}</pre>
-      </div>
-    );
-  }
-
-  if (!data) return null;
-
-  const { perfil, direccion, solicitudes, documentos, rol_id } = data;
-  const HeaderByRole = rol_id === 1 ? <HeaderAd /> : <HeaderUsr />;
+  const HeaderByRole =
+    data?.rol_id === 1 ? <HeaderAd /> : <HeaderUsr />;
 
   return (
     <>
@@ -50,13 +20,7 @@ export default function PerfilPage() {
           title="Mi Perfil"
           subtitle="Revisa y actualiza tu información personal."
         />
-        <PerfilCard
-          perfil={perfil}
-          direccion={direccion}
-          solicitudes={solicitudes}
-          mascotasAdoptadas={data.mascotasAdoptadas}
-          documentos={documentos}
-        />
+        <PerfilCard />
       </div>
     </>
   );
