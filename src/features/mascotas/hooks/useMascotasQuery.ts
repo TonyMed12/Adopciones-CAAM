@@ -1,31 +1,12 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { listarMascotas } from "../actions/mascotas-actions";
+import { useQuery } from "@tanstack/react-query";
+import { listarMascotasSinCursor } from "../actions/mascotas-actions";
+import type { Mascota } from "../types/mascotas";
 
-export function useMascotasInfiniteQuery({
-    q,
-    especie,
-    sexo,
-}: {
-    q: string;
-    especie: string;
-    sexo: string;
-}) {
-    return useInfiniteQuery({
-        queryKey: ["mascotas", q, especie, sexo],
-
-        queryFn: ({ pageParam }) =>
-            listarMascotas({
-                cursor: pageParam ?? null,
-                search: q,
-                especie,
-                sexo,
-            }),
-
-        initialPageParam: null,
-        getNextPageParam: (lastPage) => lastPage.nextCursor,
-
-        staleTime: 10000,
-        gcTime: 1000 * 60 * 5,
-        retry: 1,
+export function useMascotasQuery() {
+    return useQuery<Mascota[]>({
+        queryKey: ["mascotas-seguimiento"],
+        queryFn: listarMascotasSinCursor,
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 10,
     });
 }

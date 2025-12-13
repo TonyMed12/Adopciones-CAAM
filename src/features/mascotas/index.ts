@@ -6,7 +6,7 @@ export * from "./schemas/mascotas-schemas";
 export * from "./actions/mascotas-actions";
 export * from "./actions/razas-actions";
 
-export * from "./hooks/useMascotasQuery";
+export * from "./hooks/useMascotasInfiniteQuery";
 export * from "./hooks/useCreateMascota";
 export * from "./hooks/useUpdateMascota";
 export * from "./hooks/useDeleteMascota";

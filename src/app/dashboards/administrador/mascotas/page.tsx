@@ -30,7 +30,7 @@ import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { formatEdad } from "@/features/mascotas/utils/formatEdad";
 import { uploadQRClient } from "@/features/mascotas/utils/uploadQRClient";
 import { uploadImageClient } from "@/features/mascotas/utils/uploadImageClient";
-import { useMascotasInfiniteQuery } from "@/features/mascotas/hooks/useMascotasQuery";
+import { useMascotasInfiniteQuery } from "@/features/mascotas/hooks/useMascotasInfiniteQuery";
 
 export default function MascotasPage() {
   const {

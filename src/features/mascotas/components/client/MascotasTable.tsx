@@ -242,14 +242,19 @@ export default function MascotasTable({
         </div>
       )}
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        itemsPerPage={ITEMS_PER_PAGE}
-        itemsLabel="mascotas"
-        onChange={onPageChange}
-      />
+      {page !== undefined &&
+        onPageChange &&
+        typeof totalItems === "number" && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
+            itemsLabel="mascotas"
+            onChange={onPageChange}
+          />
+        )}
+
 
     </>
   );
