@@ -21,7 +21,7 @@ export type RowMascota = {
 
 type RowActions = {
   onViewCard?: (row: RowMascota) => void;
-  onEdit?: (row: RowMascota) => void; // ✔ Ahora se usa esta
+  onEdit?: (row: RowMascota) => void;
   onDelete?: (row: RowMascota) => void;
 };
 
@@ -30,6 +30,10 @@ type Props = {
   actions?: RowActions;
   deleteDisabledForId?: (id: string) => boolean;
   mode?: "default" | "seguimiento";
+
+  totalItems: number;
+  page: number;
+  onPageChange: (page: number) => void;
 };
 
 function getFotoSrc(m: RowMascota) {
@@ -41,21 +45,23 @@ export default function MascotasTable({
   actions,
   deleteDisabledForId,
   mode = "default",
+
+  page,
+  onPageChange,
+  totalItems,
 }: Props) {
   const isMobile = useIsMobile();
   const ITEMS_PER_PAGE = isMobile ? 5 : 10;
   const disableActions = mode === "seguimiento";
 
-  const [page, setPage] = React.useState(1);
-  const totalPages = Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE));
-
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
   const startIndex = (page - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const pageData = data.slice(startIndex, endIndex);
 
   return (
     <>
-      {/* 🔥 MOBILE */}
+      {/* MOBILE */}
       {isMobile ? (
         <div className="grid gap-4">
           {pageData.map((m) => {
@@ -72,7 +78,6 @@ export default function MascotasTable({
                 key={m.id}
                 className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 space-y-3"
               >
-                {/* FOTO */}
                 <div className="w-full h-40 rounded-lg overflow-hidden bg-slate-100">
                   {foto && (
                     <img
@@ -83,7 +88,6 @@ export default function MascotasTable({
                   )}
                 </div>
 
-                {/* NOMBRE */}
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-[#5C3D2E]">
                     {m.nombre}
@@ -95,7 +99,6 @@ export default function MascotasTable({
                   </span>
                 </div>
 
-                {/* INFO */}
                 <div className="text-sm text-slate-700 space-y-1">
                   <p><b>Especie:</b> {m.especie}</p>
                   <p><b>Raza:</b> {m.raza || "Criollo"}</p>
@@ -104,7 +107,6 @@ export default function MascotasTable({
                   <p className="line-clamp-2"><b>Personalidad:</b> {m.descripcion || "—"}</p>
                 </div>
 
-                {/* ACCIONES */}
                 {!disableActions && (
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
@@ -118,7 +120,7 @@ export default function MascotasTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => actions?.onEdit?.(m)} // ✔ EDITAR
+                      onClick={() => actions?.onEdit?.(m)}
                     >
                       Editar
                     </Button>
@@ -138,7 +140,6 @@ export default function MascotasTable({
           })}
         </div>
       ) : (
-        /* 🔥 DESKTOP */
         <div className="w-full overflow-x-auto">
           <table className="min-w-[950px] w-full border border-slate-200 rounded-lg overflow-hidden">
             <thead className="bg-amber-50">
@@ -217,7 +218,7 @@ export default function MascotasTable({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => actions?.onEdit?.(m)} // ✔ EDITAR
+                            onClick={() => actions?.onEdit?.(m)}
                           >
                             Editar
                           </Button>
@@ -241,14 +242,20 @@ export default function MascotasTable({
         </div>
       )}
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        totalItems={data.length}
-        itemsPerPage={ITEMS_PER_PAGE}
-        itemsLabel="mascotas"
-        onChange={setPage}
-      />
+      {page !== undefined &&
+        onPageChange &&
+        typeof totalItems === "number" && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={ITEMS_PER_PAGE}
+            itemsLabel="mascotas"
+            onChange={onPageChange}
+          />
+        )}
+
+
     </>
   );
 }
@@ -257,9 +264,8 @@ function Th(props: React.HTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
       {...props}
-      className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide ${
-        props.className || ""
-      }`}
+      className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide ${props.className || ""
+        }`}
     />
   );
 }
@@ -268,9 +274,8 @@ function Td(props: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
       {...props}
-      className={`px-3 py-3 align-middle text-sm text-slate-800 ${
-        props.className || ""
-      }`}
+      className={`px-3 py-3 align-middle text-sm text-slate-800 ${props.className || ""
+        }`}
     />
   );
 }

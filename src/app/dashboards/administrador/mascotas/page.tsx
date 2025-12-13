@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import QRCode from "qrcode";
+import React, { useEffect, useState } from "react";
 
 import PageHead from "@/components/layout/PageHead";
 import Button from "@/components/ui/Button2";
@@ -19,7 +20,6 @@ import UserTableSkeleton from "@/features/usuarios/components/client/UserTableSk
 
 import { createPortal } from "react-dom";
 
-import { useMascotasQuery } from "@/features/mascotas/hooks/useMascotasQuery";
 import { useDeleteMascota } from "@/features/mascotas/hooks/useDeleteMascota";
 import { useMascotasPageState } from "@/features/mascotas/hooks/useMascotasPageState";
 
@@ -27,40 +27,43 @@ import { useCreateMascota } from "@/features/mascotas/hooks/useCreateMascota";
 import { useUpdateMascota } from "@/features/mascotas/hooks/useUpdateMascota";
 
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
-import { useMascotasFilter } from "@/features/mascotas/hooks/useMascotasFilter";
 import { formatEdad } from "@/features/mascotas/utils/formatEdad";
 import { uploadQRClient } from "@/features/mascotas/utils/uploadQRClient";
 import { uploadImageClient } from "@/features/mascotas/utils/uploadImageClient";
+import { useMascotasInfiniteQuery } from "@/features/mascotas/hooks/useMascotasInfiniteQuery";
 
 export default function MascotasPage() {
   const {
-    openForm,
-    setOpenForm,
-    selectedMascota,
-    setSelectedMascota,
-    openCard,
-    setOpenCard,
-    openRazas,
-    setOpenRazas,
-    q,
-    setQ,
-    especie,
-    setEspecie,
-    sexo,
-    setSexo,
+    openForm, setOpenForm,
+    selectedMascota, setSelectedMascota,
+    openCard, setOpenCard,
+    openRazas, setOpenRazas,
+    q, setQ,
+    especie, setEspecie,
+    sexo, setSexo,
   } = useMascotasPageState();
 
-  const { data: items = [], isLoading } = useMascotasQuery();
+  const [page, setPage] = useState(1);
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useMascotasInfiniteQuery({ q, especie, sexo });
+
+  /** Aplanar datos recibidos */
+  const items = data?.pages.flatMap((p) => p.items) ?? [];
+
   const deleteMascota = useDeleteMascota();
   const createMascota = useCreateMascota();
   const updateMascota = useUpdateMascota();
 
   useBodyScrollLock(openCard);
 
-  /* Filtrado */
-  const filteredItems = useMascotasFilter(items, q, especie, sexo);
+  const filteredItems = items;
 
-  /* Formato para tabla */
   const dataParaTabla = filteredItems.map((m) => ({
     id: m.id,
     nombre: m.nombre,
@@ -74,9 +77,26 @@ export default function MascotasPage() {
     original: m,
   }));
 
+  const totalItems = data?.pages?.[0]?.total ?? 0;
+
+
+  useEffect(() => {
+    const ITEMS_PER_PAGE = 10;
+    const totalNecesario = page * ITEMS_PER_PAGE;
+
+    if (
+      items.length < totalNecesario &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      fetchNextPage();
+    }
+  }, [page, items.length, hasNextPage, isFetchingNextPage]);
+
+
+
   return (
     <>
-      {/* MODAL Creación / Edición */}
       <Modal
         open={openForm}
         onClose={() => {
@@ -93,8 +113,6 @@ export default function MascotasPage() {
           }}
           onSubmitFinal={async (values) => {
             try {
-              /* -----------------------------------EDITAR MASCOTA----------------------------------------- */
-
               if (selectedMascota) {
                 let imagen_url = values.imagen_url;
                 let qr_code = values.qr_code;
@@ -121,9 +139,7 @@ export default function MascotasPage() {
                 return;
               }
 
-              /* --------------------------------CREAR MASCOTA-------------------------------------- */
               const nuevoId = crypto.randomUUID();
-
               let imagen_url: string | null = null;
               let qr_code: string | null = null;
 
@@ -155,7 +171,6 @@ export default function MascotasPage() {
         />
       </Modal>
 
-      {/* Header */}
       <PageHead
         title="Mascotas"
         subtitle="Explora a nuestros adorables compañeros 🐾"
@@ -177,7 +192,6 @@ export default function MascotasPage() {
         }
       />
 
-      {/* Filtros */}
       <Filters
         q={q}
         onQ={setQ}
@@ -188,13 +202,15 @@ export default function MascotasPage() {
         ESPECIES={["Perro", "Gato", "Otro"]}
       />
 
-      {/* Tabla */}
       {isLoading ? (
         <UserTableSkeleton />
       ) : (
         <div className="p-4">
           <MascotasTable
             data={dataParaTabla}
+            page={page}
+            onPageChange={setPage}
+            totalItems={totalItems}
             actions={{
               onViewCard: (row) => {
                 const m = items.find((i) => i.id === row.id);
@@ -222,7 +238,6 @@ export default function MascotasPage() {
         </div>
       )}
 
-      {/* Card Full */}
       {openCard &&
         typeof window !== "undefined" &&
         createPortal(
@@ -262,7 +277,6 @@ export default function MascotasPage() {
           document.body
         )}
 
-      {/* modal gestión de razas */}
       <GestionRazas open={openRazas} onClose={() => setOpenRazas(false)} />
     </>
   );

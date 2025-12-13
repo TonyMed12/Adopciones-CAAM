@@ -1,117 +1,143 @@
 "use client";
-import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
 import { RazaSchema } from "@/features/mascotas/schemas/razas-schemas";
+import { useCrearRaza } from "@/features/mascotas/hooks/useCrearRaza";
 
-type Props = {
-  onSubmit: (data: any) => Promise<void>;
+import { FormSection } from "@/components/form/FormSection";
+import { FormGrid } from "@/components/form/FormGrid";
+import { FieldWrapper } from "@/components/form/FieldWrapper";
+import { FieldLabel } from "@/components/form/FieldLabel";
+
+import { CAAMInput } from "@/components/form/CAAMInput";
+import { CAAMSelect } from "@/components/form/CAAMSelect";
+
+export default function FormRaza({
+  onCancel,
+}: {
   onCancel: () => void;
-};
+}) {
+  const crearRaza = useCrearRaza();
 
-export default function FormRaza({ onSubmit, onCancel }: Props) {
-  const [nombre, setNombre] = useState("");
-  const [especie, setEspecie] = useState("Perro");
-  const [tamano, setTamanoRaza] = useState("mediano");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const form = useForm({
+    resolver: zodResolver(RazaSchema),
+    defaultValues: {
+      nombre: "",
+      especie: "Perro",
+      tamano: "mediano",
+      activa: true,
+    },
+  });
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-
+  const submit = form.handleSubmit(async (values) => {
     try {
-      const parsed = RazaSchema.parse({
-        nombre,
-        especie,
-        tamano,
-        activa: true,
-      });
-
-      setLoading(true);
-      await onSubmit(parsed);
-      setNombre("");
-      setTamanoRaza("mediano");
-      setEspecie("Perro");
-    } catch (err: any) {
-      setError(err.message || "Error al crear la raza");
-    } finally {
-      setLoading(false);
+      await crearRaza.mutateAsync(values);
+      toast.success("Raza guardada correctamente");
+      form.reset();
+    } catch (error: any) {
+      toast.error(
+        error?.message || "Ocurrió un error al guardar la raza"
+      );
     }
-  }
+  });
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-5 p-1"
-    >
-      <div>
-        <Label htmlFor="nombre" className="font-medium text-sm">
-          Nombre
-        </Label>
-        <Input
-          id="nombre"
-          type="text"
-          placeholder="Ej. Labrador Retriever"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-          className="mt-1"
-        />
-      </div>
+    <form onSubmit={submit} className="space-y-6 text-[#2b1b12]">
+      <FormSection title="Información de la raza">
+        <FormGrid cols={3}>
+          {/* Nombre */}
+          <Controller
+            control={form.control}
+            name="nombre"
+            render={({ field }) => (
+              <FieldWrapper>
+                <FieldLabel>Nombre</FieldLabel>
+                <CAAMInput
+                  placeholder="Ej. Labrador Retriever"
+                  {...field}
+                />
+                {form.formState.errors.nombre && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {form.formState.errors.nombre.message as string}
+                  </p>
+                )}
+              </FieldWrapper>
+            )}
+          />
 
-      <div>
-        <Label htmlFor="especie" className="font-medium text-sm">
-          Especie
-        </Label>
-        <select
-          id="especie"
-          value={especie}
-          onChange={(e) => setEspecie(e.target.value)}
-          className="mt-1 w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
-        >
-          <option value="Perro">Perro</option>
-          <option value="Gato">Gato</option>
-          <option value="Otro">Otro</option>
-        </select>
-      </div>
+          {/* Especie */}
+          <Controller
+            control={form.control}
+            name="especie"
+            render={({ field }) => (
+              <FieldWrapper>
+                <FieldLabel>Especie</FieldLabel>
+                <CAAMSelect
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={[
+                    { label: "Perro", value: "Perro" },
+                    { label: "Gato", value: "Gato" },
+                    { label: "Otro", value: "Otro" },
+                  ]}
+                />
+                {form.formState.errors.especie && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {form.formState.errors.especie.message as string}
+                  </p>
+                )}
+              </FieldWrapper>
+            )}
+          />
 
-      <div>
-        <Label htmlFor="tamano_raza" className="font-medium text-sm">
-          Tamaño promedio
-        </Label>
-        <select
-          id="tamano_raza"
-          value={tamano}
-          onChange={(e) => setTamanoRaza(e.target.value)}
-          className="mt-1 w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
-        >
-          <option value="pequeño">Pequeño</option>
-          <option value="mediano">Mediano</option>
-          <option value="grande">Grande</option>
-        </select>
-      </div>
+          {/* Tamaño */}
+          <Controller
+            control={form.control}
+            name="tamano"
+            render={({ field }) => (
+              <FieldWrapper>
+                <FieldLabel>Tamaño</FieldLabel>
+                <CAAMSelect
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  options={[
+                    { label: "Pequeño", value: "pequeño" },
+                    { label: "Mediano", value: "mediano" },
+                    { label: "Grande", value: "grande" },
+                  ]}
+                />
+                {form.formState.errors.tamano && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {form.formState.errors.tamano.message as string}
+                  </p>
+                )}
+              </FieldWrapper>
+            )}
+          />
+        </FormGrid>
+      </FormSection>
 
-      {error && (
-        <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-      )}
-
-      <div className="flex justify-end gap-3 pt-3">
-        <Button
+      {/* BOTONES */}
+      <div className="flex justify-end gap-3 pt-2">
+        <button
           type="button"
-          variant="secondary"
           onClick={onCancel}
-          disabled={loading}
+          disabled={crearRaza.isPending}
+          className="px-4 py-2 rounded-lg bg-[#f4ece4] hover:bg-[#ffede1] text-[#8B4513] transition"
         >
           Cancelar
-        </Button>
-        <Button
+        </button>
+
+        <button
           type="submit"
-          disabled={loading}
+          disabled={crearRaza.isPending}
+          className="px-4 py-2 rounded-lg bg-[#8B4513] hover:bg-[#A0522D] text-white font-semibold transition"
         >
-          {loading ? "Guardando..." : "Guardar"}
-        </Button>
+          {crearRaza.isPending ? "Guardando..." : "Guardar raza"}
+        </button>
       </div>
     </form>
   );
