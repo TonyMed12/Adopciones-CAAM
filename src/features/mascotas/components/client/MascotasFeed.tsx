@@ -5,6 +5,8 @@ import { useMascotasPublicasInfiniteQuery } from "@/features/mascotas/hooks/useM
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import MascotaCard from "@/features/mascotas/components/client/MascotaCard";
 import type { Mascota } from "@/features/mascotas/types/mascotas";
+import MascotasFeedSkeleton from "@/features/mascotas/components/client/MascotasFeedSkeleton";
+
 
 type Props = {
     search: string;
@@ -43,12 +45,9 @@ export default function MascotasFeed({
 
     // Loading inicial
     if (isLoading) {
-        return (
-            <div className="py-12 text-center text-[#7a5c49]">
-                Cargando mascotas...
-            </div>
-        );
+        return <MascotasFeedSkeleton />;
     }
+
 
     return (
         <>
