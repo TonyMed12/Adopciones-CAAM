@@ -42,7 +42,7 @@ export async function listarMascotas({
     if (sexo && sexo !== "Todos") {
         query = query.eq("sexo", sexo.toLowerCase());
     }
-    
+
     // Cursor
     if (cursor) {
         query = query.lt("created_at", cursor);
@@ -64,7 +64,18 @@ export async function listarMascotas({
     };
 }
 
+export async function listarMascotasSinCursor() {
+    const supabase = await createClient();
 
+    const { data, error } = await supabase
+        .from("mascotas")
+        .select("*, raza:raza_id(id, nombre, especie)")
+        .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    return data ?? [];
+}
 
 /* ======================== CREAR ======================== */
 export async function crearMascota(input: unknown): Promise<Mascota> {

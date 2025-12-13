@@ -1,43 +1,59 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PageHead from "@/components/layout/PageHead";
 import Filters from "@/features/mascotas/components/client/Filters";
 import MascotasTable from "@/features/mascotas/components/client/MascotasTable";
-import { useMascotasQuery } from "@/features/mascotas/hooks/useMascotasQuery";
+import { useMascotasInfiniteQuery } from "@/features/mascotas/hooks/useMascotasInfiniteQuery";
 import { useRouter } from "next/navigation";
 import { formatearMascotaParaTabla } from "@/features/seguimiento/utils/formatearMascotaParaTabla";
 import UserTableSkeleton from "@/components/ui/UserTableSkeleton";
 
 export default function SeguimientoAdminPage() {
   const router = useRouter();
-  const { data: mascotas = [], isLoading } = useMascotasQuery();
 
   const [q, setQ] = useState("");
   const [especie, setEspecie] = useState("Todas");
   const [sexo, setSexo] = useState("Todos");
+  const [page, setPage] = useState(1);
 
-  const mascotasFiltradas = useMemo(() => {
-    return mascotas.filter((m) => {
-      const matchQ =
-        q.trim() === "" ||
-        m.nombre?.toLowerCase().includes(q.toLowerCase()) ||
-        m.raza?.nombre?.toLowerCase().includes(q.toLowerCase());
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useMascotasInfiniteQuery({
+    q,
+    especie,
+    sexo,
+  });
 
-      const matchEspecie =
-        especie === "Todas" ||
-        m.raza?.especie?.toLowerCase() === especie.toLowerCase();
+  /** 🔽 Aplanar páginas */
+  const mascotas = data?.pages.flatMap((p) => p.items) ?? [];
 
-      const matchSexo =
-        sexo === "Todos" || m.sexo?.toLowerCase() === sexo.toLowerCase();
+  /** 🔢 Total real (para paginación) */
+  const totalItems = data?.pages?.[0]?.total ?? 0;
 
-      return matchQ && matchEspecie && matchSexo;
-    });
-  }, [mascotas, q, especie, sexo]);
+  /** ⏭️ Cargar más páginas cuando se necesite */
+  useEffect(() => {
+    const ITEMS_PER_PAGE = 10;
+    const totalNecesario = page * ITEMS_PER_PAGE;
 
+    if (
+      mascotas.length < totalNecesario &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      fetchNextPage();
+    }
+  }, [page, mascotas.length, hasNextPage, isFetchingNextPage]);
+
+  /** 🧩 Formateo para tabla */
   const dataTabla = useMemo(() => {
-    return mascotasFiltradas.map(formatearMascotaParaTabla);
-  }, [mascotasFiltradas]);
+    return mascotas.map(formatearMascotaParaTabla);
+  }, [mascotas]);
 
   return (
     <>
@@ -56,15 +72,20 @@ export default function SeguimientoAdminPage() {
         ESPECIES={["Perro", "Gato", "Otro"]}
       />
 
-      {isLoading ? (
-        <div className="text-center py-10 text-[#7a5c49]">
-          <UserTableSkeleton />
+      {error ? (
+        <div className="p-4 text-red-600">
+          Error: {error.message}
         </div>
+      ) : isLoading ? (
+        <UserTableSkeleton />
       ) : (
         <div className="p-4">
           <MascotasTable
             mode="seguimiento"
             data={dataTabla}
+            page={page}
+            onPageChange={setPage}
+            totalItems={totalItems}
             actions={{
               onViewCard: (rowMascota) =>
                 router.push(
