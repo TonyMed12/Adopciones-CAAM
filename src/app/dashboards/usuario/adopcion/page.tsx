@@ -18,7 +18,11 @@ import { useCancelarSolicitudAdopcionMutation } from "@/features/adopciones/hook
 
 import { mapCitaToCitaProgramadaUI } from "@/features/adopciones/mappers/mapCitaAdopcionToProgramadaUI";
 
+import { useQueryClient } from "@tanstack/react-query";
+
+
 export default function ProcesoAdopcionPage() {
+  const queryClient = useQueryClient();
   const router = useRouter();
 
   /* -------------------- Estado local -------------------- */
@@ -83,16 +87,29 @@ export default function ProcesoAdopcionPage() {
         )
     );
 
-    showSoftToast("Documentos enviados correctamente 📄");
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["documentos-adopcion"] }),
+      queryClient.invalidateQueries({ queryKey: ["proceso-adopcion"] }),
+    ]);
+
+    showSoftToast("Documentos enviados correctamente");
   };
+
 
   const handleConfirmCancelar = async () => {
     if (!solicitudActiva?.id) return;
 
     await cancelarSolicitudMutation.mutateAsync(solicitudActiva.id);
-    showSoftToast("Solicitud cancelada correctamente 🐾");
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["proceso-adopcion"] }),
+      queryClient.invalidateQueries({ queryKey: ["documentos-adopcion"] }),
+    ]);
+
+    showSoftToast("Solicitud cancelada correctamente");
     setShowCancelSolicitudModal(false);
   };
+
 
   const deshabilitarEnviar =
     subirDocumentoMutation.isPending ||
@@ -159,11 +176,13 @@ export default function ProcesoAdopcionPage() {
           citaProgramadaUI={citaProgramadaUI}
           adopcionEstado={adopcionEstado}
           onVerCita={() => router.push("/dashboards/usuario/citas")}
-          onIrFormulario={(solicitudId) =>
-            router.push(`/dashboards/usuario/form-adopcion/${solicitudId}`)
+          onVerMascotas={() => router.push("/dashboards/usuario/mascotas")}
+          onIrFormulario={(id) =>
+            router.push(`/dashboards/usuario/form-adopcion/${id}`)
           }
           onCancelarSolicitud={() => setShowCancelSolicitudModal(true)}
         />
+
 
         {estado === "sin_documentos" && (
           <section className="rounded-2xl border border-[#eadacb] bg-white p-5 text-[#2b1b12] shadow-sm">
