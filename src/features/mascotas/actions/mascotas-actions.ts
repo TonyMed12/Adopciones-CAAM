@@ -8,6 +8,7 @@ import { deleteMascotaQR } from "./storage/deleteMascotaQR";
 import { validarMascotaEliminable } from "./helpers/validarMascotaEliminable";
 import { baseMascotasQuery, PAGE_SIZE } from "./helpers/baseMascotasQuery";
 import type { ListarMascotasParams, ListarMascotasPublicasParams, MascotasPaginadasResult } from "../types/mascotas";
+import { logger } from "@/lib/logger";
 
 /* ======================== LISTAR ======================== */
 // Cuando cambie la busqueda se resetea el page
@@ -16,6 +17,14 @@ export async function listarMascotas(
     { cursor, search, especie, sexo }: ListarMascotasParams
 ) {
     const supabase = await createClient();
+
+    logger.info("listarMascotas:start", {
+        cursor,
+        search,
+        especie,
+        sexo,
+    });
+
     let query = baseMascotasQuery(supabase);
 
     if (search?.trim()) {
@@ -35,12 +44,28 @@ export async function listarMascotas(
     }
 
     const { data, error, count } = await query;
-    if (error) throw new Error(error.message);
+
+    if (error) {
+        logger.error("listarMascotas:supabase_error", {
+            message: error.message,
+            cursor,
+            search,
+            especie,
+            sexo,
+        });
+        throw new Error(error.message);
+    }
 
     const nextCursor =
         data && data.length === PAGE_SIZE
             ? data[data.length - 1].created_at
             : null;
+
+    logger.info("listarMascotas:success", {
+        returned: data?.length ?? 0,
+        nextCursor,
+        total: count ?? 0,
+    });
 
     return {
         items: data ?? [],
@@ -50,14 +75,16 @@ export async function listarMascotas(
 }
 
 export async function listarMascotasPublicas(
-    {
+    { cursor, search, especie, sexo }: ListarMascotasPublicasParams
+): Promise<MascotasPaginadasResult> {
+    const supabase = await createClient();
+
+    logger.info("listarMascotasPublicas:start", {
         cursor,
         search,
         especie,
         sexo,
-    }: ListarMascotasPublicasParams
-): Promise<MascotasPaginadasResult> {
-    const supabase = await createClient();
+    });
 
     let query = baseMascotasQuery(supabase)
         .eq("disponible_adopcion", true)
@@ -82,6 +109,13 @@ export async function listarMascotasPublicas(
     const { data, error, count } = await query;
 
     if (error) {
+        logger.error("listarMascotasPublicas:supabase_error", {
+            message: error.message,
+            cursor,
+            search,
+            especie,
+            sexo,
+        });
         throw new Error(error.message);
     }
 
@@ -89,6 +123,12 @@ export async function listarMascotasPublicas(
         data && data.length === PAGE_SIZE
             ? data[data.length - 1].created_at ?? null
             : null;
+
+    logger.info("listarMascotasPublicas:success", {
+        returned: data?.length ?? 0,
+        nextCursor,
+        total: count ?? 0,
+    });
 
     return {
         items: data ?? [],
@@ -103,13 +143,26 @@ export async function crearMascota(input: unknown): Promise<Mascota> {
     const supabase = await createClient();
     const parsed = CreateMascotaSchema.parse(input);
 
+    logger.info("crearMascota:start", {
+        nombre: parsed.nombre,
+    });
+
     const { data, error } = await supabase
         .from("mascotas")
         .insert(parsed)
         .select("*, raza:raza_id(id, nombre, especie)")
         .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+        logger.error("crearMascota:supabase_error", {
+            message: error.message,
+        });
+        throw new Error(error.message);
+    }
+
+    logger.info("crearMascota:success", {
+        mascotaId: data.id,
+    });
 
     return data as Mascota;
 }
@@ -119,6 +172,10 @@ export async function crearMascota(input: unknown): Promise<Mascota> {
 export async function actualizarMascota(payload: unknown) {
     const supabase = await createClient();
     const parsed = UpdateMascotaSchema.parse(payload);
+
+    logger.info("actualizarMascota:start", {
+        mascotaId: parsed.id,
+    });
 
     const { data, error } = await supabase
         .from("mascotas")
@@ -130,7 +187,17 @@ export async function actualizarMascota(payload: unknown) {
         .select("*, raza:raza_id(id, nombre, especie)")
         .single();
 
-    if (error) throw error;
+    if (error) {
+        logger.error("actualizarMascota:supabase_error", {
+            mascotaId: parsed.id,
+            message: error.message,
+        });
+        throw error;
+    }
+
+    logger.info("actualizarMascota:success", {
+        mascotaId: parsed.id,
+    });
 
     return data;
 }
@@ -140,9 +207,17 @@ export async function eliminarMascota(id: string): Promise<{ success: boolean; r
     const supabase = await createClient();
     const parsed = DeleteMascotaSchema.parse({ id });
 
+    logger.info("eliminarMascota:start", {
+        mascotaId: parsed.id,
+    });
+
     const validacion = await validarMascotaEliminable(parsed.id);
 
     if (!validacion.success) {
+        logger.info("eliminarMascota:validacion_fallida", {
+            mascotaId: parsed.id,
+            reason: validacion.reason,
+        });
         return validacion;
     }
 
@@ -162,8 +237,16 @@ export async function eliminarMascota(id: string): Promise<{ success: boolean; r
         .eq("id", parsed.id);
 
     if (deleteError) {
+        logger.error("eliminarMascota:supabase_error", {
+            mascotaId: parsed.id,
+            message: deleteError.message,
+        });
         return { success: false, reason: "error_eliminar" };
     }
+
+    logger.info("eliminarMascota:success", {
+        mascotaId: parsed.id,
+    });
 
     return { success: true };
 }
@@ -179,7 +262,10 @@ export async function obtenerMascotaPorId(id: string) {
         .single();
 
     if (error) {
-        console.error("Error obteniendo mascota:", error.message);
+        logger.error("obtenerMascotaPorId:error", {
+            id,
+            message: error.message,
+        });
         throw new Error("No se encontró la mascota");
     }
 
@@ -192,35 +278,56 @@ export async function fetchMascotasByIds(ids: string[]) {
 
     const supabase = await createClient();
 
+    logger.info("fetchMascotasByIds:start", {
+        idsCount: ids.length,
+    });
+
     const { data, error } = await supabase
         .from("mascotas")
         .select("id, nombre")
         .in("id", ids);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+        logger.error("fetchMascotasByIds:supabase_error", {
+            message: error.message,
+        });
+        throw new Error(error.message);
+    }
+
+    logger.info("fetchMascotasByIds:success", {
+        returned: data?.length ?? 0,
+    });
 
     return data ?? [];
 }
+
 export async function marcarMascotaAdoptada(
     supabaseSrv: SupabaseClient,
     mascotaId: string
 ) {
+    logger.info("marcarMascotaAdoptada:start", {
+        mascotaId,
+    });
+
     const { error } = await supabaseSrv
         .from("mascotas")
         .update({ estado: "adoptada", disponible_adopcion: false })
         .eq("id", mascotaId);
 
     if (error) {
-        console.error(
-            "⚠️ Error marcando mascota como adoptada:",
-            error.message
-        );
+        logger.error("marcarMascotaAdoptada:error", {
+            mascotaId,
+            message: error.message,
+        });
     }
 }
 
-
 export async function marcarMascotaDisponible(mascotaId: string) {
     const supabase = await createClient();
+
+    logger.info("marcarMascotaDisponible:start", {
+        mascotaId,
+    });
 
     const { error } = await supabase
         .from("mascotas")
@@ -232,9 +339,16 @@ export async function marcarMascotaDisponible(mascotaId: string) {
         .eq("id", mascotaId);
 
     if (error) {
-        console.error("⚠️ Error liberando mascota:", error.message);
+        logger.error("marcarMascotaDisponible:error", {
+            mascotaId,
+            message: error.message,
+        });
         throw new Error("No se pudo liberar la mascota");
     }
+
+    logger.info("marcarMascotaDisponible:success", {
+        mascotaId,
+    });
 
     return true;
 }

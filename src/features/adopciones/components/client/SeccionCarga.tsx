@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import {FileCheck2, FileUp} from "lucide-react";
-import {Button} from "@/components/ui/Button";
+import { FileCheck2, FileUp } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 interface SeccionCargaProps {
-    archivos: Record<string, File | null>;
+    archivos: Record<string, File | undefined>;
     docs?: {
         tipo: string;
         estado: string;
@@ -17,11 +17,11 @@ interface SeccionCargaProps {
     deshabilitarEnviar: boolean;
 }
 
-export default function SeccionCarga({archivos, docs = [], onPick, onEnviar, deshabilitarEnviar}: SeccionCargaProps) {
+export default function SeccionCarga({ archivos, docs = [], onPick, onEnviar, deshabilitarEnviar }: SeccionCargaProps) {
     const documentos = [
-        {id: "identificacion", label: "Identificación oficial (INE)"},
-        {id: "comprobante", label: "Comprobante de domicilio"},
-        {id: "curp", label: "CURP"},
+        { id: "identificacion", label: "Identificación oficial (INE)" },
+        { id: "comprobante", label: "Comprobante de domicilio" },
+        { id: "curp", label: "CURP" },
     ];
 
     function getDocInfo(tipo: string) {

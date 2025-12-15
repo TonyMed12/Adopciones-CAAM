@@ -7,19 +7,22 @@ import type {
   Perfil,
   SolicitudAdopcionMin as SolicitudAdopcion,
 } from "../types/perfil";
+import { logger } from "@/lib/logger";
 
 export async function obtenerPerfilActual() {
   const supabase = await createClient();
 
   const { data: userData, error: authError } = await supabase.auth.getUser();
   if (authError || !userData.user) {
-    console.error("Error obteniendo usuario:", authError?.message);
+    logger.error("obtenerPerfilActual:auth_error", {
+      message: authError?.message,
+    });
     throw new Error("No se pudo obtener el usuario autenticado.");
   }
 
   const userId = userData.user.id;
 
-  // 🔹 Perfil
+  // Perfil
   const { data: perfil, error: perfilErr } = await supabase
     .from("perfiles")
     .select("*")
@@ -27,11 +30,14 @@ export async function obtenerPerfilActual() {
     .single();
 
   if (perfilErr) {
-    console.error("Error obteniendo perfil:", perfilErr.message);
+    logger.error("obtenerPerfilActual:perfil_error", {
+      message: perfilErr.message,
+      userId,
+    });
     throw new Error("No se pudo obtener el perfil del usuario.");
   }
 
-  // 🔹 Dirección principal
+  // Dirección principal
   const { data: direccion } = await supabase
     .from("direcciones")
     .select("*")
@@ -39,7 +45,7 @@ export async function obtenerPerfilActual() {
     .eq("direccion_principal", true)
     .maybeSingle();
 
-  // 🔹 Solicitudes pendientes
+  // Solicitudes pendientes
   const { data: solicitudesBase, error: solicitudesError } = await supabase
     .from("solicitudes_adopcion")
     .select("id, numero_solicitud, estado, prioridad, motivo_adopcion, mascota_id")
@@ -47,7 +53,10 @@ export async function obtenerPerfilActual() {
     .eq("estado", "pendiente");
 
   if (solicitudesError) {
-    console.error("Error obteniendo solicitudes:", solicitudesError.message);
+    logger.error("obtenerPerfilActual:solicitudes_error", {
+      message: solicitudesError.message,
+      userId,
+    });
   }
 
   let solicitudes: SolicitudAdopcion[] = [];
@@ -61,7 +70,10 @@ export async function obtenerPerfilActual() {
       .in("id", mascotaIds);
 
     if (mascError) {
-      console.error("Error obteniendo mascotas:", mascError.message);
+      logger.error("obtenerPerfilActual:mascotas_error", {
+        message: mascError.message,
+        userId,
+      });
     }
 
     solicitudes = solicitudesBase.map((sol) => ({
@@ -70,7 +82,7 @@ export async function obtenerPerfilActual() {
     })) as SolicitudAdopcion[];
   }
 
-  // 🔹 Documentos aprobados
+  // Documentos aprobados
   const { data: documentos, error: docError } = await supabase
     .from("documentos")
     .select("id, perfil_id, tipo, status, url, created_at")
@@ -78,17 +90,23 @@ export async function obtenerPerfilActual() {
     .eq("status", "aprobado");
 
   if (docError) {
-    console.error("Error obteniendo documentos:", docError.message);
+    logger.error("obtenerPerfilActual:documentos_error", {
+      message: docError.message,
+      userId,
+    });
   }
 
-  // 🔹 Mascotas adoptadas
+  // Mascotas adoptadas
   const { data: solicitudesUsuario, error: solicitudesAdoError } = await supabase
     .from("solicitudes_adopcion")
     .select("mascota_id")
     .eq("usuario_id", userId);
 
   if (solicitudesAdoError) {
-    console.error("Error obteniendo solicitudes de adopción:", solicitudesAdoError.message);
+    logger.error("obtenerPerfilActual:solicitudes_adopcion_error", {
+      message: solicitudesAdoError.message,
+      userId,
+    });
   }
 
   let mascotasAdoptadas: { id: string; nombre: string; imagen_url: string | null }[] = [];
@@ -115,11 +133,18 @@ export async function obtenerPerfilActual() {
       .eq("estado", "adoptada");
 
     if (mascError) {
-      console.error("Error obteniendo mascotas adoptadas:", mascError.message);
+      logger.error("obtenerPerfilActual:mascotas_adoptadas_error", {
+        message: mascError.message,
+        userId,
+      });
     }
 
     mascotasAdoptadas = mascotas ?? [];
   }
+
+  logger.info("obtenerPerfilActual:success", {
+    userId,
+  });
 
   return {
     perfil: perfil as Perfil,
@@ -131,20 +156,23 @@ export async function obtenerPerfilActual() {
   };
 }
 
-// -------------------------------------------------------
 
 export async function actualizarPerfil(id: string, data: { ocupacion: string; telefono: string }) {
   const supabase = await createClient();
   const { error } = await supabase.from("perfiles").update(data).eq("id", id);
 
   if (error) {
-    console.error("Error actualizando perfil:", error.message);
+    logger.error("actualizarPerfil:error", {
+      message: error.message,
+      id,
+    });
     return { success: false };
   }
+
+  logger.info("actualizarPerfil:success", { id });
   return { success: true };
 }
 
-// -------------------------------------------------------
 
 export async function guardarDireccion(direccion: Partial<Direccion>) {
   const supabase = await createClient();
@@ -169,13 +197,19 @@ export async function guardarDireccion(direccion: Partial<Direccion>) {
   }
 
   if (error) {
-    console.error("Error guardando dirección:", error.message);
+    logger.error("guardarDireccion:error", {
+      message: error.message,
+      usuarioId: direccion.usuario_id,
+    });
     return { success: false };
   }
+
+  logger.info("guardarDireccion:success", {
+    usuarioId: direccion.usuario_id,
+  });
   return { success: true };
 }
 
-// ======================== OBTENER MASCOTAS ADOPTADAS ========================
 export async function obtenerMascotasAdoptadas(usuarioId: string) {
   const supabase = await createClient();
 
@@ -186,7 +220,10 @@ export async function obtenerMascotasAdoptadas(usuarioId: string) {
     .eq("usuario_id", usuarioId);
 
   if (solError) {
-    console.error("Error obteniendo solicitudes:", solError.message);
+    logger.error("obtenerMascotasAdoptadas:solicitudes_error", {
+      message: solError.message,
+      usuarioId,
+    });
     return [];
   }
 
@@ -202,9 +239,17 @@ export async function obtenerMascotasAdoptadas(usuarioId: string) {
     .eq("estado", "adoptada");
 
   if (mascError) {
-    console.error("Error obteniendo mascotas adoptadas:", mascError.message);
+    logger.error("obtenerMascotasAdoptadas:mascotas_error", {
+      message: mascError.message,
+      usuarioId,
+    });
     return [];
   }
+
+  logger.info("obtenerMascotasAdoptadas:success", {
+    usuarioId,
+    total: mascotas?.length ?? 0,
+  });
 
   return mascotas ?? [];
 }

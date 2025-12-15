@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 /**
  * Elimina solo la imagen de una mascota del bucket.
@@ -16,9 +17,16 @@ export async function deleteMascotaImagen(id: string): Promise<boolean> {
 
         if (error) throw error;
 
+        logger.info("deleteMascotaImagen:success", {
+            mascotaId: id,
+        });
+
         return true;
     } catch (err) {
-        console.error("❌ Error eliminando imagen:", err);
+        logger.error("deleteMascotaImagen:error", {
+            mascotaId: id,
+            error: err instanceof Error ? err.message : err,
+        });
         return false;
     }
 }
