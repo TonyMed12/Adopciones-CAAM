@@ -17,7 +17,6 @@ export function useConfirmarCitaMutation() {
             confirmarCitaAdopcion(input),
 
         onSuccess: () => {
-            // 🔁 Refresca el estado del proceso
             queryClient.invalidateQueries({
                 queryKey: ["mis-citas"],
             });

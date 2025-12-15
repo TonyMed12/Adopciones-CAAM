@@ -3,11 +3,42 @@
 import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 
-
 type CancelarCitaInput = {
     citaId: string;
     solicitudId: string;
 };
+
+async function enviarCorreoCancelacionDesdeServer(input: {
+    email: string;
+    nombre: string;
+    mascota: string;
+    motivo: string;
+}) {
+    const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL ??
+        process.env.NEXT_PUBLIC_SITE_URL;
+
+    if (!baseUrl) {
+        logger.error("cancelarCita:base_url_missing");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${baseUrl}/api/email/cita-cancelada`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input),
+        });
+
+        if (!res.ok) {
+            logger.error("cancelarCita:correo_error", {
+                status: res.status,
+            });
+        }
+    } catch (error) {
+        logger.error("cancelarCita:correo_exception", { error });
+    }
+}
 
 export async function cancelarCitaAdopcion(
     input: CancelarCitaInput
@@ -29,15 +60,30 @@ export async function cancelarCitaAdopcion(
         throw new Error("NO_AUTH");
     }
 
+    /* ---------- Obtener cita ---------- */
+    const { data: cita, error: citaFetchError } = await supabase
+        .from("citas_adopcion")
+        .select("id, usuario_id, mascota_id")
+        .eq("id", input.citaId)
+        .single();
+
+    if (citaFetchError || !cita) {
+        logger.error("cancelarCitaAdopcion:cita_not_found", {
+            citaId: input.citaId,
+            message: citaFetchError?.message,
+        });
+        throw new Error("CITA_NO_ENCONTRADA");
+    }
+
     /* ---------- Cancelar cita ---------- */
     const { error: citaError } = await supabase
         .from("citas_adopcion")
         .update({ estado: "cancelada" })
-        .eq("id", input.citaId);
+        .eq("id", cita.id);
 
     if (citaError) {
         logger.error("cancelarCitaAdopcion:cita_error", {
-            citaId: input.citaId,
+            citaId: cita.id,
             message: citaError.message,
         });
         throw new Error("ERROR_CANCELAR_CITA");
@@ -55,6 +101,31 @@ export async function cancelarCitaAdopcion(
             message: solicitudError.message,
         });
         throw new Error("ERROR_ACTUALIZAR_SOLICITUD");
+    }
+
+    /* ---------- Datos para correo ---------- */
+    const { data: perfil } = await supabase
+        .from("perfiles")
+        .select("email, nombres")
+        .eq("id", cita.usuario_id)
+        .single();
+
+    const { data: mascota } = cita.mascota_id
+        ? await supabase
+            .from("mascotas")
+            .select("nombre")
+            .eq("id", cita.mascota_id)
+            .single()
+        : { data: null };
+
+    /* ---------- Enviar correo (no bloqueante) ---------- */
+    if (perfil && mascota) {
+        await enviarCorreoCancelacionDesdeServer({
+            email: perfil.email,
+            nombre: perfil.nombres,
+            mascota: mascota.nombre,
+            motivo: "Cancelada por el adoptante",
+        });
     }
 
     logger.info("cancelarCitaAdopcion:success", {

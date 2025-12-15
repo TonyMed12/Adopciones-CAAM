@@ -127,22 +127,15 @@ export default function MisCitasPage() {
   }
 
 
-  async function cancelarCita(id: string) {
-    await cancelarCitaMutation.mutateAsync(id);
+  async function cancelarCita(citaId: string) {
+    if (!solicitudActiva) return;
 
-    try {
-      await fetch("/api/email/cita-cancelada", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: perfil.email,
-          nombre: perfil.nombres,
-          mascota: solicitudActiva?.mascota?.nombre,
-          motivo: "Cancelada por el adoptante",
-        }),
-      });
-    } catch { }
+    await cancelarCitaMutation.mutateAsync({
+      citaId,
+      solicitudId: solicitudActiva.id,
+    });
   }
+
 
   async function cancelarSolicitud(id: string) {
     await cancelarSolicitudMutation.mutateAsync(id);
