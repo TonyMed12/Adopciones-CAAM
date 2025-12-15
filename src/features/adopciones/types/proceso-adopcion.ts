@@ -1,4 +1,6 @@
 export type EstadoSolicitud = "pendiente" | "en_proceso";
+import type { CitaAdopcion } from "./citaAdopcion";
+import type { EstadoAdopcion } from "./adopciones";
 
 export type MascotaBasica = {
     nombre: string;
@@ -12,20 +14,9 @@ export type SolicitudActiva = {
     mascota: MascotaBasica;
 };
 
-export type CitaAdopcion = {
-    id: string;
-    solicitud_id: string | null;
-    fecha_cita: string;
-    hora_cita: string;
-    estado: string | null;
-    asistencia: string | null;
-    interaccion: string | null;
-    mascota: MascotaBasica | null;
-};
-
 export type ProcesoAdopcionData = {
     solicitudActiva: SolicitudActiva | null;
     citaActiva: CitaAdopcion | null;
     yaTieneAdopcion: boolean;
-    adopcionEstado: string | null;
+    adopcionEstado: EstadoAdopcion | null;
 };

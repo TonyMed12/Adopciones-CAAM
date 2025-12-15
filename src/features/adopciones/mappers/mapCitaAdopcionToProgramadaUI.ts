@@ -1,9 +1,9 @@
-import type { Cita } from "@/features/citas/types/cita";
+import type { CitaAdopcion } from "@/features/adopciones/types/citaAdopcion";
 import type { CitaProgramadaUI } from
     "@/features/citas/types/CitaProgramadaSection";
 
 export function mapCitaToCitaProgramadaUI(
-    cita: Cita
+    cita: CitaAdopcion
 ): CitaProgramadaUI {
     return {
         estado:

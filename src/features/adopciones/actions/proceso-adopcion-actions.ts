@@ -4,8 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import type {
     ProcesoAdopcionData,
     SolicitudActiva,
-    CitaAdopcion,
 } from "../types/proceso-adopcion";
+import type {
+    CitaAdopcion,
+    EstadoCitaAdopcion,
+    AsistenciaCita,
+    InteraccionCita,
+} from "../types/citaAdopcion";
+import type { EstadoAdopcion } from "../types/adopciones";
 
 export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionData> {
     const supabase = await createClient();
@@ -37,14 +43,14 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
             .from("solicitudes_adopcion")
             .select(
                 `
-        id,
-        estado,
-        mascota_id,
-        mascota:mascotas (
-          nombre,
-          imagen_url
-        )
-      `
+                id,
+                estado,
+                mascota_id,
+                mascota:mascotas (
+                  nombre,
+                  imagen_url
+                )
+              `
             )
             .eq("usuario_id", perfil.id)
             .in("estado", ["pendiente", "en_proceso"])
@@ -56,23 +62,25 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
             .from("citas_adopcion")
             .select(
                 `
-        id,
-        solicitud_id,
-        fecha_cita,
-        hora_cita,
-        estado,
-        asistencia,
-        interaccion,
-        mascota:mascotas (
-          nombre,
-          imagen_url
-        )
-      `
+                id,
+                solicitud_id,
+                fecha_cita,
+                hora_cita,
+                estado,
+                asistencia,
+                interaccion,
+                mascota:mascotas (
+                  id,
+                  nombre,
+                  imagen_url
+                )
+              `
             )
             .eq("usuario_id", perfil.id)
             .order("creada_en", { ascending: false }),
     ]);
 
+    /* Solicitud */
     const solicitudRaw = solicitudRes.data;
 
     const solicitudActiva: SolicitudActiva | null = solicitudRaw
@@ -85,20 +93,22 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
                 : solicitudRaw.mascota ?? null,
         }
         : null;
-        
-    const citas: CitaAdopcion[] = (citasRes.data ?? []).map((c) => ({
-        id: c.id,
-        solicitud_id: c.solicitud_id,
-        fecha_cita: c.fecha_cita,
-        hora_cita: c.hora_cita,
-        estado: c.estado,
-        asistencia: c.asistencia,
-        interaccion: c.interaccion,
-        mascota: Array.isArray(c.mascota)
-            ? c.mascota[0] ?? null
-            : c.mascota ?? null,
-    }));
 
+    /* Citas */
+    const citas: CitaAdopcion[] = (citasRes.data ?? [])
+        .filter((c) => c.solicitud_id && c.estado)
+        .map((c) => ({
+            id: c.id,
+            solicitud_id: c.solicitud_id!,
+            fecha_cita: c.fecha_cita,
+            hora_cita: c.hora_cita,
+            estado: c.estado as EstadoCitaAdopcion,
+            asistencia: c.asistencia as AsistenciaCita | null,
+            interaccion: c.interaccion as InteraccionCita | null,
+            mascota: Array.isArray(c.mascota)
+                ? c.mascota[0] ?? null
+                : c.mascota ?? null,
+        }));
 
     /* Cita activa */
     const citaCompletada = citas.find(
@@ -111,13 +121,13 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
     const citaActiva =
         citaCompletada ??
         citas.find((c) =>
-            ["pendiente", "programada", "confirmada"].includes(c.estado ?? "")
+            ["pendiente", "programada", "confirmada"].includes(c.estado)
         ) ??
         null;
 
     /* Adopción */
     let yaTieneAdopcion = false;
-    let adopcionEstado: string | null = null;
+    let adopcionEstado: EstadoAdopcion | null = null;
 
     if (solicitudActiva?.id) {
         const { data: adopcion } = await supabase
@@ -127,8 +137,16 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
             .maybeSingle();
 
         if (adopcion) {
-            yaTieneAdopcion = true;
-            adopcionEstado = adopcion.estado;
+            const estado = adopcion.estado;
+
+            if (
+                estado === "pendiente" ||
+                estado === "aprobada" ||
+                estado === "rechazada"
+            ) {
+                yaTieneAdopcion = true;
+                adopcionEstado = estado;
+            }
         }
     }
 

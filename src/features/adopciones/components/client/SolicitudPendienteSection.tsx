@@ -11,10 +11,10 @@ import type {
     SolicitudActiva,
     CitaAdopcion,
 } from "@/features/adopciones/types/proceso-adopcion";
+import type { SolicitudAdopcionUI } from "@/features/adopciones/types/solicitud";
 
 interface SolicitudPendienteSectionProps {
-    solicitudActiva: SolicitudActiva;
-    citaActiva: CitaAdopcion | null;
+    solicitudActiva: SolicitudAdopcionUI; citaActiva: CitaAdopcion | null;
     estado: EstadoDocumentos;
     onCancelar: () => void;
 }

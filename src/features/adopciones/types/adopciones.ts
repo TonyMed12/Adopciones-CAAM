@@ -1,3 +1,6 @@
+import type { SolicitudActiva } from "./proceso-adopcion";
+import type { CitaAdopcion } from "./citaAdopcion";
+
 export type EstadoAdopcion = "pendiente" | "aprobada" | "rechazada";
 
 export interface Adopcion {
@@ -76,3 +79,10 @@ export interface AdopcionUsuario {
     mascota_nombre: string;
     imagen_url: string | null;
 }
+
+export type ProcesoAdopcionData = {
+    solicitudActiva: SolicitudActiva | null;
+    citaActiva: CitaAdopcion | null;
+    yaTieneAdopcion: boolean;
+    adopcionEstado: EstadoAdopcion | null;
+};
