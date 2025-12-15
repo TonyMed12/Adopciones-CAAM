@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import React, { useState } from "react";
+
 import { CalendarCheck, PawPrint, CheckCircle2, MapPin } from "lucide-react";
 import { Calendar } from "@/components/ui/Calendar";
 import { isWeekend } from "date-fns";
@@ -12,32 +12,32 @@ import ConfirmCancelSolicitudModal from "@/features/adopciones/components/client
 import { FileText } from "lucide-react";
 import { XCircle } from "lucide-react";
 
-type Mascota = {
-  id: string;
-  nombre: string;
-  imagen_url: string;
-  estado: string;
-};
 
-type Solicitud = {
-  id: string;
-  estado: string;
-  created_at?: string;
-  mascota: Mascota | null;
-};
+import { useMisCitasQuery } from "@/features/citas/hooks/useMisCitasQuery";
+import { useCancelarCitaMutation } from "@/features/citas/hooks/useCancelarCitaMutation";
+import { useCancelarSolicitudAdopcionMutation } from "@/features/citas/hooks/useCancelarSolicitudAdopcionMutation";
+import { useConfirmarCitaMutation } from "@/features/citas/hooks/useConfirmarCitaMutation";
+import { useHorasOcupadasQuery } from "@/features/citas/hooks/useHorasOcupadasQuery";
 
-type Cita = {
-  id: string;
-  fecha_cita: string;
-  hora_cita: string;
-  estado: string;
-  mascota: Mascota | null;
-};
 
 export default function MisCitasPage() {
-  const supabase = createClient();
+  const { data, isLoading, isError } = useMisCitasQuery();
+  const solicitudActiva = data?.solicitudActiva ?? null;
+  const adopcionEstado = data?.adopcionEstado ?? null;
+  const perfil = data?.perfil ?? null;
+
+  const citaProgramada = data?.citaProgramada ?? null;
+  const nuevaCita = citaProgramada;
+
+
+  const confirmarCitaMutation = useConfirmarCitaMutation();
+  const cancelarCitaMutation = useCancelarCitaMutation();
+  const cancelarSolicitudMutation = useCancelarSolicitudAdopcionMutation();
+
+
+
+
   const [loadingForm, setLoadingForm] = useState(false);
-  const [adopcionEstado, setAdopcionEstado] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [citaAEliminar, setCitaAEliminar] = useState<string | null>(null);
   const [showCancelSolicitudModal, setShowCancelSolicitudModal] =
@@ -45,27 +45,17 @@ export default function MisCitasPage() {
   const [solicitudAEliminar, setSolicitudAEliminar] = useState<string | null>(
     null
   );
-  const [perfil, setPerfil] = useState<any>(null);
-  const [solicitudActiva, setSolicitudActiva] = useState<Solicitud | null>(
-    null
-  );
-  const [citas, setCitas] = useState<Cita[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [paso, setPaso] = useState<"inicio" | "formulario" | "confirmacion">(
     "inicio"
   );
   const [fecha, setFecha] = useState("");
+
   const [fechaDate, setFechaDate] = useState<Date | undefined>(undefined);
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
-  const [nuevaCita, setNuevaCita] = useState<Cita | null>(null);
-  const diasRestantes =
-    3 -
-    Math.ceil(
-      (new Date().getTime() -
-        new Date(solicitudActiva?.created_at || "").getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
-  const [horasOcupadas, setHorasOcupadas] = useState<string[]>([]);
+
+  const { data: horasOcupadas = [] } = useHorasOcupadasQuery(fecha);
+
 
   function showSoftToast(message: string) {
     const alerta = document.createElement("div");
@@ -114,361 +104,32 @@ export default function MisCitasPage() {
     return fechaHora < hoy; // true si ya pasó
   }
 
-  // ------------------------------------------------------------
-  // 📋 Cargar perfil, solicitud activa y citas
-  // ------------------------------------------------------------
-  async function fetchData() {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // 🔹 Obtener perfil del usuario
-      const { data: perfilData, error: perfilError } = await supabase
-        .from("perfiles")
-        .select("id, nombres, email")
-        .eq("email", user.email)
-        .maybeSingle();
-
-      if (perfilError) console.error("❌ Error perfil:", perfilError);
-      if (!perfilData) {
-        setLoading(false);
-        return;
-      }
-
-      setPerfil(perfilData);
-
-      // 🔹 Buscar la solicitud más reciente
-      const { data: solicitud, error: solicitudError } = await supabase
-        .from("solicitudes_adopcion")
-        .select(
-          `
-        id,
-        estado,
-        created_at,
-        mascota:mascotas(id, nombre, imagen_url, estado)
-      `
-        )
-        .eq("usuario_id", perfilData.id)
-        .in("estado", ["pendiente", "en_proceso"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (solicitudError) console.error("❌ Error solicitud:", solicitudError);
-
-      if (!solicitud) {
-        setSolicitudActiva(null);
-        setCitas([]);
-        setAdopcionEstado(null);
-        setLoading(false);
-        return;
-      }
-
-      const solicitudObj = {
-        id: solicitud.id,
-        estado: solicitud.estado,
-        created_at: solicitud.created_at,
-        mascota: Array.isArray(solicitud.mascota)
-          ? solicitud.mascota[0]
-          : solicitud.mascota ?? null,
-      };
-
-      setSolicitudActiva(solicitudObj);
-
-      // 🔍 Verificar si ya existe una adopción enviada para esta solicitud
-      try {
-        const { data: adopcionExistente, error: adopcionError } = await supabase
-          .from("adopciones")
-          .select("id, estado")
-          .eq("solicitud_id", solicitud.id)
-          .maybeSingle();
-
-        if (adopcionError) {
-          console.error("❌ Error buscando adopción:", adopcionError);
-          setAdopcionEstado(null);
-        } else if (adopcionExistente) {
-          setAdopcionEstado(adopcionExistente.estado);
-        } else {
-          setAdopcionEstado(null);
-        }
-      } catch (e) {
-        console.error("💥 Error general verificando adopción:", e);
-        setAdopcionEstado(null);
-      }
-
-      // 🔹 Buscar citas vinculadas a esta solicitud
-      const { data: citasData, error: citasError } = await supabase
-        .from("citas_adopcion")
-        .select(
-          `
-        id,
-        solicitud_id,
-        fecha_cita,
-        hora_cita,
-        estado,
-        mascota:mascotas(id, nombre, imagen_url, estado)
-      `
-        )
-        .eq("usuario_id", perfilData.id)
-        .eq("solicitud_id", solicitudObj.id)
-        .order("fecha_cita", { ascending: false });
-
-      if (citasError) console.error("❌ Error citas:", citasError);
-
-      // 🔍 Mostrar solo cita programada
-      const citaProgramada =
-        citasData?.find((c) => c.estado === "programada") ?? null;
-
-      // 🔹 Formatear la cita si existe
-      const citasFormateadas = citaProgramada
-        ? [
-            {
-              id: citaProgramada.id,
-              fecha_cita: citaProgramada.fecha_cita,
-              hora_cita: citaProgramada.hora_cita,
-              estado: citaProgramada.estado,
-              mascota: Array.isArray(citaProgramada.mascota)
-                ? citaProgramada.mascota[0]
-                : citaProgramada.mascota ?? null,
-            },
-          ]
-        : [];
-
-      setCitas(citasFormateadas);
-    } catch (err) {
-      console.error("💥 Error general en fetchData:", err);
-    } finally {
-      setLoading(false);
-    }
+  function handleFinalizar() {
+    setPaso("inicio");
   }
 
-  async function cargarHorasOcupadas(fechaStr: string) {
-    const { data, error } = await supabase
-      .from("citas_ocupadas")
-      .select("hora_cita, estado")
-      .eq("fecha_cita", fechaStr)
-      .eq("estado", "programada"); // 🔴 SOLO citas programadas
 
-    if (error) {
-      console.error("❌ Error cargando horas ocupadas:", error);
-      setHorasOcupadas([]);
-      return;
-    }
-
-    // Guardamos como "HH:mm" para comparar directo con el arreglo de horas
-    const horas = (data || [])
-      .map((c: any) => (c.hora_cita ? c.hora_cita.slice(0, 5) : null))
-      .filter(Boolean) as string[];
-
-    setHorasOcupadas(horas);
-    console.log("🔵 horasOcupadas cargadas:", horas);
-  }
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // ------------------------------------------------------------
-  // 📅 Confirmar cita (inserta en Supabase)
-  // ------------------------------------------------------------
   async function confirmarCita() {
     if (!fecha || !horaSeleccionada || !solicitudActiva || !perfil) {
-      alert("Por favor selecciona una fecha y hora válidas.");
+      showSoftToast("Selecciona fecha y hora");
       return;
     }
 
-    // ✅ Verificar que no exista ya una cita programada en esa fecha y hora
-    const { data: citaExistente, error: errorCheck } = await supabase
-      .from("citas_adopcion")
-      .select("id")
-      .eq("fecha_cita", fecha)
-      .eq("hora_cita", horaSeleccionada + ":00") // en BD suele estar con segundos
-      .eq("estado", "programada")
-      .maybeSingle();
-
-    if (errorCheck) {
-      console.error("❌ Error verificando cita existente:", errorCheck);
-    }
-
-    if (citaExistente) {
-      showSoftToast("Ya hay una cita programada en esa hora 🐾");
-      // recargar horas ocupadas por si cambió algo
-      await cargarHorasOcupadas(fecha);
-      return;
-    }
-
-    // Crear cita
-    const nueva = {
-      usuario_id: perfil.id,
-      solicitud_id: solicitudActiva.id,
-      mascota_id: solicitudActiva.mascota?.id,
-      fecha_cita: fecha,
-      hora_cita: horaSeleccionada,
-      estado: "programada",
-    };
-
-    const { data, error } = await supabase
-      .from("citas_adopcion")
-      .insert([nueva]).select(`
-      id, fecha_cita, hora_cita, estado,
-      mascota:mascotas(id, nombre, imagen_url, estado)
-    `);
-
-    if (error) {
-      alert("No se pudo registrar la cita 😕");
-      console.error(error);
-      return;
-    }
-
-    // Cambiar solicitud → en_proceso
-    const { error: updateError } = await supabase
-      .from("solicitudes_adopcion")
-      .update({ estado: "en_proceso" })
-      .eq("id", solicitudActiva.id);
-
-    if (updateError) {
-      console.error(updateError);
-    }
-
-    // Toast bonito (como lo tenías)
-    const alerta = document.createElement("div");
-    document.body.appendChild(alerta);
-    setTimeout(() => alerta.remove(), 2500);
-    const fechaTexto = new Date(fecha).toLocaleDateString("es-MX", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    await confirmarCitaMutation.mutateAsync({
+      usuarioId: perfil.id,
+      solicitudId: solicitudActiva.id,
+      mascotaId: solicitudActiva.mascota?.id ?? null,
+      fecha,
+      hora: horaSeleccionada,
     });
 
-    const horaTexto = horaSeleccionada; // ya está bien
-
-    // Actualizar UI local
-    const citaCreada = {
-      id: data![0].id,
-      fecha_cita: data![0].fecha_cita,
-      hora_cita: data![0].hora_cita,
-      estado: data![0].estado,
-      mascota: Array.isArray(data![0].mascota)
-        ? data![0].mascota[0]
-        : data![0].mascota,
-    };
-
-    setNuevaCita(citaCreada);
-    setCitas([citaCreada]);
-    setSolicitudActiva({ ...solicitudActiva, estado: "en_proceso" });
-
     setPaso("confirmacion");
-
-    // 📩 Enviar correo (que no truene el flujo si falla)
-    try {
-      await fetch("/api/email/cita", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: perfil.email,
-          nombre: perfil.nombres,
-          nombreMascota: solicitudActiva.mascota?.nombre,
-          fechaTexto,
-          horaTexto,
-          lugar: "Centro de Atención Animal de Morelia",
-          folio: data![0].id,
-        }),
-      });
-    } catch (e) {
-      console.error("Error al enviar correo de cita:", e);
-      // no hacemos return: la cita ya quedó agendada
-    }
   }
 
-  async function cancelarSolicitud(id: string) {
-    if (!solicitudActiva?.mascota?.id) {
-      console.error("❌ No hay mascota vinculada a la solicitud.");
-      return;
-    }
 
-    try {
-      const mascotaId = solicitudActiva.mascota.id;
-
-      // 1️⃣ Cancelar todas las citas de esta solicitud
-      await supabase
-        .from("citas_adopcion")
-        .update({ estado: "cancelada" })
-        .eq("solicitud_id", id);
-
-      // 2️⃣ Cambiar estado de la solicitud a "rechazada"
-      const { error: solicitudError } = await supabase
-        .from("solicitudes_adopcion")
-        .update({ estado: "rechazada" })
-        .eq("id", id);
-
-      if (solicitudError) {
-        console.error("❌ Error actualizando solicitud:", solicitudError);
-        showSoftToast("Ocurrió un problema al cancelar la solicitud 😕");
-        return;
-      }
-
-      // 3️⃣ Liberar mascota
-      const { error: mascotaError } = await supabase
-        .from("mascotas")
-        .update({
-          estado: "disponible",
-          disponible_adopcion: true,
-        })
-        .eq("id", mascotaId);
-
-      if (mascotaError) {
-        console.error("❌ Error actualizando mascota:", mascotaError);
-        showSoftToast("No se pudo liberar la mascota 😕");
-        return;
-      }
-
-      // 4️⃣ Mostrar toast suave
-      showSoftToast("Solicitud cancelada y mascota liberada correctamente 🐾");
-
-      // 5️⃣ Limpiar UI
-      setSolicitudActiva(null);
-      setCitas([]);
-
-      await fetchData();
-    } catch (err) {
-      console.error("💥 Error general en cancelarSolicitud:", err);
-      showSoftToast("Error al cancelar la solicitud 😕");
-    }
-  }
-
-  // ------------------------------------------------------------
-  // Cancelar cita
-  // ------------------------------------------------------------
   async function cancelarCita(id: string) {
-    // 1️⃣ Cancelar en BD
-    const { error } = await supabase
-      .from("citas_adopcion")
-      .update({ estado: "cancelada" })
-      .eq("id", id);
+    await cancelarCitaMutation.mutateAsync(id);
 
-    if (error) {
-      alert("Hubo un problema al cancelar la cita 😕");
-      console.error(error);
-      return;
-    }
-
-    // 2️⃣ Regresar solicitud a "pendiente"
-    const { error: solicitudError } = await supabase
-      .from("solicitudes_adopcion")
-      .update({ estado: "pendiente" })
-      .eq("id", solicitudActiva?.id);
-
-    if (solicitudError) {
-      console.error("Error actualizando solicitud:", solicitudError);
-    }
-
-    // 3️⃣ Enviar correo de cancelación (NO rompe flujo si falla)
     try {
       await fetch("/api/email/cita-cancelada", {
         method: "POST",
@@ -477,36 +138,39 @@ export default function MisCitasPage() {
           email: perfil.email,
           nombre: perfil.nombres,
           mascota: solicitudActiva?.mascota?.nombre,
-          fecha: nuevaCita?.fecha_cita,
-          hora: nuevaCita?.hora_cita,
           motivo: "Cancelada por el adoptante",
         }),
       });
-    } catch (correoError) {
-      console.error("❌ Error al enviar correo de cancelación:", correoError);
-      // No hacemos return: la cancelación ya fue exitosa
-    }
-
-    // 4️⃣ Mostrar toast elegante
-    showSoftToast("Tu cita fue cancelada correctamente 🐾");
-
-    // 5️⃣ Refrescar data
-    await fetchData();
+    } catch { }
   }
 
-  // ------------------------------------------------------------
-  // 🔁 Volver al inicio
-  // ------------------------------------------------------------
-  async function handleFinalizar() {
-    await fetchData();
-    setPaso("inicio");
+  async function cancelarSolicitud(id: string) {
+    await cancelarSolicitudMutation.mutateAsync(id);
+    showSoftToast("Solicitud cancelada correctamente 🐾");
   }
+
+
+
 
   // ------------------------------------------------------------
   // 🧱 Render principal
   // ------------------------------------------------------------
-  if (loading)
-    return <p className="text-center py-10 text-[#7a5c49]">Cargando...</p>;
+  if (isLoading) {
+    return (
+      <p className="text-center py-10 text-[#7a5c49]">
+        Cargando...
+      </p>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p className="text-center py-10 text-red-600">
+        Error al cargar tus citas.
+      </p>
+    );
+  }
+
 
   return (
     <div className="space-y-8">
@@ -518,14 +182,13 @@ export default function MisCitasPage() {
       {/* PASO 1 */}
       {paso === "inicio" && (
         <>
-          {citas.length > 0 ? (
-            // 🗓️ Si ya hay una cita programada
+          {citaProgramada ? (            // 🗓️ Si ya hay una cita programada
             <div className="rounded-2xl border border-[#eadacb] bg-[#fffaf4] p-8 shadow-md text-[#2b1b12]">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 {/* 🐶 Imagen de mascota */}
                 <img
-                  src={citas[0].mascota?.imagen_url || "/placeholder.jpg"}
-                  alt={citas[0].mascota?.nombre || "Mascota"}
+                  src={citaProgramada.mascota?.imagen_url || "/placeholder.jpg"}
+                  alt={citaProgramada.mascota?.nombre || "Mascota"}
                   className="h-48 w-48 rounded-xl object-cover border border-[#e8c9b8] shadow-sm"
                 />
 
@@ -540,7 +203,7 @@ export default function MisCitasPage() {
                     <strong className="text-[#BC5F36]">CAAM</strong> para
                     conocer a{" "}
                     <span className="font-semibold">
-                      {citas[0].mascota?.nombre}
+                      {citaProgramada.mascota?.nombre}
                     </span>
                     .
                   </p>
@@ -552,7 +215,7 @@ export default function MisCitasPage() {
                         <strong>📅 Fecha:</strong>{" "}
                         <span className="font-semibold text-[#BC5F36]">
                           {(() => {
-                            const [y, m, d] = citas[0].fecha_cita
+                            const [y, m, d] = citaProgramada.fecha_cita
                               .split("-")
                               .map(Number);
                             const fechaOK = new Date(y, m - 1, d);
@@ -568,7 +231,7 @@ export default function MisCitasPage() {
                       <p className="text-sm text-[#5a4b3f] mt-1">
                         <strong>🕒 Hora:</strong>{" "}
                         <span className="font-semibold text-[#BC5F36]">
-                          {citas[0].hora_cita.slice(0, 5)}
+                          {citaProgramada.hora_cita.slice(0, 5)}
                         </span>
                       </p>
                     </div>
@@ -579,7 +242,7 @@ export default function MisCitasPage() {
                     <Button
                       className="bg-[#fff5f3] border border-[#e8c9b8] text-[#BC5F36] hover:bg-[#ffe7e2] transition-all duration-200 cursor-pointer rounded-lg"
                       onClick={() => {
-                        setCitaAEliminar(citas[0].id);
+                        setCitaAEliminar(citaProgramada.id);
                         setShowCancelModal(true);
                       }}
                     >
@@ -1141,7 +804,6 @@ export default function MisCitasPage() {
                         setFecha(fechaStr);
 
                         // Cargar horas ocupadas
-                        cargarHorasOcupadas(fechaStr);
                         console.log("🟠 fecha seleccionada:", fechaStr);
                       }}
                       disabled={(date: Date) => {
@@ -1215,13 +877,12 @@ export default function MisCitasPage() {
                           className={`
           rounded-lg border px-3 py-2 text-sm font-semibold 
           text-center select-none w-full transition-all
-          ${
-            deshabilitada
-              ? "cursor-not-allowed opacity-40 bg-[#f5e9e4] border-[#e0cfc5]"
-              : horaSeleccionada === hora
-              ? "bg-[#BC5F36] border-[#BC5F36] text-white shadow-md"
-              : "bg-[#fffaf4] border-[#eadacb] text-[#2b1b12] hover:bg-[#ffe8df] hover:border-[#BC5F36]"
-          }
+          ${deshabilitada
+                              ? "cursor-not-allowed opacity-40 bg-[#f5e9e4] border-[#e0cfc5]"
+                              : horaSeleccionada === hora
+                                ? "bg-[#BC5F36] border-[#BC5F36] text-white shadow-md"
+                                : "bg-[#fffaf4] border-[#eadacb] text-[#2b1b12] hover:bg-[#ffe8df] hover:border-[#BC5F36]"
+                            }
         `}
                         >
                           {hora}
@@ -1240,8 +901,8 @@ export default function MisCitasPage() {
                             {noHayFecha
                               ? "Selecciona una fecha primero 📅"
                               : esPasada
-                              ? "Esta hora ya pasó hoy ⏳"
-                              : "Ya hay una cita a esta hora 🐾"}
+                                ? "Esta hora ya pasó hoy ⏳"
+                                : "Ya hay una cita a esta hora 🐾"}
                           </div>
                         )}
                       </div>
@@ -1256,13 +917,16 @@ export default function MisCitasPage() {
                   className={`
     px-8 py-3 transition-all duration-200 
     cursor-pointer select-none
-    ${
-      !fecha || !horaSeleccionada
-        ? "opacity-60 cursor-not-allowed"
-        : "hover:bg-[#a64d2e] hover:shadow-md"
-    }
+    ${!fecha || !horaSeleccionada
+                      ? "opacity-60 cursor-not-allowed"
+                      : "hover:bg-[#a64d2e] hover:shadow-md"
+                    }
   `}
-                  disabled={!fecha || !horaSeleccionada}
+                  disabled={
+                    !fecha ||
+                    !horaSeleccionada ||
+                    confirmarCitaMutation.isPending
+                  }
                   onClick={confirmarCita}
                 >
                   <CalendarCheck className="h-5 w-5 mr-2" />
