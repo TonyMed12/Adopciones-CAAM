@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Info } from "lucide-react";
 
 import PageHead from "@/components/layout/PageHead";
 import { showSoftToast } from "@/lib/showSoftToast";
@@ -182,21 +181,6 @@ export default function ProcesoAdopcionPage() {
           }
           onCancelarSolicitud={() => setShowCancelSolicitudModal(true)}
         />
-
-
-        {estado === "sin_documentos" && (
-          <section className="rounded-2xl border border-[#eadacb] bg-white p-5 text-[#2b1b12] shadow-sm">
-            <div className="flex items-center gap-2">
-              <Info className="h-5 w-5 text-[#BC5F36]" />
-              <h3 className="text-sm font-extrabold">Preguntas frecuentes</h3>
-            </div>
-            <ul className="mt-3 grid gap-2 text-sm text-[#7a5c49]">
-              <li>• Formatos aceptados: PDF, JPG, PNG. Tamaño máx. 5 MB.</li>
-              <li>• La revisión la realiza un administrador.</li>
-              <li>• Si hay observaciones, podrás corregir y volver a enviar.</li>
-            </ul>
-          </section>
-        )}
       </div>
 
       <ConfirmCancelSolicitudModal

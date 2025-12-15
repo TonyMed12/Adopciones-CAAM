@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Clock, XCircle } from "lucide-react";
+import { Clock, XCircle, Info } from "lucide-react";
 import dynamic from "next/dynamic";
 import PanelEstado from "./PanelEstado";
 
@@ -31,7 +31,8 @@ export default function DocumentosSection({
     onEnviar,
     deshabilitarEnviar,
 }: DocumentosSectionProps) {
-    /* ---------------- Rechazado (panel de error) ---------------- */
+
+    /* ---------------- Rechazado ---------------- */
     if (estado === "rechazado") {
         return (
             <PanelEstado
@@ -43,7 +44,7 @@ export default function DocumentosSection({
         );
     }
 
-    /* ---------------- Sin documentos (o primera carga) ---------------- */
+    /* ---------------- Sin documentos ---------------- */
     if (estado === "sin_documentos") {
         const docsNormalizados = documentos.map((doc) => ({
             ...doc,
@@ -52,13 +53,28 @@ export default function DocumentosSection({
         }));
 
         return (
-            <SeccionCarga
-                archivos={archivos}
-                docs={docsNormalizados}
-                onPick={onPick}
-                onEnviar={onEnviar}
-                deshabilitarEnviar={deshabilitarEnviar}
-            />
+            <>
+                <SeccionCarga
+                    archivos={archivos}
+                    docs={docsNormalizados}
+                    onPick={onPick}
+                    onEnviar={onEnviar}
+                    deshabilitarEnviar={deshabilitarEnviar}
+                />
+
+                {/* FAQs */}
+                <section className="rounded-2xl border border-[#eadacb] bg-white p-5 text-[#2b1b12] shadow-sm mt-6">
+                    <div className="flex items-center gap-2">
+                        <Info className="h-5 w-5 text-[#BC5F36]" />
+                        <h3 className="text-sm font-extrabold">Preguntas frecuentes</h3>
+                    </div>
+                    <ul className="mt-3 grid gap-2 text-sm text-[#7a5c49]">
+                        <li>• Formatos aceptados: PDF, JPG, PNG. Tamaño máx. 5 MB.</li>
+                        <li>• La revisión la realiza un administrador.</li>
+                        <li>• Si hay observaciones, podrás corregir y volver a enviar.</li>
+                    </ul>
+                </section>
+            </>
         );
     }
 
