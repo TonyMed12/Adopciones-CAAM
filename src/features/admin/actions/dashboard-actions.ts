@@ -1,9 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function obtenerStatsDashboard() {
     const supabase = await createClient();
+
+    logger.info("obtenerStatsDashboard:start");
 
     const hoy = new Date();
     const hoyStr = hoy.toISOString().split("T")[0];
@@ -72,6 +75,17 @@ export async function obtenerStatsDashboard() {
             .select("*", { head: true, count: "exact" })
             .eq("estado", "pendiente"),
     ]);
+
+    logger.info("obtenerStatsDashboard:success", {
+        documentosPendientes: docs.count ?? 0,
+        citasHoy: (citasAdopHoy.count ?? 0) + (citasVetHoy.count ?? 0),
+        citasSemana:
+            (citasAdopSemana.count ?? 0) + (citasVetSemana.count ?? 0),
+        usuariosProceso: usuarios.count ?? 0,
+        mascotasAdoptables: adoptables.count ?? 0,
+        citasAdopPend: citasAdopPend.count ?? 0,
+        citasVetPend: citasVetPend.count ?? 0,
+    });
 
     return {
         documentosPendientes: docs.count ?? 0,

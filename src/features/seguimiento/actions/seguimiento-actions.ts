@@ -2,13 +2,19 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { Seguimiento } from "../types/seguimiento";
+import type { CrearSeguimientoDBInput } from "../types/seguimiento";
 import dayjs from "dayjs";
-import { CrearSeguimientoDBInput } from "../types/seguimiento";
+import { logger } from "@/lib/logger";
 
 export async function crearSeguimientoAction(
   input: CrearSeguimientoDBInput
 ) {
   const supabase = await createClient();
+
+  logger.info("crearSeguimientoAction:start", {
+    adopcionId: input.adopcionId,
+    fechaSeguimiento: input.fechaProgramada,
+  });
 
   const {
     data: { user },
@@ -16,7 +22,10 @@ export async function crearSeguimientoAction(
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("Usuario no autenticado");
+    logger.error("crearSeguimientoAction:no_auth", {
+      message: userError?.message,
+    });
+    throw new Error("Usuario no autenticado"); 
   }
 
   const { error } = await supabase.from("seguimiento_adopcion").insert({
@@ -33,15 +42,27 @@ export async function crearSeguimientoAction(
   });
 
   if (error) {
-    console.error("Error creando seguimiento:", error);
+    logger.error("crearSeguimientoAction:supabase_error", {
+      adopcionId: input.adopcionId,
+      message: error.message,
+    });
     throw new Error("Error al guardar el seguimiento");
   }
+
+  logger.info("crearSeguimientoAction:success", {
+    adopcionId: input.adopcionId,
+    realizadoPor: user.id,
+  });
 }
 
 export async function listarSeguimientosPorMascota(
   mascotaId: string
 ): Promise<Seguimiento[]> {
   const supabase = await createClient();
+
+  logger.info("listarSeguimientosPorMascota:start", {
+    mascotaId,
+  });
 
   const { data: adopciones, error: adopcionesError } = await supabase
     .from("adopciones")
@@ -54,13 +75,21 @@ export async function listarSeguimientosPorMascota(
     .eq("solicitudes_adopcion.mascota_id", mascotaId);
 
   if (adopcionesError) {
-    console.error("Error obteniendo adopciones:", adopcionesError);
+    logger.error("listarSeguimientosPorMascota:adopciones_error", {
+      mascotaId,
+      message: adopcionesError.message,
+    });
     throw new Error("Error obteniendo adopciones");
   }
 
   const adopcionIds = (adopciones ?? []).map((a) => a.id);
 
-  if (adopcionIds.length === 0) return [];
+  if (adopcionIds.length === 0) {
+    logger.info("listarSeguimientosPorMascota:sin_adopciones", {
+      mascotaId,
+    });
+    return [];
+  }
 
   const { data, error } = await supabase
     .from("seguimiento_adopcion")
@@ -82,9 +111,17 @@ export async function listarSeguimientosPorMascota(
     .order("fecha_seguimiento", { ascending: true });
 
   if (error) {
-    console.error("Error listando seguimientos:", error);
+    logger.error("listarSeguimientosPorMascota:supabase_error", {
+      mascotaId,
+      message: error.message,
+    });
     throw new Error("Error obteniendo los seguimientos");
   }
+
+  logger.info("listarSeguimientosPorMascota:success", {
+    mascotaId,
+    total: data?.length ?? 0,
+  });
 
   return data as Seguimiento[];
 }
@@ -92,13 +129,18 @@ export async function listarSeguimientosPorMascota(
 export async function obtenerSeguimientoMascotasUsuario() {
   const supabase = await createClient();
 
+  logger.info("obtenerSeguimientoMascotasUsuario:start");
+
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    throw new Error("Usuario no autenticado");
+    logger.error("obtenerSeguimientoMascotasUsuario:no_auth", {
+      message: userError?.message,
+    });
+    throw new Error("Usuario no autenticado"); 
   }
 
   const { data: perfil, error: perfilError } = await supabase
@@ -108,7 +150,10 @@ export async function obtenerSeguimientoMascotasUsuario() {
     .single();
 
   if (perfilError || !perfil) {
-    throw new Error("Perfil no encontrado");
+    logger.error("obtenerSeguimientoMascotasUsuario:perfil_no_encontrado", {
+      userId: user.id,
+    });
+    throw new Error("Perfil no encontrado"); 
   }
 
   const { data: adopciones, error: adopcionesError } = await supabase
@@ -129,7 +174,10 @@ export async function obtenerSeguimientoMascotasUsuario() {
     .order("fecha_adopcion", { ascending: false });
 
   if (adopcionesError) {
-    throw new Error("Error al obtener adopciones");
+    logger.error("obtenerSeguimientoMascotasUsuario:adopciones_error", {
+      perfilId: perfil.id,
+    });
+    throw new Error("Error al obtener adopciones"); 
   }
 
   const adopcionesUsuario = (adopciones || []).filter(
@@ -197,6 +245,11 @@ export async function obtenerSeguimientoMascotasUsuario() {
       };
     })
   );
+
+  logger.info("obtenerSeguimientoMascotasUsuario:success", {
+    perfilId: perfil.id,
+    totalAdopciones: resultado.length,
+  });
 
   return resultado;
 }

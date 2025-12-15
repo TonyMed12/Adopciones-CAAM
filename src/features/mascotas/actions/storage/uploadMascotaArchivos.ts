@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
+import { logger } from "@/lib/logger";
 
 /**
  * Sube la imagen y el QR al storage.
@@ -19,10 +20,15 @@ export async function uploadMascotaArchivos(
 }> {
     const supabase = await createClient();
 
+    logger.info("uploadMascotaArchivos:start", {
+        hasId: !!id,
+        fileType: file.type,
+        fileSize: file.size,
+    });
+
     try {
         const uuid = id || uuidv4();
 
-        /* Subir imagen */
         const imageName = `${uuid}.jpg`;
         const { error: imgError } = await supabase.storage
             .from("mascotas-imagenes")
@@ -38,13 +44,11 @@ export async function uploadMascotaArchivos(
             .from("mascotas-imagenes")
             .getPublicUrl(imageName);
 
-        /* Base URL */
         const baseUrl =
             process.env.NODE_ENV === "development"
                 ? "http://localhost:3000"
                 : "https://caamorelia.vercel.app";
 
-        /* Crear QR */
         const qrLink = `${baseUrl}/mascota/${uuid}`;
         const qrDataUrl = await QRCode.toDataURL(qrLink, { width: 300 });
         const qrBlob = await (await fetch(qrDataUrl)).blob();
@@ -60,6 +64,10 @@ export async function uploadMascotaArchivos(
 
         if (qrError) throw qrError;
 
+        logger.info("uploadMascotaArchivos:success", {
+            mascotaId: uuid,
+        });
+
         return {
             ok: true,
             id: uuid,
@@ -67,6 +75,10 @@ export async function uploadMascotaArchivos(
             qr_code: qrName,
         };
     } catch (err) {
+        logger.error("uploadMascotaArchivos:error", {
+            error: err instanceof Error ? err.message : err,
+        });
+
         return { ok: false, error: (err as Error).message };
     }
 }

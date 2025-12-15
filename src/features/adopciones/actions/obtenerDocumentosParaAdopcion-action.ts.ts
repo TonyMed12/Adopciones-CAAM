@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import type {
     DocumentosUsuarioData,
     DocumentoUsuario,
@@ -10,12 +11,17 @@ import type {
 export async function obtenerDocumentosUsuario(): Promise<DocumentosUsuarioData> {
     const supabase = await createClient();
 
+    logger.info("obtenerDocumentosUsuario:start");
+
     const {
         data: { user },
         error: authError,
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+        logger.error("obtenerDocumentosUsuario:auth_error", {
+            message: authError?.message,
+        });
         throw new Error("NO_AUTH");
     }
 
@@ -25,10 +31,17 @@ export async function obtenerDocumentosUsuario(): Promise<DocumentosUsuarioData>
         .eq("perfil_id", user.id);
 
     if (error) {
+        logger.error("obtenerDocumentosUsuario:supabase_error", {
+            userId: user.id,
+            message: error.message,
+        });
         throw new Error("ERROR_DOCUMENTOS");
     }
 
     if (!data || data.length === 0) {
+        logger.info("obtenerDocumentosUsuario:sin_documentos", {
+            userId: user.id,
+        });
         return {
             estado: "sin_documentos",
             documentos: [],
@@ -52,6 +65,12 @@ export async function obtenerDocumentosUsuario(): Promise<DocumentosUsuarioData>
     } else if (estados.some((e) => e === "rechazado")) {
         estado = "rechazado";
     }
+
+    logger.info("obtenerDocumentosUsuario:success", {
+        userId: user.id,
+        estado,
+        total: documentos.length,
+    });
 
     return {
         estado,

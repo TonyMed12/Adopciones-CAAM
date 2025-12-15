@@ -20,19 +20,37 @@ import { throwIf } from "./helpers/throwIf";
 import { updateSolicitudEstado } from "@/features/solicitudes/actions/solicitudes-actions";
 import { getUsuarioAuthId } from "@/features/perfil/actions/perfil-actions";
 import { mapAdopcionUsuario } from "../mappers/adopciones-mappers";
+import { logger } from "@/lib/logger";
 
 export async function listarAdopciones(): Promise<Adopcion[]> {
+  logger.info("listarAdopciones:start");
+
   const { data, error } = await supabase
     .from("adopciones")
     .select("*")
     .order("created_at", { ascending: false });
 
+  if (error) {
+    logger.error("listarAdopciones:supabase_error", {
+      message: error.message,
+    });
+  }
+
   throwIf(error);
+
+  logger.info("listarAdopciones:success", {
+    returned: data?.length ?? 0,
+  });
+
   return (data ?? []) as Adopcion[];
 }
 
 export async function crearAdopcion(input: unknown): Promise<Adopcion> {
   const parsed = NuevaAdopcionSchema.parse(input);
+
+  logger.info("crearAdopcion:start", {
+    solicitudId: parsed.solicitud_id,
+  });
 
   const { data, error } = await supabase
     .from("adopciones")
@@ -51,12 +69,28 @@ export async function crearAdopcion(input: unknown): Promise<Adopcion> {
     .select()
     .single();
 
+  if (error) {
+    logger.error("crearAdopcion:supabase_error", {
+      message: error.message,
+    });
+  }
+
   throwIf(error);
+
+  logger.info("crearAdopcion:success", {
+    adopcionId: data.id,
+  });
+
   return data as Adopcion;
 }
 
 export async function revisarAdopcion(input: unknown): Promise<Adopcion> {
   const parsed = RevisionAdopcionSchema.parse(input);
+
+  logger.info("revisarAdopcion:start", {
+    adopcionId: parsed.id,
+    estado: parsed.estado,
+  });
 
   const { data, error } = await supabase
     .from("adopciones")
@@ -72,36 +106,75 @@ export async function revisarAdopcion(input: unknown): Promise<Adopcion> {
     .select()
     .single();
 
+  if (error) {
+    logger.error("revisarAdopcion:supabase_error", {
+      adopcionId: parsed.id,
+      message: error.message,
+    });
+  }
+
   throwIf(error);
+
+  logger.info("revisarAdopcion:success", {
+    adopcionId: parsed.id,
+  });
+
   return data as Adopcion;
 }
 
 export async function obtenerAdopcionPorId(
   id: string
 ): Promise<Adopcion | null> {
+  logger.info("obtenerAdopcionPorId:start", {
+    id,
+  });
+
   const { data, error } = await supabase
     .from("adopciones")
     .select("*")
     .eq("id", id)
     .single();
 
+  if (error) {
+    logger.error("obtenerAdopcionPorId:supabase_error", {
+      id,
+      message: error.message,
+    });
+  }
+
   throwIf(error);
+
+  logger.info("obtenerAdopcionPorId:success", {
+    id,
+  });
+
   return data as Adopcion;
 }
 
 export async function listarAdopcionesAdmin(): Promise<AdopcionAdminRow[]> {
+  logger.info("listarAdopcionesAdmin:start");
+
   const adopciones = await fetchAdopcionesBase();
 
   const solIds = [
     ...new Set(adopciones.map((a: any) => a.solicitud_id).filter(Boolean)),
   ];
 
-  if (solIds.length === 0) return [];
+  if (solIds.length === 0) {
+    logger.info("listarAdopcionesAdmin:sin_solicitudes");
+    return [];
+  }
 
   const solicitudes = await fetchSolicitudesMeta(solIds);
   const byId = indexSolicitudesPorId(solicitudes);
 
-  return mapAdopcionesAdminRows(adopciones, byId);
+  const rows = mapAdopcionesAdminRows(adopciones, byId);
+
+  logger.info("listarAdopcionesAdmin:success", {
+    returned: rows.length,
+  });
+
+  return rows;
 }
 
 async function moverCitaAGemela(
@@ -110,6 +183,11 @@ async function moverCitaAGemela(
   mascotaId: string,
   solicitudId: string
 ) {
+  logger.info("moverCitaAGemela:start", {
+    usuarioAuthId,
+    mascotaId,
+  });
+
   const { data: cita } = await supabaseSrv
     .from("citas_adopcion")
     .select("*")
@@ -148,6 +226,10 @@ async function moverCitaAGemela(
   }
 
   await supabaseSrv.from("citas_adopcion").delete().eq("id", cita.id);
+
+  logger.info("moverCitaAGemela:success", {
+    citaId: cita.id,
+  });
 }
 
 async function eliminarCitasPendientes(
@@ -155,6 +237,11 @@ async function eliminarCitasPendientes(
   usuarioAuthId: string,
   mascotaId: string
 ) {
+  logger.info("eliminarCitasPendientes:start", {
+    usuarioAuthId,
+    mascotaId,
+  });
+
   const { data: citasRelacionadas } = await supabaseSrv
     .from("citas_adopcion")
     .select("id")
@@ -167,6 +254,10 @@ async function eliminarCitasPendientes(
     .from("citas_adopcion")
     .delete()
     .in("id", citasRelacionadas.map((c) => c.id));
+
+  logger.info("eliminarCitasPendientes:success", {
+    total: citasRelacionadas.length,
+  });
 }
 
 export async function cambiarEstadoAdopcion(params: {
@@ -179,6 +270,11 @@ export async function cambiarEstadoAdopcion(params: {
 }): Promise<Adopcion> {
   const supabaseSrv = await createClient();
   const parsed = RevisionAdopcionSchema.parse(params);
+
+  logger.info("cambiarEstadoAdopcion:start", {
+    adopcionId: parsed.id,
+    estado: parsed.estado,
+  });
 
   const { data, error } = await supabaseSrv
     .from("adopciones")
@@ -193,6 +289,13 @@ export async function cambiarEstadoAdopcion(params: {
     .eq("id", parsed.id)
     .select("id, solicitud_id, estado")
     .single();
+
+  if (error) {
+    logger.error("cambiarEstadoAdopcion:supabase_error", {
+      adopcionId: parsed.id,
+      message: error.message,
+    });
+  }
 
   throwIf(error);
 
@@ -223,11 +326,19 @@ export async function cambiarEstadoAdopcion(params: {
     await eliminarCitasPendientes(supabaseSrv, usuarioAuthId, mascotaId);
   }
 
+  logger.info("cambiarEstadoAdopcion:success", {
+    adopcionId: parsed.id,
+  });
+
   return data as Adopcion;
 }
 
 export async function obtenerAdopcionesIdsPorUsuario(auth_id: string) {
   const supabase = await createClient();
+
+  logger.info("obtenerAdopcionesIdsPorUsuario:start", {
+    auth_id,
+  });
 
   const { data: perfil, error: perfilError } = await supabase
     .from("perfiles")
@@ -235,21 +346,39 @@ export async function obtenerAdopcionesIdsPorUsuario(auth_id: string) {
     .eq("id", auth_id)
     .maybeSingle();
 
-  if (perfilError || !perfil) return [];
+  if (perfilError || !perfil) {
+    logger.info("obtenerAdopcionesIdsPorUsuario:sin_perfil", {
+      auth_id,
+    });
+    return [];
+  }
 
   const { data, error } = await supabase
     .from("adopciones")
     .select("id")
     .eq("adoptante_id", perfil.id);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    logger.error("obtenerAdopcionesIdsPorUsuario:supabase_error", {
+      auth_id,
+      message: error.message,
+    });
+    throw new Error(error.message);
+  }
+
+  logger.info("obtenerAdopcionesIdsPorUsuario:success", {
+    returned: data?.length ?? 0,
+  });
 
   return data?.map((a) => a.id) || [];
 }
 
-
 export async function obtenerAdopcionesConMascotaYAdoptante(ids: string[]) {
   const supabase = await createClient();
+
+  logger.info("obtenerAdopcionesConMascotaYAdoptante:start", {
+    idsCount: ids.length,
+  });
 
   const { data, error } = await supabase
     .from("adopciones")
@@ -261,14 +390,26 @@ export async function obtenerAdopcionesConMascotaYAdoptante(ids: string[]) {
     `)
     .in("id", ids);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    logger.error("obtenerAdopcionesConMascotaYAdoptante:supabase_error", {
+      message: error.message,
+    });
+    throw new Error(error.message);
+  }
+
+  logger.info("obtenerAdopcionesConMascotaYAdoptante:success", {
+    returned: data?.length ?? 0,
+  });
 
   return data || [];
 }
 
-
 export async function listarAdopcionesPorUsuario(adoptanteId: string) {
   const supabase = await createClient();
+
+  logger.info("listarAdopcionesPorUsuario:start", {
+    adoptanteId,
+  });
 
   const { data, error } = await supabase
     .from("adopciones")
@@ -286,7 +427,17 @@ export async function listarAdopcionesPorUsuario(adoptanteId: string) {
     .eq("adoptante_id", adoptanteId)
     .order("fecha_adopcion", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    logger.error("listarAdopcionesPorUsuario:supabase_error", {
+      adoptanteId,
+      message: error.message,
+    });
+    throw new Error(error.message);
+  }
+
+  logger.info("listarAdopcionesPorUsuario:success", {
+    returned: data?.length ?? 0,
+  });
 
   return (data ?? []).map(mapAdopcionUsuario);
 }

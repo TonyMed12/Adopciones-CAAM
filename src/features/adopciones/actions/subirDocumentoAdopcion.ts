@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function subirDocumentoAdopcion(params: {
     tipo: string;
@@ -9,21 +10,26 @@ export async function subirDocumentoAdopcion(params: {
 }): Promise<void> {
     const supabase = await createClient();
 
-    /* Auth */
+    logger.info("subirDocumentoAdopcion:start", {
+        tipo: params.tipo,
+        fileName: params.fileName,
+    });
+
     const {
         data: { user },
         error: authError,
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+        logger.error("subirDocumentoAdopcion:auth_error", {
+            message: authError?.message,
+        });
         throw new Error("NO_AUTH");
     }
 
-    /* Construir path seguro */
     const safeName = params.fileName.replace(/[^a-zA-Z0-9.]/g, "_");
     const path = `${user.id}/${params.tipo}-${Date.now()}-${safeName}`;
 
-    /* Upload */
     const { error: uploadError } = await supabase.storage
         .from("documentos_adopcion")
         .upload(path, params.fileBuffer, {
@@ -32,17 +38,20 @@ export async function subirDocumentoAdopcion(params: {
         });
 
     if (uploadError) {
+        logger.error("subirDocumentoAdopcion:upload_error", {
+            userId: user.id,
+            path,
+            message: uploadError.message,
+        });
         throw new Error("ERROR_UPLOAD");
     }
 
-    /* URL pública */
     const { data: publicUrlData } = supabase.storage
         .from("documentos_adopcion")
         .getPublicUrl(path);
 
     const publicUrl = publicUrlData.publicUrl;
 
-    /* Guardar en DB */
     const { error: dbError } = await supabase
         .from("documentos")
         .upsert(
@@ -57,6 +66,17 @@ export async function subirDocumentoAdopcion(params: {
         );
 
     if (dbError) {
+        logger.error("subirDocumentoAdopcion:db_error", {
+            userId: user.id,
+            tipo: params.tipo,
+            message: dbError.message,
+        });
         throw new Error("ERROR_DB");
     }
+
+    logger.info("subirDocumentoAdopcion:success", {
+        userId: user.id,
+        tipo: params.tipo,
+        path,
+    });
 }

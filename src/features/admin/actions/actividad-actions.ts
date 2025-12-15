@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import type { ActividadItemType } from "../types/dashboard";
 import type {
     DocumentoActividadRow,
@@ -15,12 +16,21 @@ export async function obtenerActividadReciente(
     const supabase = await createClient();
     const eventos: ActividadItemType[] = [];
 
-    /* DOCUMENTOS */
+    logger.info("obtenerActividadReciente:start", {
+        filtro,
+    });
+
     if (filtro === "todo" || filtro === "documento") {
-        const { data: docs } = await supabase
+        const { data: docs, error } = await supabase
             .from("documentos")
             .select("created_at, tipo, perfiles(nombres)")
             .returns<DocumentoActividadRow[]>();
+
+        if (error) {
+            logger.error("obtenerActividadReciente:documentos_error", {
+                message: error.message,
+            });
+        }
 
         docs?.forEach((d) =>
             eventos.push({
@@ -31,9 +41,8 @@ export async function obtenerActividadReciente(
         );
     }
 
-    /* CITAS ADOPCIÓN */
     if (filtro === "todo" || filtro === "cita") {
-        const { data: citasAdop } = await supabase
+        const { data: citasAdop, error } = await supabase
             .from("citas_adopcion")
             .select(`
         estado,
@@ -43,19 +52,25 @@ export async function obtenerActividadReciente(
       `)
             .returns<CitaAdopcionActividadRow[]>();
 
+        if (error) {
+            logger.error("obtenerActividadReciente:citas_adopcion_error", {
+                message: error.message,
+            });
+        }
+
         citasAdop?.forEach((c) =>
             eventos.push({
                 tipo: "cita",
-                mensaje: `${c.perfiles?.nombres ?? "Un adoptante"} ${c.estado === "programada" ? "agendó" : "actualizó"
-                    } una cita de adopción para "${c.mascotas?.nombre ?? "una mascota"}"`,
+                mensaje: `${c.perfiles?.nombres ?? "Un adoptante"} ${
+                    c.estado === "programada" ? "agendó" : "actualizó"
+                } una cita de adopción para "${c.mascotas?.nombre ?? "una mascota"}"`,
                 fecha: c.creada_en,
             })
         );
     }
 
-    /* CITAS VETERINARIAS */
     if (filtro === "todo" || filtro === "cita") {
-        const { data: citasVet } = await supabase
+        const { data: citasVet, error } = await supabase
             .from("citas_veterinarias")
             .select(`
         estado,
@@ -67,24 +82,37 @@ export async function obtenerActividadReciente(
       `)
             .returns<CitaVeterinariaActividadRow[]>();
 
+        if (error) {
+            logger.error("obtenerActividadReciente:citas_veterinarias_error", {
+                message: error.message,
+            });
+        }
+
         citasVet?.forEach((c) =>
             eventos.push({
                 tipo: "cita",
-                mensaje: `${c.adopciones?.adoptante?.nombres ?? "Un usuario"} ${c.estado === "pendiente" ? "agendó" : "actualizó"
-                    } una cita veterinaria para "${c.adopciones?.mascota?.nombre ?? "una mascota"
-                    }".`,
+                mensaje: `${c.adopciones?.adoptante?.nombres ?? "Un usuario"} ${
+                    c.estado === "pendiente" ? "agendó" : "actualizó"
+                } una cita veterinaria para "${
+                    c.adopciones?.mascota?.nombre ?? "una mascota"
+                }".`,
                 fecha: c.created_at,
             })
         );
     }
 
-    /* MASCOTAS ADOPTADAS */
     if (filtro === "todo" || filtro === "mascota") {
-        const { data: masc } = await supabase
+        const { data: masc, error } = await supabase
             .from("mascotas")
             .select("nombre, updated_at")
             .eq("estado", "adoptada")
             .returns<MascotaAdoptadaActividadRow[]>();
+
+        if (error) {
+            logger.error("obtenerActividadReciente:mascotas_error", {
+                message: error.message,
+            });
+        }
 
         masc?.forEach((m) =>
             eventos.push({
@@ -95,6 +123,16 @@ export async function obtenerActividadReciente(
         );
     }
 
-    eventos.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-    return eventos.slice(0, 8);
+    eventos.sort(
+        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+    );
+
+    const result = eventos.slice(0, 8);
+
+    logger.info("obtenerActividadReciente:success", {
+        filtro,
+        returned: result.length,
+    });
+
+    return result;
 }

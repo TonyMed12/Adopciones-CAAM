@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import type {
     ProcesoAdopcionData,
     SolicitudActiva,
@@ -16,17 +17,20 @@ import type { EstadoAdopcion } from "../types/adopciones";
 export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionData> {
     const supabase = await createClient();
 
-    /* Usuario */
+    logger.info("obtenerProcesoAdopcionUsuario:start");
+
     const {
         data: { user },
         error: authError,
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+        logger.error("obtenerProcesoAdopcionUsuario:auth_error", {
+            message: authError?.message,
+        });
         throw new Error("NO_AUTH");
     }
 
-    /* Perfil */
     const { data: perfil, error: perfilError } = await supabase
         .from("perfiles")
         .select("id")
@@ -34,10 +38,13 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
         .maybeSingle();
 
     if (perfilError || !perfil) {
+        logger.error("obtenerProcesoAdopcionUsuario:perfil_error", {
+            email: user.email,
+            message: perfilError?.message,
+        });
         throw new Error("PERFIL_NO_ENCONTRADO");
     }
 
-    /* Queries paralelas */
     const [solicitudRes, citasRes] = await Promise.all([
         supabase
             .from("solicitudes_adopcion")
@@ -80,7 +87,20 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
             .order("creada_en", { ascending: false }),
     ]);
 
-    /* Solicitud */
+    if (solicitudRes.error) {
+        logger.error("obtenerProcesoAdopcionUsuario:solicitud_error", {
+            perfilId: perfil.id,
+            message: solicitudRes.error.message,
+        });
+    }
+
+    if (citasRes.error) {
+        logger.error("obtenerProcesoAdopcionUsuario:citas_error", {
+            perfilId: perfil.id,
+            message: citasRes.error.message,
+        });
+    }
+
     const solicitudRaw = solicitudRes.data;
 
     const solicitudActiva: SolicitudActiva | null = solicitudRaw
@@ -94,7 +114,6 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
         }
         : null;
 
-    /* Citas */
     const citas: CitaAdopcion[] = (citasRes.data ?? [])
         .filter((c) => c.solicitud_id && c.estado)
         .map((c) => ({
@@ -110,7 +129,6 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
                 : c.mascota ?? null,
         }));
 
-    /* Cita activa */
     const citaCompletada = citas.find(
         (c) =>
             c.estado === "completada" &&
@@ -125,16 +143,22 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
         ) ??
         null;
 
-    /* Adopción */
     let yaTieneAdopcion = false;
     let adopcionEstado: EstadoAdopcion | null = null;
 
     if (solicitudActiva?.id) {
-        const { data: adopcion } = await supabase
+        const { data: adopcion, error: adopcionError } = await supabase
             .from("adopciones")
             .select("estado")
             .eq("solicitud_id", solicitudActiva.id)
             .maybeSingle();
+
+        if (adopcionError) {
+            logger.error("obtenerProcesoAdopcionUsuario:adopcion_error", {
+                solicitudId: solicitudActiva.id,
+                message: adopcionError.message,
+            });
+        }
 
         if (adopcion) {
             const estado = adopcion.estado;
@@ -149,6 +173,13 @@ export async function obtenerProcesoAdopcionUsuario(): Promise<ProcesoAdopcionDa
             }
         }
     }
+
+    logger.info("obtenerProcesoAdopcionUsuario:success", {
+        perfilId: perfil.id,
+        tieneSolicitud: Boolean(solicitudActiva),
+        tieneCita: Boolean(citaActiva),
+        yaTieneAdopcion,
+    });
 
     return {
         solicitudActiva,
