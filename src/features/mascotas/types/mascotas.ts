@@ -54,4 +54,8 @@ export interface ListarMascotasParams {
     sexo?: string;
 }
 
-
+export interface MascotaBasica {
+    id: string;
+    nombre: string;
+    imagen_url?: string | null;
+}
