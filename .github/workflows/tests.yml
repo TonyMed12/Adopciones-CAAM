@@ -1,30 +1,38 @@
-name: CI - Tests
+name: CI - Tests and Build
 
 on:
   push:
-    branches: [ "main", "godav" ]
+    branches: ["main", "godav"]
   pull_request:
-    branches: [ "main", "godav" ]
+    branches: ["main", "godav"]
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
 
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
     steps:
-      - name: Descargar repositorio
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - name: Instalar dependencias
+      - name: Install deps
         run: npm install
 
-      - name: Ejecutar tests
+      - name: Run tests
         run: npm run test:run
-      
-      - name: Agradecimiento especial a pacheco que nos cancelo un examen
-        run: echo "Si jalan los tests jdksafkja te amo pacheco gracias por todo"
+
+      - name: Build Next.js
+        run: npm run build
+
+      - name: Mensaje fin de semestre
+        run: echo "CI pasó correctamente y nosotros también "
