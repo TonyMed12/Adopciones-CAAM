@@ -77,33 +77,73 @@ export async function reprogramarCita(id: string, fecha: string, hora: string) {
 export async function cancelarCita(id: string) {
   const supabase = await createClient();
 
-  logger.info("cancelarCita:start", {
-    id,
-  });
+  logger.info("cancelarCita:start", { id });
 
-  const { data, error } = await supabase
+  const { data: cita, error: getError } = await supabase
+    .from("citas_adopcion")
+    .select("id, solicitud_id")
+    .eq("id", id)
+    .single();
+
+  if (getError || !cita) {
+    logger.error("cancelarCita:get_cita_error", {
+      id,
+      message: getError?.message,
+    });
+    throw new Error("No se pudo obtener la cita");
+  }
+
+  const { error: cancelError } = await supabase
     .from("citas_adopcion")
     .update({
       estado: "cancelada",
       actualizada_en: new Date().toISOString(),
     })
-    .eq("id", id)
-    .select("id, estado")
-    .single();
+    .eq("id", id);
 
-  if (error) {
-    logger.error("cancelarCita:supabase_error", {
+  if (cancelError) {
+    logger.error("cancelarCita:update_error", {
       id,
-      message: error.message,
+      message: cancelError.message,
     });
-    throw new Error(error.message);
+    throw new Error(cancelError.message);
+  }
+
+  logger.info("cancelarCita:cita_cancelada", {
+    id,
+    solicitudId: cita.solicitud_id,
+  });
+
+  if (cita.solicitud_id) {
+    const { error: solicitudError } = await supabase
+      .from("solicitudes_adopcion")
+      .update({
+        estado: "pendiente",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", cita.solicitud_id);
+
+    if (solicitudError) {
+      logger.error("cancelarCita:fix_solicitud_error", {
+        id,
+        solicitudId: cita.solicitud_id,
+        message: solicitudError.message,
+      });
+      throw new Error(solicitudError.message);
+    }
+
+    logger.warn("cancelarCita:solicitud_estado_forzado", {
+      solicitudId: cita.solicitud_id,
+      estado: "pendiente",
+      reason: "workaround_trigger_citas",
+    });
   }
 
   logger.info("cancelarCita:success", {
     id,
   });
 
-  return data;
+  return { id, estado: "cancelada" };
 }
 
 async function obtenerCita(id: string) {

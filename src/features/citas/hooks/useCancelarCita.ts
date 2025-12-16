@@ -5,22 +5,21 @@ import { cancelarCita } from "../actions/citas-actions";
 import { citasKeys } from "../queries/citas-keys";
 
 export function useCancelarCita() {
-    const qc = useQueryClient();
+  const qc = useQueryClient();
 
-    return useMutation({
-        mutationFn: async (id: string) => {
-            return await cancelarCita(id);
-        },
-        onSuccess: async () => {
-            await qc.invalidateQueries({ queryKey: citasKeys.list() });
+  return useMutation({
+    mutationFn: cancelarCita,
 
-            qc.refetchQueries({ queryKey: citasKeys.list() });
-        },
+    onSuccess: async () => {
+      await qc.invalidateQueries({
+        queryKey: citasKeys.list(),
+      });
+    },
 
-        onError: (error) => {
-            console.error("Error cancelando cita:", error?.message);
-        },
+    onError: (error: any) => {
+      console.error("Error cancelando cita:", error?.message);
+    },
 
-        retry: 1,
-    });
+    retry: 1,
+  });
 }

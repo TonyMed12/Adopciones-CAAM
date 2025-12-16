@@ -38,7 +38,7 @@ export default function GestionCitasPage() {
 
   const [query, setQuery] = useState("");
   const [filtroEstado, setFiltroEstado] =
-    useState<"todas" | "programada" | "completada" | "cancelada" | "aprobada">("todas");
+    useState<"todas" | "programada" | "completada" | "cancelada" | "aprobada">("programada");
 
   const [view, setView] = useState<"tabla" | "calendario">("tabla");
 

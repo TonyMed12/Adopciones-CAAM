@@ -1,0 +1,20 @@
+name: PR - Alerta por correo
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Mostrar info del Pull Request
+        run: |
+          echo "Se abrió un Pull Request"
+          echo "Autor: ${{ github.actor }}"
+          echo "Repositorio: ${{ github.repository }}"
+          echo "Rama de origen: ${{ github.head_ref }}"
+          echo "Rama de destino: ${{ github.base_ref }}"
+          echo "Uy kieto"
+
