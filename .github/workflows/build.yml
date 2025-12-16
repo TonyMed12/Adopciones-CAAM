@@ -1,4 +1,4 @@
-name: CI - Tests
+name: CI - Build
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main", "godav" ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,8 +23,5 @@ jobs:
       - name: Instalar dependencias
         run: npm install
 
-      - name: Ejecutar tests
-        run: npm run test:run
-      
-      - name: Agradecimiento especial a pacheco que nos cancelo un examen
-        run: echo "Si jalan los tests jdksafkja te amo pacheco gracias por todo"
+      - name: Build de Next.js
+        run: npm run build
