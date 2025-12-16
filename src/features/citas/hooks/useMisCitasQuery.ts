@@ -7,7 +7,7 @@ export function useMisCitasQuery() {
     return useQuery({
         queryKey: misCitasKeys.all,
         queryFn: fetchMisCitas,
-        staleTime: 1000 * 60,
+        staleTime: 3 * 1000,
         retry: false, 
     });
 }
