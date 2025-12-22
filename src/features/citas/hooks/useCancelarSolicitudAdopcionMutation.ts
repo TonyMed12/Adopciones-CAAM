@@ -7,8 +7,13 @@ export function useCancelarSolicitudAdopcionMutation() {
 
     return useMutation({
         mutationFn: cancelarSolicitudAdopcion,
-        onSuccess: () => {
-            queryClient.invalidateQueries({
+
+        onSuccess: async () => {
+            queryClient.removeQueries({
+                queryKey: misCitasKeys.all,
+            });
+
+            await queryClient.refetchQueries({
                 queryKey: misCitasKeys.all,
             });
         },

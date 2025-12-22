@@ -4,12 +4,16 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  pull-requests: write
+  issues: write
+
 jobs:
   comment:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Comentar el Pull Request
+      - name: Comentar en el Pull Request
         uses: actions/github-script@v7
         with:
           script: |
@@ -21,5 +25,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `Hola @${actor}!\n\n Parece que cambiaron algo.\n\n Rama origen: **${branchFrom}**\n Rama destino: **${branchTo}**\n\n Se ejecutarán automáticamente:\n- Tests unitarios\n- Build de Next.js\n- Validaciones de CI\n\n Y hasta un mensaje de navidad, ya acabate semestre. Por favor espera a que GitHub Actions acabe todo mi sufrimiento.`
+              body: `Hola @${actor}!\n\n Parece que hubo un Pull Request.\n\n Rama origen: **${branchFrom}**\n Rama destino: **${branchTo}**\n\n 15 niños en la India harán automáticamente:\n- Tests unitarios\n- Build de Next.js\n- Validaciones de CI\n\n y mil cosas más, por favor espera a que GitHub Actions nuestro sufrimiento.`
             });

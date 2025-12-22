@@ -2,22 +2,36 @@ name: CD - Deploy VPS
 
 on:
   push:
-    branches: [ "main", "godav" ]
+    branches: ["main", "godav"]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Desplegar en VPS por SSH
+      - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_KEY }}
           script: |
+            set -e
+
             cd Adopciones-CAAM
-            git pull origin godav
+
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
+
+            echo "Limpiando Docker"
             docker-compose down
-            docker-compose build
+            docker system prune -af
+
+            echo "Rebuild completo"
+            docker-compose build --no-cache
+
+            echo "Levantando app"
             docker-compose up -d
+
+            echo "Deploy finalizado"
