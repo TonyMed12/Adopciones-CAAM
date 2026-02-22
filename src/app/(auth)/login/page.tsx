@@ -6,11 +6,11 @@ import { useRouter } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { signIn } from "@/lib/auth-client";
 
 export default function LoginCAAM() {
   const router = useRouter();
   const supabase = createClient();
-
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export default function LoginCAAM() {
         {
           email: correo,
           password: contrasena,
-        }
+        },
       );
 
       if (authError) {
@@ -55,7 +55,7 @@ export default function LoginCAAM() {
       if (data.user && !data.user.email_confirmed_at) {
         await supabase.auth.signOut();
         setError(
-          "Tu cuenta aún no ha sido verificada. Revisa tu bandeja de entrada."
+          "Tu cuenta aún no ha sido verificada. Revisa tu bandeja de entrada.",
         );
         setLoading(false);
         return;
@@ -186,48 +186,54 @@ export default function LoginCAAM() {
             </div>
 
             {/* Botón Google */}
-            {/*<Button
-              disabled
+            <Button
               type="button"
               full
               variant="secondary"
-              className="bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2"
-              onClick={async () => {
-                setLoading(true);
-                try {
-                  const { error } = await supabase.auth.signInWithOAuth({
-                    provider: "google",
-                    options: {
-                      redirectTo: `${window.location.origin}/auth/callback`,
-                    },
-                  });
-                  if (error) {
-                    console.error("Error al iniciar con Google:", error);
-                    setError(
-                      "No se pudo iniciar sesión con Google. Intenta nuevamente."
-                    );
-                  }
-                } catch (err) {
-                  console.error(err);
-                  setError(
-                    "No se pudo iniciar sesión con Google. Intenta nuevamente."
-                  );
-                } finally {
-                  setLoading(false);
-                }
-              }}
+              className="bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() =>
+                signIn.social({
+                  provider: "google",
+                  callbackURL: "/redirect",
+                })
+              }
             >
               <Image
                 src="/google.png"
                 alt="Google logo"
                 width={18}
                 height={18}
-                className="inline-block"
+                className="inline-block cursor-pointer"
               />
               <span className="text-[var(--brand-dark)] font-medium">
                 Iniciar sesión con Google
               </span>
-            </Button>*/}
+            </Button>
+
+            {/* Botón Github */}
+            <Button
+              type="button"
+              full
+              variant="secondary"
+              className="bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() =>
+                signIn.social({
+                  provider: "github",
+                  callbackURL: "/redirect",
+                })
+              }
+            >
+              <Image
+                src="/github.png"
+                alt="Github logo"
+                width={18}
+                height={18}
+                className="inline-block"
+              />
+              <span className="text-[var(--brand-dark)] font-medium">
+                Iniciar sesión con GitHub
+              </span>
+            </Button>
 
             <div className="text-center -mt-2">
               <ButtonLink
