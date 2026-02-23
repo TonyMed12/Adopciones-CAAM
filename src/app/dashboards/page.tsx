@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export default async function OAuthRedirect() {
+export default async function DashboardsRouter() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user?.email) redirect("/login");
@@ -17,6 +17,5 @@ export default async function OAuthRedirect() {
   if (!perfil?.rol_id) redirect("/registro");
 
   if (perfil.rol_id === 1) redirect("/dashboards/administrador");
-
-  redirect("/dashboards");
+  redirect("/dashboards/usuario");
 }

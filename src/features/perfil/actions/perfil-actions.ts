@@ -1,6 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { auth } from "@/lib/auth";
 import type {
   Direccion,
   Documento,
@@ -9,35 +11,43 @@ import type {
 } from "../types/perfil";
 import { logger } from "@/lib/logger";
 
+async function getCurrentEmail() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const emailBA = session?.user?.email;
+  if (emailBA) return emailBA;
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  return data?.user?.email ?? null;
+}
+
 export async function obtenerPerfilActual() {
   const supabase = await createClient();
 
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  if (authError || !userData.user) {
+  const email = await getCurrentEmail();
+  if (!email) {
     logger.error("obtenerPerfilActual:auth_error", {
-      message: authError?.message,
+      message: "No session (BetterAuth/Supabase)",
     });
     throw new Error("No se pudo obtener el usuario autenticado.");
   }
 
-  const userId = userData.user.id;
-
-  // Perfil
   const { data: perfil, error: perfilErr } = await supabase
     .from("perfiles")
     .select("*")
-    .eq("id", userId)
+    .eq("email", email)
     .single();
 
-  if (perfilErr) {
+  if (perfilErr || !perfil) {
     logger.error("obtenerPerfilActual:perfil_error", {
-      message: perfilErr.message,
-      userId,
+      message: perfilErr?.message,
+      email,
     });
     throw new Error("No se pudo obtener el perfil del usuario.");
   }
 
-  // Dirección principal
+  const userId = perfil.id;
+
   const { data: direccion } = await supabase
     .from("direcciones")
     .select("*")
@@ -45,7 +55,6 @@ export async function obtenerPerfilActual() {
     .eq("direccion_principal", true)
     .maybeSingle();
 
-  // Solicitudes pendientes
   const { data: solicitudesBase, error: solicitudesError } = await supabase
     .from("solicitudes_adopcion")
     .select("id, numero_solicitud, estado, prioridad, motivo_adopcion, mascota_id")
@@ -82,7 +91,6 @@ export async function obtenerPerfilActual() {
     })) as SolicitudAdopcion[];
   }
 
-  // Documentos aprobados
   const { data: documentos, error: docError } = await supabase
     .from("documentos")
     .select("id, perfil_id, tipo, status, url, created_at")
@@ -96,7 +104,6 @@ export async function obtenerPerfilActual() {
     });
   }
 
-  // Mascotas adoptadas
   const { data: solicitudesUsuario, error: solicitudesAdoError } = await supabase
     .from("solicitudes_adopcion")
     .select("mascota_id")
@@ -109,7 +116,8 @@ export async function obtenerPerfilActual() {
     });
   }
 
-  let mascotasAdoptadas: { id: string; nombre: string; imagen_url: string | null }[] = [];
+  let mascotasAdoptadas: { id: string; nombre: string; imagen_url: string | null }[] =
+    [];
 
   if (solicitudesUsuario && solicitudesUsuario.length > 0) {
     const mascotaIds = solicitudesUsuario.map((s) => s.mascota_id);
@@ -139,11 +147,12 @@ export async function obtenerPerfilActual() {
       });
     }
 
-    mascotasAdoptadas = mascotas ?? [];
+    mascotasAdoptadas = (mascotas ?? []) as any;
   }
 
   logger.info("obtenerPerfilActual:success", {
     userId,
+    email,
   });
 
   return {
@@ -156,8 +165,10 @@ export async function obtenerPerfilActual() {
   };
 }
 
-
-export async function actualizarPerfil(id: string, data: { ocupacion: string; telefono: string }) {
+export async function actualizarPerfil(
+  id: string,
+  data: { ocupacion: string; telefono: string },
+) {
   const supabase = await createClient();
   const { error } = await supabase.from("perfiles").update(data).eq("id", id);
 
@@ -172,7 +183,6 @@ export async function actualizarPerfil(id: string, data: { ocupacion: string; te
   logger.info("actualizarPerfil:success", { id });
   return { success: true };
 }
-
 
 export async function guardarDireccion(direccion: Partial<Direccion>) {
   const supabase = await createClient();
@@ -192,13 +202,15 @@ export async function guardarDireccion(direccion: Partial<Direccion>) {
       .eq("id", existente.id);
     error = updateError;
   } else {
-    const { error: insertError } = await supabase.from("direcciones").insert([direccion]);
+    const { error: insertError } = await supabase
+      .from("direcciones")
+      .insert([direccion]);
     error = insertError;
   }
 
   if (error) {
     logger.error("guardarDireccion:error", {
-      message: error.message,
+      message: (error as any).message ?? String(error),
       usuarioId: direccion.usuario_id,
     });
     return { success: false };
@@ -213,7 +225,6 @@ export async function guardarDireccion(direccion: Partial<Direccion>) {
 export async function obtenerMascotasAdoptadas(usuarioId: string) {
   const supabase = await createClient();
 
-  //Obtener solicitudes del usuario
   const { data: solicitudes, error: solError } = await supabase
     .from("solicitudes_adopcion")
     .select("mascota_id")
@@ -231,7 +242,6 @@ export async function obtenerMascotasAdoptadas(usuarioId: string) {
 
   const mascotaIds = solicitudes.map((s) => s.mascota_id);
 
-  //Filtrar solo las mascotas cuyo estado = "adoptada"
   const { data: mascotas, error: mascError } = await supabase
     .from("mascotas")
     .select("id, nombre, imagen_url, estado")
@@ -265,7 +275,7 @@ export async function getUsuarioAuthId(perfilUsuarioId: string | null) {
     .eq("id", perfilUsuarioId)
     .maybeSingle();
 
-  return data?.auth_user_id || perfilUsuarioId;
+  return (data?.auth_user_id as string | null) || perfilUsuarioId;
 }
 
 export async function getPerfilById(id: string) {

@@ -26,6 +26,8 @@ const PUBLIC_PATHS = [
   "/mascota",
   "/auth/redirect",
   "/redirect",
+  "/dashboards",
+
 ];
 
 export async function middleware(request: NextRequest) {
@@ -67,7 +69,7 @@ export async function middleware(request: NextRequest) {
   });
 
   if (session?.user?.email) {
-    console.log("Sesion BetterAuth detectada:", session.user.email);
+    console.log("Sesion BetterAuth:", session.user.email);
     return NextResponse.next();
   }
 
