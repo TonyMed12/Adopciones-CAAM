@@ -2,7 +2,9 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+
 import { updateSession } from "@/lib/supabase/middleware";
+import { auth } from "@/lib/auth";
 
 const PUBLIC_PATHS = [
   "/",
@@ -21,26 +23,18 @@ const PUBLIC_PATHS = [
   "/dashboards/usuarios",
   "/nosotros",
   "/usuario/adopcion",
-  "/api/auth/register",
-  "/api/auth/login",
-  "/api/auth/recover",
-  "/api/auth/check-email",
-  "/api/auth/reset-password",   
-  "/api/email/send",      
-  "/api/email/registro",     
-  "/api/email/reenviar",       
   "/mascota",
-  "/api/email/documento",
-  "/api/email/cita",
-  "/api/email/cita-cancelada",
-  "/api/email/citaVeterinaria",
+  "/auth/redirect",
+  "/redirect",
+  "/dashboards",
+
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   console.log("Middleware activado para:", pathname);
 
-  // Permitir archivos estáticos
+  // Archivos estáticos
   if (
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
@@ -49,18 +43,37 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-// PERMITIR CUALQUIER PUTISIMO CORREO
-if (pathname.startsWith("/api/email/")) {
-  return NextResponse.next();
-}
-
-
-  // Permitir rutas públicas
-  if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))) {
+  // APIs publicas
+  if (pathname.startsWith("/api/email/")) {
     return NextResponse.next();
   }
 
-  // Resto de rutas requieren sesión
+  // BetterAuth NO tocar
+  if (pathname.startsWith("/api/auth/")) {
+    return NextResponse.next();
+  }
+
+  // Rutas publicas
+  if (
+    PUBLIC_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(p + "/")
+    )
+  ) {
+    return NextResponse.next();
+  }
+
+  // inntentar sesión BetterAuth 
+
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (session?.user?.email) {
+    console.log("Sesion BetterAuth:", session.user.email);
+    return NextResponse.next();
+  }
+
+  //  intentar actualizar desde Supabase
   return updateSession(request);
 }
 
