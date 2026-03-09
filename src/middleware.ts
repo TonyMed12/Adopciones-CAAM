@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 import { updateSession } from "@/lib/supabase/middleware";
 import { auth } from "@/lib/auth";
@@ -42,8 +43,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // APIs públicas
+  // APIs públicas con rate limiting
   if (pathname.startsWith("/api/email/")) {
+
+    const ip =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "local";
+
+    const allowed = rateLimit(ip);
+
+    if (!allowed) {
+      return new NextResponse(
+        JSON.stringify({ error: "Demasiadas solicitudes. Intenta nuevamente en un minuto." }),
+        { status: 429, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     return NextResponse.next();
   }
 

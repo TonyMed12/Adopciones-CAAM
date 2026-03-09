@@ -1,42 +1,45 @@
-//Se implementó un mecanismo de Rate Limiting utilizando la estrategia Fixed Window. 
+type RateLimitRecord = {
+    count: number;
+    timestamp: number;
+};
 
-type RateRecord = {
-    count: number
-    startTime: number
-}
+const WINDOW_SIZE = 60 * 1000; // 1 minuto
+const MAX_REQUESTS = 5;
 
-const requests = new Map<string, RateRecord>()
+const requests = new Map<string, RateLimitRecord>();
 
-const WINDOW_SIZE = 60 * 1000 // 1 minuto
-const MAX_REQUESTS = 5
+export function rateLimit(ip: string) {
+    const now = Date.now();
 
-export function rateLimit(identifier: string): boolean {
-    const now = Date.now()
+    const record = requests.get(ip);
 
-    const record = requests.get(identifier)
-
+    // si no existe registro
     if (!record) {
-        requests.set(identifier, {
+        requests.set(ip, {
             count: 1,
-            startTime: now
-        })
-        return true
+            timestamp: now,
+        });
+        return true;
     }
 
-    const elapsed = now - record.startTime
+    const timePassed = now - record.timestamp;
 
-    if (elapsed > WINDOW_SIZE) {
-        requests.set(identifier, {
+    if (timePassed > WINDOW_SIZE) {
+        requests.set(ip, {
             count: 1,
-            startTime: now
-        })
-        return true
+            timestamp: now,
+        });
+        return true;
     }
 
+    // si excede el límite
     if (record.count >= MAX_REQUESTS) {
-        return false
+        return false;
     }
 
-    record.count++
-    return true
+    // aumentar contador
+    record.count += 1;
+    requests.set(ip, record);
+
+    return true;
 }
