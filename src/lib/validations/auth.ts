@@ -8,7 +8,7 @@ const emailSchema = z.string()
 const passwordSchema = z.string()
   .min(8, 'La contraseña debe tener al menos 8 caracteres')
   .max(100, 'La contraseña no puede tener más de 100 caracteres')
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
     'La contraseña debe contener al menos una letra minúscula, una mayúscula y un número')
 
 const nombresSchema = z.string()
@@ -37,18 +37,17 @@ const curpSchema = z.string()
     return curpRegex.test(val.toUpperCase())
   }, 'Ingresa una CURP válida')
 
-// Schema para registro de adoptante
-export const registroAdoptanteSchema = z.object({
+const registroAdoptanteBaseSchema = z.object({
   nombres: nombresSchema,
   apellido_paterno: apellidoSchema,
   apellido_materno: z.string()
     .max(50, 'El apellido materno no puede tener más de 50 caracteres')
     .regex(/^[a-zA-ZÀ-ÿñÑ\s]*$/, 'El apellido materno solo puede contener letras y espacios')
     .optional(),
-  
+
   email: emailSchema,
   telefono: telefonoSchema,
-  
+
   fecha_nacimiento: z.string()
     .optional()
     .refine((val) => {
@@ -58,21 +57,27 @@ export const registroAdoptanteSchema = z.object({
       const edad = hoy.getFullYear() - fecha.getFullYear()
       return edad >= 18 && edad <= 100
     }, 'Debes ser mayor de 18 años'),
-  
+
   curp: curpSchema,
   ocupacion: z.string()
     .max(100, 'La ocupación no puede tener más de 100 caracteres')
     .optional(),
-  
+
   password: passwordSchema,
   confirmPassword: z.string(),
-  
+
   acceptTerms: z.boolean().refine(val => val === true, 'Debes aceptar los términos y condiciones'),
   acceptPrivacy: z.boolean().refine(val => val === true, 'Debes aceptar la política de privacidad'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirmPassword'],
 })
+
+export const registroAdoptanteSchema = registroAdoptanteBaseSchema.refine(
+  (data) => data.password === data.confirmPassword,
+  {
+    message: 'Las contraseñas no coinciden',
+    path: ['confirmPassword'],
+  }
+)
+
 
 // Schema para login
 export const loginSchema = z.object({
@@ -81,12 +86,14 @@ export const loginSchema = z.object({
   remember: z.boolean().optional(),
 })
 
+
 // Tipos derivados
 export type RegistroAdoptanteData = z.infer<typeof registroAdoptanteSchema>
 export type LoginData = z.infer<typeof loginSchema>
 
+
 // Schemas para formularios paso a paso
-export const registroAdoptantePaso1Schema = registroAdoptanteSchema.pick({
+export const registroAdoptantePaso1Schema = registroAdoptanteBaseSchema.pick({
   nombres: true,
   apellido_paterno: true,
   apellido_materno: true,
@@ -94,13 +101,13 @@ export const registroAdoptantePaso1Schema = registroAdoptanteSchema.pick({
   telefono: true,
 })
 
-export const registroAdoptantePaso2Schema = registroAdoptanteSchema.pick({
+export const registroAdoptantePaso2Schema = registroAdoptanteBaseSchema.pick({
   fecha_nacimiento: true,
   curp: true,
   ocupacion: true,
 })
 
-export const registroAdoptantePaso3Schema = registroAdoptanteSchema.pick({
+export const registroAdoptantePaso3Schema = registroAdoptanteBaseSchema.pick({
   password: true,
   confirmPassword: true,
   acceptTerms: true,

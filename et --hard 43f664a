@@ -1,0 +1,129 @@
+[33me039c33[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32msec[m[33m)[m clean commit without secrets
+[33m43a4623[m Login con rate limit
+[33m43f664a[m[33m ([m[1;31morigin/sec[m[33m)[m integrado oauth con google y github como dios y yo nos entendimos con betterauth, lo hubiera hecho con supabase, se me fue el pedo
+[33mbb6f3c7[m limpiando un json que se me fue y que no me deja hacer un commit
+[33m1795203[m feat: integrado betterauth con github y google, pendiente de arreglar dashboard en redireccion
+[33m443882d[m[33m ([m[1;31morigin/godav[m[33m)[m enable next.js standalone output
+[33md2e9638[m Deploy updated again :(
+[33mdc27563[m Deploy updated and Dockerfile
+[33m59d1c0e[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33m36e4b18[m Tests
+[33m6bdd30f[m cambio en el staleTime de citas
+[33m18f6948[m fix: define variables in PR comment workflow
+[33m38809ad[m fix: enable PR automatic comments
+[33m4a37711[m fix: supabase envs and dynamic auth pages
+[33m9086bfb[m fix: add NEXT_PUBLIC_SUPABASE_URL to CI
+[33m6c858bf[m Corrección de workflows
+[33me52df1a[m Corrección de Workflows
+[33m25d0664[m Correccion de cancelacion de cita en vista admin
+[33mcee502d[m page Citas completo
+[33meedf50a[m correo de cancelacion de cita
+[33m4f1cfff[m correos en los actions
+[33m65a86cb[m Cambios en los logs de las paginas principales
+[33m8af4d57[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33m4b01d73[m Cambios en el page de adopciones
+[33m847dc2e[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33mdccc538[m tests: implementacion de tests unitarios
+[33mcc87741[m cala el de adopciones enrimar
+[33mac3cdaf[m pageAdopciones en usuario completo
+[33mecb9e02[m Mejora en el page de adopcion del usuario
+[33m7f25fe4[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33m5f24ed1[m ci: run workflows on godav and main branches
+[33m97f6596[m Ya quedo el perfil en teoria
+[33md738599[m Ya quedo la parte del seguimiento y volvio a funcionar el form
+[33m343e8b2[m Tanstack para seguimientos en usuario
+[33md429243[m MascotasPage Publico ya funciona
+[33m22b9feb[m Diseño al card de validacion de documentos
+[33m908ba7d[m Ya esta el pageMascotas en el usuario
+[33mfad26d1[m Ya hace la solicitud ahora si xdd
+[33mb75ef16[m Cambio en el pageMasctoas usuario
+[33m44e8429[m Paginaciony logs en citas veterinarias en admin y usuario
+[33m6c08ce5[m Fix React Server Components CVE vulnerabilities (#14)
+[33m889520f[m[33m ([m[1;31morigin/vercel/react-server-components-cve-vu-odgzmi[m[33m)[m Fix React Server Components CVE vulnerabilities
+[33m5f83392[m Arreglo de mascotas en el usuario
+[33mf25c8f5[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33mb8620f8[m arregle las razas con form sexual
+[33mf0e1ecf[m Seguimiento de mascotas en el admin arreglado
+[33mc9c8857[m Implementacion de logs en usarios vista admin
+[33m160680f[m Paginacion en usuarios vista admin
+[33m66de696[m No jalaba el filtro de sexo pero ya jala xdd
+[33m14c045e[m Paginacion y arreglo de los filtros en el pageMascotas en el admin
+[33mfd05e00[m Cambios en la parte del dashboard del admin
+[33m0a2fd72[m Ya quedo bien citas veterinarias
+[33m8ed2835[m Cambio en el boton
+[33ma838f2d[m Correccion de skeleton para citas veterinarias en vista admin
+[33m9c7346c[m Corrección de dashboard de administrador
+[33m449f853[m Cambio en las actions de usuarios
+[33m1e21b76[m Tanstack a citas veterinarias en admin y usuario
+[33ma56531e[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33m51e319b[m Page completo de gestion de citas con TanStack
+[33m4c9a00a[m Corrección de proceso de editar mascotas en administrador
+[33mdd08af2[m Ya jala el cancelar cita en el admin
+[33mbd558a9[m Correcciones de perfil
+[33m33cdc10[m TanStack a seguimiento en admin
+[33m6414a44[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33m3e060f2[m Cambios con tanStack para la parte de la gestion de cita en el admin
+[33m1d060d2[m Correccion en envio de correo en documentos admin
+[33m5d47a22[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33m8f266cf[m Tanstack en documentos vista admin
+[33m187ae9f[m Correcciones en validaciones de registro
+[33mcdb0514[m Correcciones en validaciones de formMascotas 2
+[33m7ed001a[m Correcciones en validaciones de formMascotas
+[33mff3775b[m Ya esta adopciones en vista de admin
+[33m49a5424[m Validaciones en formMascotas y campo de "Personalidad" añadido
+[33ma38a0bd[m Tanstack a gestion de adopciones en admin
+[33m56ac798[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33m012738e[m quedo funcional por fin el form mascota aun le falta diseño sex pero por ahora sueño
+[33m02c249f[m Ya revivio supa
+[33m7dce5aa[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33m010d23b[m Configuracion de Docker
+[33m12c9a1e[m Cambios en el nosotros
+[33m4add689[m Merge branch 'godav' of https://github.com/TonyMed12/Adopciones-CAAM into godav
+[33mb2b45f4[m Cambios en los hooks
+[33md8bbe95[m Add Docker configuration
+[33m50d6dfe[m ruta para despliegue
+[33mb52dc0e[m TanStack query en razas tambien
+[33m2a0ab14[m Ultimo tweak a skelenton en usuarios vista admin
+[33mb05a171[m Skeleton en tabla y modal de usuarios vista admin
+[33mf0b6a36[m TanStack en usuarios vista admin
+[33m49e94bc[m Index.ts
+[33md21429e[m Uso de TanStack en mascotas en la parte del admin
+[33mbe9740f[m Reestructuracion de carpetas
+[33mdb4ba7a[m Cambios en el perfil
+[33m5605cb0[m[33m ([m[1;31morigin/dev[m[33m)[m son las 2 am me voy a suicidar, ya funcionan los correos de adopcion
+[33m1268ca5[m ya no se ni que hice
+[33m02c2001[m Correccion de fechas en la parte de adopciones y en la parte de citas
+[33mcf8ac64[m Merge branch 'dev' of https://github.com/TonyMed12/Adopciones-CAAM into dev
+[33m0f1b65f[m Ya jala el seguimiento en el usuario y en el admin ya con imagenes
+[33m6132310[m Paginacion en vista de admin
+[33m6a1d020[m feat: add emails for schedules on admin panel
+[33m44b4b0c[m feat: add emails for adoptions without certificate
+[33m102bdd1[m Cambios en modal infor sobre el seguimiento
+[33ma743551[m Fix 2: Intento de solucionar emails de citas veterinarias
+[33me5e9f9e[m Intento de solución al problema de envío de correos electrónicos para citas veterinarias.
+[33m7710636[m feat: add veterinarian schedule email
+[33mf2aacc9[m Alerts toast en seguimiento
+[33mcce20c9[m Dev a Main (#9)
+[33m041ba02[m Correccion de datos de mascota en mis mascotas
+[33m97c7301[m Validacion de las fechas y horas al agendar una cita
+[33me3eb113[m fix: updated schedule email
+[33m9d9be2a[m Fix: Added templates to emails
+[33m3b3ba08[m feat: add adoption appointment and cancellation email flow
+[33mf08bf85[m Fix 6: Updated emails on documents
+[33m4bddfb4[m Fix: Documents rejected and email
+[33m03b5633[m Middleware & Confirmacion de correo
+[33m44b2160[m Fix 5: DatePicker on register & Middleware
+[33m8f5dd49[m Merge branch 'dev' of https://github.com/TonyMed12/Adopciones-CAAM into dev
+[33m4138c27[m Fix 5: DatePicker on register
+[33m11ace68[m Una validacion xdd
+[33m5a3f2d3[m Fix 4: Register & verification emails function
+[33mbbcf24c[m Fix 4: Middleware updated
+[33m0ff3eb7[m Fix 3: verification emails
+[33m61cb570[m Fix 2: route direction on reset-password
+[33m7588db0[m Fix: route direction on reset-password
+[33m80374a4[m Merge branch 'dev' of https://github.com/TonyMed12/Adopciones-CAAM into dev
+[33mbcb8ab1[m Integracion de nodemailer, verificacion e inicio de recuperacion de contraseña
+[33ma7b0964[m Cambio en las validaciones del CREATE mascotas en el admin
+[33me5bf58e[m Cambio pequeño en el mensaje de compartir qr
+[33m5860ee8[m Mas cambios en la parte de los QRs
+[33mf8a9e7d[m Mejoras de responsive gestion de citas de adopcion en vista de ad

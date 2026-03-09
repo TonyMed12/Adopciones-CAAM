@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "local";
+
+    const allowed = rateLimit(ip);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Demasiadas solicitudes. Intenta nuevamente en un minuto." },
+        { status: 429 }
+      );
+    }
+
     const formData = await req.json();
 
     console.log("Iniciando registro para:", formData.email);

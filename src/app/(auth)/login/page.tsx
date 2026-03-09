@@ -20,9 +20,7 @@ export default function LoginCAAM() {
     e.preventDefault();
 
     if (!correo || !contrasena) {
-      //setError("Por favor completa ambos campos.");
       setError("Checa tu info papito.");
-
       return;
     }
 
@@ -30,63 +28,34 @@ export default function LoginCAAM() {
     setLoading(true);
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword(
-        {
-          email: correo,
-          password: contrasena,
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        credentials: "include",
+        body: JSON.stringify({
+          correo,
+          contrasena,
+        }),
+      });
 
-      if (authError) {
-        let errorMessage = "Credenciales incorrectas";
+      const result = await response.json();
 
-        if (authError.message === "Invalid login credentials") {
-          errorMessage = "Email o contraseña incorrectos";
-        } else if (authError.message === "Email not confirmed") {
-          errorMessage = "Por favor verifica tu email antes de iniciar sesión";
-        }
-
-        setError(errorMessage);
+      if (!response.ok) {
+        setError(result.error || "Credenciales incorrectas");
         setLoading(false);
         return;
       }
 
-      // Validar de confirmado
-      if (data.user && !data.user.email_confirmed_at) {
-        await supabase.auth.signOut();
-        setError(
-          "Tu cuenta aún no ha sido verificada. Revisa tu bandeja de entrada.",
-        );
-        setLoading(false);
-        return;
+      router.refresh();
+
+      if (result.rol === 1) {
+        router.push("/dashboards/administrador");
+      } else {
+        router.push("/dashboards/usuario");
       }
 
-      if (data.user) {
-        // obtener perfil del usuario
-        console.log("Usuario logueado:", data.user.id);
-
-        const { data: perfil, error: perfilError } = await supabase
-          .from("perfiles")
-          .select("rol_id")
-          .eq("id", data.user.id)
-          .single();
-
-        if (perfilError) {
-          console.error("Error al obtener el perfil:", perfilError);
-          setError("Ocurrió un error al cargar tu perfil. Intenta nuevamente.");
-          setLoading(false);
-          return;
-        }
-
-        console.log("Perfil encontrado:", perfil);
-
-        //Redirigir según el rol
-        if (perfil?.rol_id === 1) {
-          router.push("/dashboards/administrador");
-        } else {
-          router.push("/dashboards/usuario");
-        }
-      }
     } catch (err) {
       console.error(err);
       setError("No se pudo conectar con el servidor. Inténtalo de nuevo.");

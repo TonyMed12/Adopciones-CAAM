@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
+
+    const ip =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "local";
+
+    const allowed = rateLimit(ip);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Demasiadas solicitudes. Intenta nuevamente en un minuto." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { email, curp, action } = body;
 
@@ -34,9 +50,9 @@ export async function POST(request: NextRequest) {
 
       const curpExists = perfiles && perfiles.length > 0;
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         exists: curpExists,
-        available: !curpExists 
+        available: !curpExists
       }, {
         status: 200,
         headers: {
@@ -68,9 +84,9 @@ export async function POST(request: NextRequest) {
       (user) => user.email?.toLowerCase() === email.toLowerCase()
     );
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       exists: emailExists,
-      available: !emailExists 
+      available: !emailExists
     }, {
       status: 200,
       headers: {
@@ -80,7 +96,7 @@ export async function POST(request: NextRequest) {
 
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : "Error desconocido";
-    
+
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }
@@ -90,7 +106,7 @@ export async function POST(request: NextRequest) {
 
 // Endpoint de prueba GET (opcional - puedes eliminarlo si quieres)
 export async function GET() {
-  return NextResponse.json({ 
+  return NextResponse.json({
     message: "API check-email funcionando",
     method: "Use POST con {email: 'tu@email.com'} o {curp: 'CURP...', action: 'check-curp'}"
   });

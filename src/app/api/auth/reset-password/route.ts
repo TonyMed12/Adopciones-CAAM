@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "local";
+
+    const allowed = rateLimit(ip);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Demasiadas solicitudes. Intenta nuevamente en un minuto." },
+        { status: 429 }
+      );
+    }
+
     const { email } = await req.json();
 
     if (!email) {
@@ -40,10 +56,10 @@ export async function POST(req: Request) {
     const nombre = data?.user?.user_metadata?.nombre || "Usuario";
 
     // 2️⃣ Enviar el correo usando tu sistema
-const baseUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://caamorelia.vercel.app";
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "https://caamorelia.vercel.app";
 
-await fetch(`${baseUrl}/api/email/send`, {
+    await fetch(`${baseUrl}/api/email/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
