@@ -1,18 +1,28 @@
 "use server";
 
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth/require-role";
+import { createClient } from "@/lib/supabase/server";
 
 export async function obtenerNombreUsuarioActual() {
-    const { perfilId } = await requireRole(2);
+    const supabase = await createClient();
 
-    const { data, error } = await supabaseAdmin
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+        return "Usuario";
+    }
+
+    const { data, error } = await supabase
         .from("perfiles")
         .select("nombres")
-        .eq("id", perfilId)
+        .eq("id", user.id)
         .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+        console.error(error);
+        return "Usuario";
+    }
 
     return data?.nombres ?? "Usuario";
 }

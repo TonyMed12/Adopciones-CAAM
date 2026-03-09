@@ -1,14 +1,11 @@
-
-import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import type { LoginPayload } from '@/utils/zod-schemas';
 
 export async function signInWithEmail(payload: LoginPayload) {
-  const cookieStore = cookies();
-  
 
-  const supabase = createClient(cookieStore);
-  
+  // ← createClient es async
+  const supabase = await createClient();
+
   // Extraemos los datos del payload.
   const { correo, contrasena } = payload;
 
@@ -16,7 +13,6 @@ export async function signInWithEmail(payload: LoginPayload) {
     email: correo,
     password: contrasena,
   });
-
 
   if (error) {
     return {

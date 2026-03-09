@@ -1,8 +1,24 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { requireBetterAuthEmail } from "./require-session";
 
+async function obtenerEmailSesion() {
+    try {
+        return await requireBetterAuthEmail();
+    } catch {
+        const supabase = await createClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        return user?.email ?? null;
+    }
+}
+
 export async function requireRole(rolEsperado: 1 | 2) {
-    const email = await requireBetterAuthEmail();
+    const email = await obtenerEmailSesion();
+
+    if (!email) throw new Error("FORBIDDEN");
 
     const { data: perfil, error } = await supabaseAdmin
         .from("perfiles")
@@ -17,7 +33,9 @@ export async function requireRole(rolEsperado: 1 | 2) {
 }
 
 export async function requireAnyRole() {
-    const email = await requireBetterAuthEmail();
+    const email = await obtenerEmailSesion();
+
+    if (!email) throw new Error("FORBIDDEN");
 
     const { data: perfil, error } = await supabaseAdmin
         .from("perfiles")

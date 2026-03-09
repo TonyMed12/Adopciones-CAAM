@@ -26,15 +26,14 @@ const PUBLIC_PATHS = [
   "/mascota",
   "/auth/redirect",
   "/redirect",
-  "/dashboards",
-
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
   console.log("Middleware activado para:", pathname);
 
-  // Archivos estáticos
+  // archivos estáticos
   if (
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
@@ -43,17 +42,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // APIs publicas
+  // APIs públicas
   if (pathname.startsWith("/api/email/")) {
     return NextResponse.next();
   }
 
-  // BetterAuth NO tocar
+  // auth APIs
   if (pathname.startsWith("/api/auth/")) {
     return NextResponse.next();
   }
 
-  // Rutas publicas
+  // rutas públicas
   if (
     PUBLIC_PATHS.some(
       (p) => pathname === p || pathname.startsWith(p + "/")
@@ -62,8 +61,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // inntentar sesión BetterAuth 
-
+  // intentar sesión BetterAuth
   const session = await auth.api.getSession({
     headers: request.headers,
   });
@@ -73,8 +71,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  //  intentar actualizar desde Supabase
-  return updateSession(request);
+  // actualizar sesión Supabase
+  const response = await updateSession(request);
+
+  // verificar cookie de sesión Supabase
+  const supabaseCookie = request.cookies
+    .getAll()
+    .find((c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
+
+  if (supabaseCookie) {
+    return response;
+  }
+
+  return NextResponse.redirect(new URL("/login", request.url));
 }
 
 export const config = {
