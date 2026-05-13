@@ -3,83 +3,100 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
-  CalendarDays,
-  CalendarHeart,
+  PawPrint,
   Users,
   FileText,
+  CalendarDays,
+  CalendarHeart,
+  ClipboardList,
+  HeartHandshake,
   Menu,
   X,
   User,
   LogOutIcon,
-  ChevronDown,
   FolderKanban,
+  Bell,
 } from "lucide-react";
 
-export default function AdminHeader() {
+const mainLinks = [
+  {
+    href: "/dashboards/administrador",
+    label: "Inicio",
+    icon: LayoutDashboard,
+  },
+  {
+    href: "/dashboards/administrador/mascotas",
+    label: "Mascotas",
+    icon: PawPrint,
+  },
+  {
+    href: "/dashboards/administrador/usuarios",
+    label: "Usuarios",
+    icon: Users,
+  },
+];
+
+const managementLinks = [
+  {
+    href: "/dashboards/administrador/gestion_adopciones",
+    label: "Adopciones",
+    icon: HeartHandshake,
+    badge: "12",
+  },
+  {
+    href: "/dashboards/administrador/documentos",
+    label: "Documentos",
+    icon: FileText,
+    badge: "4",
+  },
+  {
+    href: "/dashboards/administrador/seguimiento",
+    label: "Seguimiento",
+    icon: ClipboardList,
+    badge: "3",
+  },
+  {
+    href: "/dashboards/administrador/gestion_citas",
+    label: "Citas de adopción",
+    icon: CalendarDays,
+  },
+  {
+    href: "/dashboards/administrador/citas-veterinarias",
+    label: "Citas veterinarias",
+    icon: CalendarHeart,
+  },
+];
+
+export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
 
-  const [open, setOpen] = useState(false); // menú móvil
-  const [menuOpen, setMenuOpen] = useState(false); // menú perfil
-  const [gestionOpen, setGestionOpen] = useState(false); // submenú gestión
-  const [adminName, setAdminName] = useState<string>("Cargando...");
-
-  // 🔹 Referencias para detectar clic fuera
-  const gestionRef = useRef<HTMLLIElement>(null);
-  const menuRef = useRef<HTMLLIElement>(null);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
-
-  // 🔹 Cierra menús si se hace clic fuera
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-
-      // 👇 Si el click fue dentro del menú móvil, no cierres nada
-      if (mobileMenuRef.current && mobileMenuRef.current.contains(target)) {
-        return;
-      }
-
-      if (gestionRef.current && !gestionRef.current.contains(target)) {
-        setGestionOpen(false);
-      }
-
-      if (menuRef.current && !menuRef.current.contains(target)) {
-        setMenuOpen(false);
-      }
-
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(target)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const [open, setOpen] = useState(false);
+  const [adminName, setAdminName] = useState("Administrador");
 
   const isActive = (href: string) =>
     href === "/dashboards/administrador"
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/");
 
-  // 🔹 Obtener nombre del administrador
   useEffect(() => {
     const fetchAdmin = async () => {
       const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        const nombre = data.user.user_metadata?.nombre;
-        setAdminName(nombre || "Administrador");
-      } else setAdminName("Administrador");
+      const nombre = data.user?.user_metadata?.nombre;
+      setAdminName(nombre || "Administrador");
     };
 
     fetchAdmin();
+
     const { data: listener } = supabase.auth.onAuthStateChange(() => {
       fetchAdmin();
     });
+
     return () => listener.subscription.unsubscribe();
   }, [supabase]);
 
@@ -88,223 +105,175 @@ export default function AdminHeader() {
     router.push("/");
   };
 
+  const NavLink = ({
+    href,
+    label,
+    icon: Icon,
+    badge,
+  }: {
+    href: string;
+    label: string;
+    icon: React.ElementType;
+    badge?: string;
+  }) => {
+    const active = isActive(href);
+
+    return (
+      <Link
+        href={href}
+        onClick={() => setOpen(false)}
+        className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition ${
+          active
+            ? "bg-[#FFF1E6] text-[#8B4513] shadow-sm"
+            : "text-[#FFF8F0] hover:bg-white/10 hover:text-[#FDE68A]"
+        }`}
+      >
+        <span className="flex items-center gap-3">
+          <Icon size={18} />
+          {label}
+        </span>
+
+        {badge && (
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+              active
+                ? "bg-[#BC5F36] text-white"
+                : "bg-[#FDE68A] text-[#8B4513]"
+            }`}
+          >
+            {badge}
+          </span>
+        )}
+      </Link>
+    );
+  };
+
   return (
-    <header className="fixed top-0 z-50 w-full bg-[#BC5F36] shadow-md">
-      <nav className="container mx-auto flex items-center justify-between px-6 py-5">
-        {/* Logo */}
+    <>
+      {/* Barra superior móvil */}
+      <header className="fixed top-0 z-50 flex w-full items-center justify-between bg-[#BC5F36] px-5 py-4 shadow-md lg:hidden">
         <Link href="/dashboards/administrador" className="flex items-center gap-3">
-          <Image src="/logo.png" alt="CAAM" width={40} height={40} />
-          <div className="flex flex-col items-start">
-            <span className="font-bold text-xl text-[#FFF8F0] leading-tight">
+          <Image src="/logo.png" alt="CAAM" width={36} height={36} />
+          <span className="font-bold text-[#FFF8F0]">CAAM Admin</span>
+        </Link>
+
+        <button
+          onClick={() => setOpen((value) => !value)}
+          className="rounded-lg p-2 text-[#FFF8F0] hover:bg-white/10"
+          aria-label="Abrir menú"
+        >
+          {open ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </header>
+
+      {/* Overlay móvil */}
+      {open && (
+        <button
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={() => setOpen(false)}
+          aria-label="Cerrar menú"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed left-0 top-0 z-50 flex h-screen w-72 flex-col bg-[#BC5F36] px-4 py-5 shadow-xl transition-transform duration-300 lg:translate-x-0 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Logo */}
+        <Link
+          href="/dashboards/administrador"
+          onClick={() => setOpen(false)}
+          className="mb-6 flex items-center gap-3 rounded-xl px-2"
+        >
+          <Image src="/logo.png" alt="CAAM" width={44} height={44} />
+
+          <div className="flex flex-col">
+            <span className="text-base font-bold leading-tight text-[#FFF8F0]">
               Centro de Atención Animal
             </span>
-            <span className="font-medium text-sm text-[#FFF8F0]">
+            <span className="text-xs font-medium text-[#FFE4D6]">
               Morelia, Michoacán
             </span>
           </div>
         </Link>
 
-        {/* Botón móvil */}
-        <button
-          className="lg:hidden text-[#FFF8F0] p-2 cursor-pointer"
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        {/* Perfil admin */}
+        <div className="mb-6 rounded-2xl bg-white/10 p-4 text-[#FFF8F0]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF1E6] text-[#8B4513]">
+              <User size={22} />
+            </div>
 
-        {/* NAV DESKTOP */}
-        <ul className="hidden lg:flex items-center gap-8">
-          {[
-            { href: "/dashboards/administrador", label: "Inicio", icon: LayoutDashboard },
-            { href: "/dashboards/administrador/mascotas", label: "Mascotas", icon: FileText },
-            { href: "/dashboards/administrador/usuarios", label: "Usuarios", icon: Users },
-          ].map(({ href, label, icon: Icon }) => {
-            const active = isActive(href);
-            return (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className={`group flex items-center gap-2 rounded-md px-4 py-2 text-lg font-medium transition ${
-                    active
-                      ? "bg-[#FFF1E6] text-[#8B4513] border-b-2 border-[#FDE68A]"
-                      : "text-[#FFF8F0] hover:text-[#FDE68A]"
-                  }`}
-                >
-                  <Icon
-                    size={18}
-                    className={active ? "text-[#8B4513]" : "text-[#FFF8F0] group-hover:text-[#FDE68A]"}
-                  />
-                  {label}
-                </Link>
-              </li>
-            );
-          })}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">{adminName}</p>
+              <p className="text-xs text-[#FFE4D6]">Administrador</p>
+            </div>
+          </div>
+        </div>
 
-          {/* MENÚ GESTIÓN */}
-          <li className="relative" ref={gestionRef}>
-            <button
-              onClick={() => setGestionOpen((v) => !v)}
-              className="flex items-center gap-2 text-[#FFF8F0] hover:text-[#FDE68A] transition text-lg font-medium cursor-pointer"
-            >
-              <FolderKanban size={18} />
-              <span>Gestión</span>
-              <ChevronDown size={16} />
-            </button>
+        {/* Navegación */}
+        <nav className="flex-1 space-y-6 overflow-y-auto">
+          <section>
+            <p className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-[#FFE4D6]">
+              Principal
+            </p>
 
-            {gestionOpen && (
-              <div className="absolute left-0 mt-3 w-56 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513] animate-fadeIn">
-                {[
-                  { href: "/dashboards/administrador/gestion_adopciones", label: "Adopciones", icon: FileText },
-                  { href: "/dashboards/administrador/documentos", label: "Documentos", icon: FileText },
-                  { href: "/dashboards/administrador/seguimiento", label: "Seguimiento", icon: FileText },
-                  { href: "/dashboards/administrador/gestion_citas", label: "Citas de adopción", icon: CalendarDays },
-                  { href: "/dashboards/administrador/citas-veterinarias", label: "Citas veterinarias", icon: CalendarHeart },
-                ].map(({ href, label, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
-                    onClick={() => setGestionOpen(false)}
-                  >
-                    <Icon size={16} />
-                    <span>{label}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </li>
+            <div className="space-y-1">
+              {mainLinks.map((link) => (
+                <NavLink key={link.href} {...link} />
+              ))}
+            </div>
+          </section>
 
-          {/* MENÚ ADMIN */}
-          <li className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen((v) => !v)}
-              className="flex items-center gap-2 text-[#FFF8F0] hover:text-[#FDE68A] transition text-lg font-medium cursor-pointer"
-            >
-              <User size={18} />
-              <span>{adminName}</span>
-              <ChevronDown size={16} />
-            </button>
+          <section>
+            <p className="mb-2 flex items-center gap-2 px-3 text-xs font-bold uppercase tracking-wider text-[#FFE4D6]">
+              <FolderKanban size={14} />
+              Gestión
+            </p>
 
-            {menuOpen && (
-              <div className="absolute right-0 mt-3 w-44 rounded-md bg-[#FFF1E6] shadow-lg py-2 text-[#8B4513] animate-fadeIn">
-                <Link
-                  href="/dashboards/perfil"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <User size={16} />
-                  <span>Mi perfil</span>
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left flex items-center gap-2 px-4 py-2 hover:bg-[#FDE68A]/50 transition"
-                >
-                  <LogOutIcon size={16} />
-                  <span>Cerrar sesión</span>
-                </button>
-              </div>
-            )}
-          </li>
-        </ul>
-      </nav>
+            <div className="space-y-1">
+              {managementLinks.map((link) => (
+                <NavLink key={link.href} {...link} />
+              ))}
+            </div>
+          </section>
 
-      {/* 🔹 NAV MÓVIL */}
-      {open && (
-        <div
-          ref={mobileMenuRef}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="lg:hidden bg-[#BC5F36] border-t border-[#e3bba7] shadow-inner"
-        >
-          <ul className="flex flex-col items-center py-3 space-y-1 text-center">
-            {[
-              { href: "/dashboards/administrador", label: "Inicio" },
-              { href: "/dashboards/administrador/mascotas", label: "Mascotas" },
-              { href: "/dashboards/administrador/usuarios", label: "Usuarios" },
-            ].map(({ href, label }) => (
-              <li key={href}>
-                <button
-                  onClick={() => {
-                    router.push(href);
-                    setOpen(false);
-                  }}
-                  className={`block w-full px-4 py-2 rounded-md text-lg font-medium transition ${
-                    pathname === href
-                      ? "bg-[#FFF1E6] text-[#8B4513]"
-                      : "text-[#FFF8F0] hover:text-[#FDE68A]"
-                  }`}
-                >
-                  {label}
-                </button>
-              </li>
-            ))}
+          <section>
+            <p className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-[#FFE4D6]">
+              Cuenta
+            </p>
 
-            {/* Submenú Gestión */}
-            <li className="w-full">
+            <div className="space-y-1">
+              <NavLink
+                href="/dashboards/perfil"
+                label="Mi perfil"
+                icon={User}
+              />
+
               <button
-                onClick={() => setGestionOpen((v) => !v)}
-                className="flex items-center justify-center gap-2 w-full text-lg font-medium text-[#FFF8F0] hover:text-[#FDE68A] transition py-2"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-[#FFF8F0] transition hover:bg-white/10 hover:text-[#FDE68A]"
               >
-                <FolderKanban size={18} />
-                <span>Gestión</span>
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform ${gestionOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-
-              {gestionOpen && (
-                <div className="bg-[#FFF1E6] rounded-md mt-1 mx-6 text-left text-[#8B4513] shadow-lg">
-                  {[
-                    { href: "/dashboards/administrador/gestion_adopciones", label: "Adopciones", icon: FileText },
-                    { href: "/dashboards/administrador/documentos", label: "Documentos", icon: FileText },
-                    { href: "/dashboards/administrador/seguimiento", label: "Seguimiento", icon: FileText },
-                    { href: "/dashboards/administrador/gestion_citas", label: "Citas de adopción", icon: CalendarDays },
-                    { href: "/dashboards/administrador/citas-veterinarias", label: "Citas veterinarias", icon: CalendarHeart },
-                  ].map(({ href, label, icon: Icon }) => (
-                    <button
-                      key={href}
-                      onClick={() => {
-                        router.push(href);
-                        setGestionOpen(false);
-                        setOpen(false);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 w-full text-left hover:bg-[#FDE68A]/50 transition"
-                    >
-                      <Icon size={16} />
-                      <span>{label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </li>
-
-            {/* Perfil y Cerrar sesión */}
-            <li>
-              <button
-                onClick={() => {
-                  router.push("/dashboards/perfil");
-                  setOpen(false);
-                }}
-                className="block w-full px-4 py-2 text-lg text-[#FFF8F0] hover:text-[#FDE68A]"
-              >
-                Mi perfil
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  router.push("/");
-                  setOpen(false);
-                }}
-                className="w-full text-center px-5 py-3 rounded-md bg-[#8B4513] text-white font-semibold hover:bg-[#A0522D] transition"
-              >
+                <LogOutIcon size={18} />
                 Cerrar sesión
               </button>
-            </li>
-          </ul>
+            </div>
+          </section>
+        </nav>
+
+        {/* Notificación UX */}
+        <div className="mt-5 rounded-2xl bg-[#FFF1E6] p-4 text-[#8B4513]">
+          <div className="mb-1 flex items-center gap-2 font-bold">
+            <Bell size={16} />
+            Pendientes
+          </div>
+          <p className="text-sm">
+            Hay solicitudes y documentos por revisar.
+          </p>
         </div>
-      )}
-    </header>
+      </aside>
+    </>
   );
 }
