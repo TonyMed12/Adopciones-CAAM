@@ -1,107 +1,133 @@
 "use client";
 
-import { CalendarCheck, Info } from "lucide-react";
+import {
+  CalendarCheck,
+  Info,
+  Clock,
+  PawPrint,
+  ArrowRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { CitaProgramadaSectionProps } from "@/features/citas/types/CitaProgramadaSection.ts";
 
-
 function formateaFechaBonita(isoDate: string) {
-    const [year, month, day] = isoDate.split("-").map(Number);
-    const fecha = new Date(year, month - 1, day);
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const fecha = new Date(year, month - 1, day);
 
-    return new Intl.DateTimeFormat("es-MX", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    }).format(fecha);
+  return new Intl.DateTimeFormat("es-MX", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(fecha);
 }
 
 export default function CitaProgramadaSection({
-    citaActiva,
-    onVerCita,
+  citaActiva,
+  onVerCita,
 }: CitaProgramadaSectionProps) {
+  if (citaActiva.estado !== "programada") {
+    return null;
+  }
 
-    if (citaActiva.estado !== "programada") {
-        return null;
-    }
+  const datos = [
+    {
+      label: "Mascota",
+      value: citaActiva.mascota?.nombre ?? "Sin nombre",
+      Icon: PawPrint,
+    },
+    {
+      label: "Fecha",
+      value: formateaFechaBonita(citaActiva.fecha_cita),
+      Icon: CalendarCheck,
+    },
+    {
+      label: "Hora",
+      value: citaActiva.hora_cita,
+      Icon: Clock,
+    },
+  ];
 
-    return (
-        <div className="mt-6 mb-4 rounded-2xl border border-[#c7ddff] bg-gradient-to-br from-[#eef4ff] via-[#e3f0ff] to-[#d6e7ff] p-6 shadow-md">
-            <div className="flex flex-col md:flex-row gap-5 items-start">
-                {/* Columna izquierda */}
-                <div className="flex-1">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold text-[#1d4ed8] border border-[#c7ddff]">
-                        <CalendarCheck className="h-3 w-3" />
-                        Cita programada
-                    </div>
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-[#c7ddff] bg-gradient-to-br from-[#eef4ff] via-white to-[#d6e7ff] p-5 sm:p-6 lg:p-7 shadow-md">
+      {/* Glow decorativo */}
+      <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-[#3b82f6]/15 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-12 -left-12 h-44 w-44 rounded-full bg-[#dbeafe]/60 blur-3xl" />
 
-                    <h3 className="mt-3 text-base md:text-lg font-extrabold text-[#1e3a8a] flex items-center gap-2">
-                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#1d4ed8]/10">
-                            <CalendarCheck className="h-4 w-4 text-[#1d4ed8]" />
-                        </span>
-                        ¡Ya tienes una cita programada!
-                    </h3>
+      <div className="relative flex flex-col lg:flex-row gap-5 items-stretch">
+        {/* === Columna principal === */}
+        <div className="flex-1 min-w-0">
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/80 backdrop-blur px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#1d4ed8] ring-1 ring-[#c7ddff]">
+            <CalendarCheck className="h-3 w-3" />
+            Cita programada
+          </div>
 
-                    <p className="mt-2 text-sm text-[#1e40af] leading-relaxed">
-                        Acude a tu cita en la fecha y hora indicadas. Después de la visita,
-                        el CAAM evaluará la interacción para continuar con el proceso.
-                    </p>
+          <h3 className="mt-3 flex items-center gap-2 text-base sm:text-lg md:text-xl font-extrabold text-[#1e3a8a] tracking-tight">
+            <span className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-2xl bg-[#1d4ed8] text-white shadow-md shrink-0">
+              <CalendarCheck className="h-5 w-5" />
+            </span>
+            ¡Tu cita ya está agendada!
+          </h3>
 
-                    {/* Datos */}
-                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-xl bg-white/70 border border-[#d4e3ff] px-4 py-3 text-xs text-[#1e3a8a]">
-                            <p className="font-semibold text-[11px] uppercase tracking-wide text-[#2563eb]/90">
-                                Mascota
-                            </p>
-                            <p className="mt-1 text-sm font-bold">
-                                {citaActiva.mascota?.nombre ?? "Sin nombre"}
-                            </p>
-                        </div>
+          <p className="mt-2 text-sm sm:text-base text-[#1e40af] leading-relaxed">
+            Acude a tu cita en la fecha y hora indicadas. Después de la visita,
+            el CAAM evaluará la interacción para continuar con tu proceso.
+          </p>
 
-                        <div className="rounded-xl bg-white/70 border border-[#d4e3ff] px-4 py-3 text-xs text-[#1e3a8a]">
-                            <p className="font-semibold text-[11px] uppercase tracking-wide text-[#2563eb]/90">
-                                Fecha
-                            </p>
-                            <p className="mt-1 text-sm font-bold">
-                                {formateaFechaBonita(citaActiva.fecha_cita)}
-                            </p>
-                        </div>
-
-                        <div className="rounded-xl bg-white/70 border border-[#d4e3ff] px-4 py-3 text-xs text-[#1e3a8a]">
-                            <p className="font-semibold text-[11px] uppercase tracking-wide text-[#2563eb]/90">
-                                Hora
-                            </p>
-                            <p className="mt-1 text-sm font-bold">
-                                {citaActiva.hora_cita}
-                            </p>
-                        </div>
-                    </div>
+          {/* Datos */}
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {datos.map((d) => (
+              <div
+                key={d.label}
+                className="rounded-2xl bg-white border border-[#d4e3ff] px-4 py-3 shadow-sm transition hover:shadow-md hover:-translate-y-[1px]"
+              >
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#2563eb]">
+                  <d.Icon className="h-3 w-3" />
+                  {d.label}
                 </div>
-
-                {/* Columna derecha */}
-                <div className="w-full md:w-56 rounded-2xl bg-white/80 border border-[#d4e3ff] px-4 py-4 text-xs text-[#1e3a8a] shadow-sm">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2563eb] mb-2 flex items-center gap-1">
-                        <Info className="h-3 w-3" />
-                        ¿Qué sigue?
-                    </p>
-
-                    <ol className="space-y-2">
-                        <li>• Asiste a tu cita en el CAAM.</li>
-                        <li>• El equipo evaluará la interacción.</li>
-                        <li>• Si es aprobada, podrás continuar el proceso.</li>
-                    </ol>
-                </div>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-                <Button
-                    onClick={onVerCita}
-                    className="bg-white/90 text-[#1d4ed8] border border-[#bfdbfe] hover:bg-[#eff6ff] text-sm font-semibold px-4 py-2 rounded-xl"
-                >
-                    Ver detalles de mi cita
-                </Button>
-            </div>
+                <p className="mt-1 text-sm sm:text-base font-extrabold text-[#1e3a8a] tracking-tight capitalize">
+                  {d.value}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-    );
+
+        {/* === Columna lateral === */}
+        <div className="w-full lg:w-60 rounded-2xl bg-white/80 backdrop-blur border border-[#d4e3ff] p-4 text-xs sm:text-sm text-[#1e3a8a] shadow-sm shrink-0">
+          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#2563eb] mb-2 flex items-center gap-1">
+            <Info className="h-3 w-3" />
+            ¿Qué sigue?
+          </p>
+
+          <ol className="space-y-2">
+            {[
+              "Asiste a tu cita en el CAAM.",
+              "El equipo evaluará la interacción.",
+              "Si es aprobada, podrás continuar.",
+            ].map((t, i) => (
+              <li key={i} className="flex items-start gap-2 leading-relaxed">
+                <span className="grid h-4 w-4 shrink-0 mt-0.5 place-items-center rounded-full bg-[#dbeafe] text-[#1d4ed8] text-[9px] font-extrabold">
+                  {i + 1}
+                </span>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      <div className="relative mt-5 sm:mt-6 flex justify-end">
+        <Button
+          variant="ghost"
+          onClick={onVerCita}
+          className="cursor-pointer bg-white text-[#1d4ed8] border border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#1d4ed8] shadow-sm"
+        >
+          Ver detalles de mi cita
+          <ArrowRight className="h-4 w-4 ml-1.5" />
+        </Button>
+      </div>
+    </div>
+  );
 }
