@@ -15,6 +15,7 @@ import { CitasVeterinariasKPIs } from "@/features/citas/components/client/veteri
 import { CitasVeterinariasTablaAdmin } from "@/features/citas/components/client/veterinarias/CitasVeterinariasTableAdmin";
 import { CitasVeterinariasCardsAdmin } from "@/features/citas/components/client/veterinarias/CitasVeterinariasCardsAdmin";
 import { CitasVeterinariasPanelLateral } from "@/features/citas/components/client/veterinarias/CitasVeterinariasPanelLateral";
+import { CalendarHeart, Stethoscope } from "lucide-react";
 
 const ITEMS_PER_PAGE_DESKTOP = 10;
 const ITEMS_PER_PAGE_MOBILE = 5;
@@ -100,9 +101,16 @@ export default function GestionCitasVeterinariasPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="space-y-5 sm:space-y-6">
         <PageHead
-          title="Citas Veterinarias"
+          title="Citas veterinarias"
+          eyebrow={
+            <>
+              <Stethoscope size={12} />
+              <span>Atención médica</span>
+            </>
+          }
+          icon={<CalendarHeart size={20} />}
           subtitle="Administra las citas veterinarias agendadas."
         />
         <CitasVeterinariasSkeleton />
@@ -111,10 +119,17 @@ export default function GestionCitasVeterinariasPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <PageHead
-        title="Citas Veterinarias"
-        subtitle="Administra citas veterinarias"
+        title="Citas veterinarias"
+        eyebrow={
+          <>
+            <Stethoscope size={12} />
+            <span>Atención médica</span>
+          </>
+        }
+        icon={<CalendarHeart size={20} />}
+        subtitle="Administra las citas veterinarias agendadas."
       />
 
       <CitasVeterinariasKPIs totales={totales} />

@@ -8,6 +8,7 @@ import { useMascotasInfiniteQuery } from "@/features/mascotas/hooks/useMascotasI
 import { useRouter } from "next/navigation";
 import { formatearMascotaParaTabla } from "@/features/seguimiento/utils/formatearMascotaParaTabla";
 import UserTableSkeleton from "@/components/ui/UserTableSkeleton";
+import { ClipboardList, PawPrint } from "lucide-react";
 
 export default function SeguimientoAdminPage() {
   const router = useRouter();
@@ -52,10 +53,17 @@ export default function SeguimientoAdminPage() {
   }, [mascotas]);
 
   return (
-    <>
+    <div className="space-y-5 sm:space-y-6">
       <PageHead
-        title="Seguimiento de Mascotas"
-        subtitle="Administra y revisa los seguimientos de cada mascota 🐾"
+        title="Seguimiento de mascotas"
+        eyebrow={
+          <>
+            <ClipboardList size={12} />
+            <span>Historial post-adopción</span>
+          </>
+        }
+        icon={<PawPrint size={20} />}
+        subtitle="Administra y revisa los reportes de seguimiento de cada mascota adoptada."
       />
 
       <Filters
@@ -69,29 +77,27 @@ export default function SeguimientoAdminPage() {
       />
 
       {error ? (
-        <div className="p-4 text-red-600">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           Error: {error.message}
         </div>
       ) : isLoading ? (
         <UserTableSkeleton />
       ) : (
-        <div className="p-4">
-          <MascotasTable
-            mode="seguimiento"
-            data={dataTabla}
-            page={page}
-            onPageChange={setPage}
-            totalItems={totalItems}
-            actions={{
-              onViewCard: (rowMascota) =>
-                router.push(
-                  `/dashboards/administrador/seguimiento/${rowMascota.id}`
-                ),
-            }}
-            deleteDisabledForId={() => true}
-          />
-        </div>
+        <MascotasTable
+          mode="seguimiento"
+          data={dataTabla}
+          page={page}
+          onPageChange={setPage}
+          totalItems={totalItems}
+          actions={{
+            onViewCard: (rowMascota) =>
+              router.push(
+                `/dashboards/administrador/seguimiento/${rowMascota.id}`
+              ),
+          }}
+          deleteDisabledForId={() => true}
+        />
       )}
-    </>
+    </div>
   );
 }
