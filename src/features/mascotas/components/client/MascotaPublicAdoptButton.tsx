@@ -155,14 +155,24 @@ export default function MascotaPublicAdoptButton({
   };
 
   return (
-    <div className="flex justify-center my-10">
-      <Button
-        onClick={handleAdopt}
-        disabled={loading}
-        className="bg-[#FF8414] hover:bg-[#d86f0f] text-white px-6 py-3 rounded-xl text-lg font-bold shadow"
+    <Button
+      onClick={handleAdopt}
+      disabled={loading}
+      size="lg"
+      className="!bg-gradient-to-r !from-[#BC5F36] !to-[#D97706] hover:!from-[#a24f2d] hover:!to-[#b8650a] !text-white !px-5 sm:!px-8 !py-3 sm:!py-3.5 !rounded-xl !text-sm sm:!text-base !font-extrabold !shadow-lg hover:!shadow-xl gap-2 capitalize"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="currentColor"
       >
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+      </svg>
+      <span className="whitespace-nowrap">
         {loading ? "Procesando..." : `Adoptar a ${mascota.nombre}`}
-      </Button>
-    </div>
+      </span>
+    </Button>
   );
 }

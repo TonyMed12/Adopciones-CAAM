@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { Heart, PawPrint } from "lucide-react";
 
 export type MascotaAdoptadaMin = {
   id: string;
@@ -18,44 +18,60 @@ export function MascotaCardAdoptada({
 }: {
   mascota: MascotaAdoptadaMin;
 }) {
-  return (
-    <Card className="overflow-hidden bg-[#fffaf3] border border-[#e2cbb3] rounded-2xl shadow-sm hover:shadow-md transition-all">
-      <div className="relative w-full h-48">
-        <img
-          src={mascota.imagen_url || "/placeholder.jpg"}
-          alt={mascota.nombre}
-          className="w-full h-full object-cover"
-        />
+  const esHembra = mascota.sexo?.toLowerCase()?.startsWith("h");
 
-        {mascota.sexo && (
-          <span
-            className={`absolute top-3 left-3 text-xs font-semibold text-white px-3 py-1 rounded-full ${
-              mascota.sexo === "macho" ? "bg-blue-500" : "bg-pink-400"
-            }`}
-          >
-            {mascota.sexo === "macho" ? "Macho" : "Hembra"}
-          </span>
+  return (
+    <article className="group overflow-hidden rounded-2xl bg-white border border-[#eadacb] shadow-sm hover:shadow-md hover:border-[#f3d6bb] hover:-translate-y-0.5 transition-all">
+      <div className="relative aspect-[4/3] bg-gradient-to-br from-[#FFF1E6] to-[#FFEAD2] overflow-hidden">
+        {mascota.imagen_url ? (
+          <img
+            src={mascota.imagen_url}
+            alt={mascota.nombre}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full grid place-items-center">
+            <PawPrint size={36} className="text-[#d7c4b2]" />
+          </div>
         )}
+
+        <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 pointer-events-none">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur-sm text-[#BC5F36] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+            <Heart size={10} fill="currentColor" />
+            Adoptada
+          </span>
+
+          {mascota.sexo && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-white shadow-md ${
+                esHembra
+                  ? "bg-gradient-to-r from-pink-500 to-rose-500"
+                  : "bg-gradient-to-r from-sky-500 to-blue-600"
+              }`}
+            >
+              {esHembra ? "♀" : "♂"}
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="p-4 text-[#5b3e26]">
-        <h3 className="text-lg font-semibold text-[#8b4513]">
+      <div className="p-4">
+        <h3 className="text-base font-extrabold text-[#2b1b12] capitalize tracking-tight truncate">
           {mascota.nombre}
         </h3>
 
         {mascota.raza?.nombre && (
-          <p className="text-sm">
-            <span className="font-semibold">Raza:</span>{" "}
+          <p className="text-xs text-[#7a5c49] capitalize mt-0.5 truncate">
             {mascota.raza.nombre}
           </p>
         )}
 
         {mascota.personalidad && (
-          <p className="text-sm italic mt-2 text-[#7a5c49]">
-            {mascota.personalidad}
+          <p className="text-xs italic mt-2 text-[#6c5241] line-clamp-2 leading-relaxed">
+            "{mascota.personalidad}"
           </p>
         )}
       </div>
-    </Card>
+    </article>
   );
 }

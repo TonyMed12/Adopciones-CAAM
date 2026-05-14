@@ -1,219 +1,277 @@
 "use client";
 
 import { motion } from "framer-motion";
+import {
+  Stethoscope,
+  PawPrint,
+  ShieldCheck,
+  Heart,
+  Target,
+  Eye,
+  MapPin,
+  Phone,
+  Sparkles,
+} from "lucide-react";
 import Header from "@/components/layout/Header";
+
+const milestones = [
+  {
+    year: "2015",
+    title: "Inicio de operaciones",
+    desc: "Comenzamos atendiendo animales en situación vulnerable en Morelia.",
+    img: "https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&q=70&w=1200",
+  },
+  {
+    year: "2018",
+    title: "Nuevas campañas",
+    desc: "Programas de esterilización masiva y educación ciudadana.",
+    img: "https://images.unsplash.com/photo-1525253086316-d0c936c814f8?auto=format&q=70&w=1200",
+  },
+  {
+    year: "2022",
+    title: "Más de 100 adopciones",
+    desc: "Miles de mascotas encontraron un nuevo hogar.",
+    img: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&q=70&w=1200",
+  },
+  {
+    year: "2025",
+    title: "Plataforma digital",
+    desc: "Modernización del proceso y adopciones en línea.",
+    img: "https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&q=70&w=1200",
+  },
+];
+
+const valores = [
+  {
+    title: "Salud Pública",
+    text: "Servicios médicos veterinarios, campañas de vacunación y esterilización para toda la comunidad.",
+    icon: Stethoscope,
+    tone: "from-sky-500 to-sky-400",
+  },
+  {
+    title: "Bienestar Animal",
+    text: "Promovemos el trato digno y responsable hacia cada uno de los animales.",
+    icon: PawPrint,
+    tone: "from-[#BC5F36] to-[#D97706]",
+  },
+  {
+    title: "Seguridad Ciudadana",
+    text: "Resguardamos animales en riesgo y atendemos reportes ciudadanos.",
+    icon: ShieldCheck,
+    tone: "from-emerald-500 to-emerald-400",
+  },
+];
 
 export default function SobreNosotros() {
   return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-800">
-      {/* Navbar */}
+    <div className="min-h-screen flex flex-col bg-[#FFF8F0] text-[#2b1b12]">
       <Header />
 
       <main className="flex-1">
-        {/* ================================================
-          ENCABEZADO PRINCIPAL ANIMADO + ICONS + ILUSTRACIÓN
-        ================================================= */}
-        <section className="pt-20 px-6  text-gray-800">
-          <div className="max-w-5xl mx-auto text-center relative">
-            {/* Título animado */}
-            <motion.h2
-              initial={{ opacity: 0, y: 25, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.7, ease: "easeOut" }}
-              className="text-4xl font-extrabold mb-6 text-orange-600"
-            >
-              Sobre Nosotros
-            </motion.h2>
+        {/* ============ HERO ============ */}
+        <section className="relative overflow-hidden pt-24 sm:pt-32 pb-16 sm:pb-24 px-6">
+          {/* Glow decorativo */}
+          <div className="pointer-events-none absolute inset-0 -z-0">
+            <div className="absolute -top-20 -left-32 w-[36rem] h-[36rem] rounded-full bg-orange-200/40 blur-3xl" />
+            <div className="absolute -bottom-32 -right-32 w-[36rem] h-[36rem] rounded-full bg-amber-200/30 blur-3xl" />
+          </div>
 
-            {/* Párrafo principal */}
+          <div className="max-w-5xl mx-auto text-center relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 rounded-full bg-white text-[#BC5F36] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider shadow-sm ring-1 ring-[#f3d6bb]"
+            >
+              <Sparkles size={14} />
+              Sobre nosotros
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 25 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+              className="mt-5 text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.05]"
+            >
+              Por un Morelia donde{" "}
+              <span className="text-[#BC5F36]">cada animal</span>
+              <br className="hidden sm:block" /> tenga un hogar digno.
+            </motion.h1>
+
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="mb-6 text-lg leading-relaxed max-w-3xl mx-auto relative z-10"
+              className="mt-6 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto text-[#6c5241]"
             >
-              En el <strong>Centro de Atención Animal de Morelia (CAAM)</strong>{" "}
+              En el{" "}
+              <strong className="text-[#8B4513]">
+                Centro de Atención Animal de Morelia (CAAM)
+              </strong>{" "}
               trabajamos con pasión y compromiso por la salud pública, el
-              bienestar animal y la seguridad ciudadana. Nuestro equipo busca
-              que cada perro y gato reciba atención digna, cariño y la
-              oportunidad de encontrar un hogar responsable.
+              bienestar animal y la seguridad ciudadana.
             </motion.p>
+          </div>
 
-            {/* TARJETAS PRINCIPALES */}
-            <div className="grid md:grid-cols-3 gap-8 my-10">
-              {[
-                {
-                  title: "Salud Pública",
-                  text: "Servicios médicos veterinarios, campañas de vacunación y esterilización.",
-                  icon: "🩺",
-                },
-                {
-                  title: "Bienestar Animal",
-                  text: "Promovemos el trato digno y responsable hacia los animales.",
-                  icon: "🐾",
-                },
-                {
-                  title: "Seguridad Ciudadana",
-                  text: "Resguardamos animales en riesgo y atendemos reportes ciudadanos.",
-                  icon: "🛡️",
-                },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: i * 0.2 }}
-                  whileHover={{
-                    y: -8,
-                    scale: 1.03,
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-                  }}
-                  className="p-6 bg-white shadow rounded-2xl cursor-default transition-all"
+          {/* ============ VALORES ============ */}
+          <div className="max-w-6xl mx-auto mt-12 sm:mt-16 grid sm:grid-cols-3 gap-4 sm:gap-6 relative z-10">
+            {valores.map((item, i) => (
+              <motion.article
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                whileHover={{ y: -6 }}
+                className="rounded-3xl bg-white border border-[#eadacb] p-6 sm:p-7 shadow-sm hover:shadow-lg transition-shadow"
+              >
+                <div
+                  className={`grid place-items-center h-12 w-12 rounded-2xl bg-gradient-to-br ${item.tone} text-white shadow-md mb-4`}
                 >
-                  <motion.div
-                    whileHover={{ rotate: 8, scale: 1.15 }}
-                    transition={{ type: "spring", stiffness: 200 }}
-                    className="text-4xl mb-3"
-                  >
-                    {item.icon}
-                  </motion.div>
+                  <item.icon size={22} />
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-[#2b1b12] mb-2 tracking-tight">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-[#6c5241] leading-relaxed">
+                  {item.text}
+                </p>
+              </motion.article>
+            ))}
+          </div>
+        </section>
 
-                  <h3 className="text-xl font-semibold mb-2 text-orange-500">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-700">{item.text}</p>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* MISIÓN Y VISIÓN */}
+        {/* ============ MISIÓN Y VISIÓN ============ */}
+        <section className="px-6 pb-16 sm:pb-24">
+          <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-5 sm:gap-6">
             <motion.div
-              initial={{ opacity: 0, y: 25 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="bg-orange-100 p-8 rounded-2xl shadow-inner mb-16"
+              className="rounded-3xl bg-gradient-to-br from-[#BC5F36] to-[#8B4513] text-[#FFF8F0] p-7 sm:p-9 shadow-xl relative overflow-hidden"
             >
-              <motion.h3
-                className="text-2xl font-bold mb-3 text-orange-600 flex items-center justify-center gap-2"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                Nuestra Misión
-              </motion.h3>
+              <div className="pointer-events-none absolute -top-12 -right-12 w-64 h-64 rounded-full bg-white/5 blur-3xl" />
+              <div className="relative">
+                <div className="grid place-items-center h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-sm text-white mb-4">
+                  <Target size={22} />
+                </div>
+                <h3 className="text-xs uppercase tracking-widest font-bold opacity-80">
+                  Nuestra
+                </h3>
+                <h2 className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight">
+                  Misión
+                </h2>
+                <p className="mt-4 text-base leading-relaxed text-[#FFF8F0]/90">
+                  Promover la adopción responsable y contribuir a una ciudad
+                  consciente donde{" "}
+                  <strong className="text-white">
+                    el amor por los animales
+                  </strong>{" "}
+                  sea parte fundamental de cada hogar y comunidad.
+                </p>
+              </div>
+            </motion.div>
 
-              <p className="mb-6 text-gray-700">
-                Promover la adopción responsable y contribuir a una ciudad
-                consciente donde <strong>el amor por los animales</strong> sea
-                parte fundamental.
-              </p>
-
-              <motion.h3
-                className="text-2xl font-bold mb-3 text-orange-600 flex items-center justify-center gap-2"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
-              >
-                Nuestra Visión
-              </motion.h3>
-
-              <p className="text-gray-700">
-                Convertir a Morelia en un referente nacional en{" "}
-                <strong>bienestar animal</strong>
-                mediante educación y participación comunitaria.
-              </p>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="rounded-3xl bg-white border border-[#eadacb] p-7 sm:p-9 shadow-sm relative overflow-hidden"
+            >
+              <div className="pointer-events-none absolute -top-12 -right-12 w-64 h-64 rounded-full bg-orange-100/40 blur-3xl" />
+              <div className="relative">
+                <div className="grid place-items-center h-12 w-12 rounded-2xl bg-[#FFF1E6] text-[#BC5F36] mb-4 ring-1 ring-[#f3d6bb]">
+                  <Eye size={22} />
+                </div>
+                <h3 className="text-xs uppercase tracking-widest font-bold text-[#BC5F36]">
+                  Nuestra
+                </h3>
+                <h2 className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight text-[#2b1b12]">
+                  Visión
+                </h2>
+                <p className="mt-4 text-base leading-relaxed text-[#6c5241]">
+                  Convertir a Morelia en un referente nacional en{" "}
+                  <strong className="text-[#8B4513]">
+                    bienestar animal
+                  </strong>{" "}
+                  mediante educación, prevención y participación comunitaria
+                  activa.
+                </p>
+              </div>
             </motion.div>
           </div>
         </section>
 
-        {/* ================================================
-            NUESTRA HISTORIA — CARRUSEL AUTOPLAY INFINITO
-        ================================================= */}
-        <section className="relative py-24 bg-white overflow-hidden">
-          <div className="absolute left-0 top-10 w-64 h-64 bg-orange-200/40 blur-[100px] rounded-full"></div>
-          <div className="absolute right-0 bottom-10 w-72 h-72 bg-orange-300/30 blur-[120px] rounded-full"></div>
+        {/* ============ HISTORIA / CARRUSEL ============ */}
+        <section className="relative py-16 sm:py-24 overflow-hidden bg-white">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-0 top-10 w-64 h-64 bg-orange-200/40 blur-[100px] rounded-full" />
+            <div className="absolute right-0 bottom-10 w-72 h-72 bg-orange-300/30 blur-[120px] rounded-full" />
+          </div>
 
           <div className="max-w-6xl mx-auto px-6 relative z-10">
-            <motion.h3
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="text-3xl font-extrabold text-orange-600 text-center mb-14"
+              transition={{ duration: 0.6 }}
+              className="text-center mb-12"
             >
-              Nuestra Historia
-            </motion.h3>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF1E6] text-[#BC5F36] px-3 py-1 text-xs font-bold uppercase tracking-wider ring-1 ring-[#f3d6bb]">
+                <Heart size={12} fill="currentColor" />
+                Nuestro recorrido
+              </span>
+              <h2 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight text-[#2b1b12]">
+                Una década transformando vidas
+              </h2>
+              <p className="mt-3 text-base text-[#6c5241] max-w-2xl mx-auto leading-relaxed">
+                Desde nuestros inicios hasta hoy, cada paso nos ha acercado a un
+                Morelia más empático con los animales.
+              </p>
+            </motion.div>
 
             <div className="relative overflow-hidden pb-6">
               <motion.div
-                className="flex gap-10"
+                className="flex gap-6 sm:gap-8"
                 initial={{ x: 0 }}
                 animate={{ x: "-50%" }}
                 transition={{
-                  duration: 18,
+                  duration: 22,
                   ease: "linear",
                   repeat: Infinity,
                 }}
               >
-                {[...Array(2)].flatMap(() =>
-                  [
-                    {
-                      year: "2015",
-                      title: "Inicio de operaciones",
-                      desc: "Comenzamos atendiendo animales en situación vulnerable.",
-                      img: "https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&q=70&w=1200",
-                    },
-                    {
-                      year: "2018",
-                      title: "Nuevas campañas",
-                      desc: "Programas de esterilización masiva y educación.",
-                      img: "https://images.unsplash.com/photo-1525253086316-d0c936c814f8?auto=format&q=70&w=1200",
-                    },
-                    {
-                      year: "2022",
-                      title: "Más de 100 adopciones",
-                      desc: "Miles de mascotas encontraron un nuevo hogar.",
-                      img: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&q=70&w=1200",
-                    },
-                    {
-                      year: "2025",
-                      title: "Plataforma digital",
-                      desc: "Modernización y adopciones en línea.",
-                      img: "https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?auto=format&q=70&w=1200",
-                    },
-                  ].map((ev, i) => (
-                    <div key={i} className="min-w-[330px] sm:min-w-[360px]">
-                      <motion.div
-                        whileHover={{ scale: 1.03 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 200,
-                        }}
-                        className="bg-white shadow-xl rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-500"
-                      >
-                        <div className="relative h-56 overflow-hidden">
-                          <motion.img
-                            src={ev.img}
-                            className="w-full h-full object-cover"
-                            whileHover={{ scale: 1.1 }}
-                            transition={{ duration: 0.6 }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-orange-600/25 to-transparent"></div>
-                        </div>
-
-                        <div className="p-6">
-                          <p className="text-orange-600 font-bold">{ev.year}</p>
-                          <h4 className="text-xl font-semibold mt-1">
-                            {ev.title}
-                          </h4>
-                          <p className="text-gray-600 mt-2 text-sm leading-relaxed">
-                            {ev.desc}
-                          </p>
-                        </div>
-                      </motion.div>
-                    </div>
+                {[...Array(2)].flatMap((_, dup) =>
+                  milestones.map((ev, i) => (
+                    <motion.article
+                      key={`${dup}-${i}`}
+                      whileHover={{ y: -4 }}
+                      className="min-w-[290px] sm:min-w-[340px] rounded-3xl overflow-hidden bg-white border border-[#eadacb] shadow-sm hover:shadow-xl transition-all"
+                    >
+                      <div className="relative h-48 sm:h-56 overflow-hidden">
+                        <motion.img
+                          src={ev.img}
+                          alt={ev.title}
+                          className="w-full h-full object-cover"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.5 }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#2b1b12]/40 via-transparent to-transparent" />
+                        <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur-sm text-[#BC5F36] px-2.5 py-1 text-xs font-extrabold shadow-sm">
+                          {ev.year}
+                        </span>
+                      </div>
+                      <div className="p-5">
+                        <h4 className="text-lg font-extrabold text-[#2b1b12] tracking-tight">
+                          {ev.title}
+                        </h4>
+                        <p className="text-sm text-[#6c5241] mt-1.5 leading-relaxed">
+                          {ev.desc}
+                        </p>
+                      </div>
+                    </motion.article>
                   ))
                 )}
               </motion.div>
@@ -221,48 +279,66 @@ export default function SobreNosotros() {
           </div>
         </section>
 
-        {/* ================================================
-            UBICACIÓN — PING
-        ================================================= */}
-        <section className="relative bg-white overflow-hidden">
-          <div className="absolute -left-32 top-16 w-[250px] h-[250px] bg-orange-200/40 blur-[120px] rounded-full"></div>
-          <div className="absolute -right-32 bottom-16 w-[260px] h-[260px] bg-orange-300/40 blur-[130px] rounded-full"></div>
+        {/* ============ UBICACIÓN ============ */}
+        <section className="relative py-16 sm:py-24 overflow-hidden">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -left-32 top-16 w-[250px] h-[250px] bg-orange-200/40 blur-[120px] rounded-full" />
+            <div className="absolute -right-32 bottom-16 w-[260px] h-[260px] bg-orange-300/40 blur-[130px] rounded-full" />
+          </div>
 
           <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
-            <h3 className="text-3xl font-extrabold text-orange-600 mb-4">
-              Estamos en Morelia, Michoacán
-            </h3>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 rounded-full bg-white text-[#BC5F36] px-3 py-1 text-xs font-bold uppercase tracking-wider ring-1 ring-[#f3d6bb] shadow-sm"
+            >
+              <MapPin size={14} />
+              Visítanos
+            </motion.div>
 
-            <p className="text-gray-700 max-w-xl mx-auto mb-4">
+            <h2 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight text-[#2b1b12]">
+              Estamos en Morelia, Michoacán
+            </h2>
+
+            <p className="mt-3 text-base text-[#6c5241] max-w-xl mx-auto leading-relaxed">
               Nuestra ubicación nos permite responder rápidamente a animales en
               situación vulnerable y coordinar esfuerzos de bienestar animal.
             </p>
 
-            <p className="text-gray-600 mb-1">
-              Álamos No. 395, Col. Centenario, C.P. 58128, Morelia, Mich.
-            </p>
+            <div className="mt-8 grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <div className="rounded-2xl bg-white border border-[#eadacb] p-5 text-left shadow-sm">
+                <div className="grid place-items-center h-10 w-10 rounded-xl bg-[#FFF1E6] text-[#BC5F36] ring-1 ring-[#f3d6bb] mb-3">
+                  <MapPin size={18} />
+                </div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#a78d7b] mb-1">
+                  Dirección
+                </p>
+                <p className="text-sm font-bold text-[#2b1b12] leading-relaxed">
+                  Álamos No. 395, Col. Centenario, C.P. 58128, Morelia, Mich.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white border border-[#eadacb] p-5 text-left shadow-sm">
+                <div className="grid place-items-center h-10 w-10 rounded-xl bg-[#FFF1E6] text-[#BC5F36] ring-1 ring-[#f3d6bb] mb-3">
+                  <Phone size={18} />
+                </div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#a78d7b] mb-1">
+                  Teléfonos
+                </p>
+                <p className="text-sm font-bold text-[#2b1b12] leading-relaxed">
+                  443 321 4731
+                  <br />
+                  443 321 1392
+                </p>
+              </div>
+            </div>
 
-            <p className="text-gray-600 font-medium mb-12">
-              443 321 4731 / 443 321 1392
-            </p>
-
-            <div className="relative flex justify-center mt-6">
-              <div className="absolute w-10 h-10 bg-orange-500/20 rounded-full blur-md animate-ping-smooth"></div>
-
-              <div className="relative pb-15 z-10 flex items-center justify-center w-12 h-12 bg-white/95 backdrop-blur rounded-full shadow-lg">
-                <svg
-                  width="40"
-                  height="40"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#d97706"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 1 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
+            {/* Ping animado */}
+            <div className="relative flex justify-center mt-10">
+              <div className="absolute w-14 h-14 bg-orange-500/20 rounded-full blur-md animate-ping-smooth" />
+              <div className="relative z-10 grid place-items-center w-14 h-14 bg-white/95 backdrop-blur rounded-full shadow-lg ring-1 ring-[#f3d6bb]">
+                <MapPin size={26} className="text-[#BC5F36]" />
               </div>
             </div>
           </div>
@@ -283,16 +359,15 @@ export default function SobreNosotros() {
               opacity: 0;
             }
           }
-
           .animate-ping-smooth {
             animation: pingSmooth 2.6s ease-out infinite;
           }
         `}</style>
       </main>
 
-      <footer className="border-t border-[#e3c8b4] bg-[#BC5F36] text-[#fffaf4] shadow-inner">
+      <footer className="border-t border-[#e3c8b4] bg-[#BC5F36] text-[#fffaf4]">
         <div className="container mx-auto px-4 py-6 text-sm text-center">
-          © 2025{" "}
+          © {new Date().getFullYear()}{" "}
           <span className="font-semibold">
             Centro de Atención Animal Morelia
           </span>

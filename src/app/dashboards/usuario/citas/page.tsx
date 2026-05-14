@@ -1,6 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import {
+  CalendarCheck,
+  AlertCircle,
+  Loader2,
+  CalendarPlus,
+} from "lucide-react";
 
 import PageHead from "@/components/layout/PageHead";
 import ConfirmCancelModal from "@/features/adopciones/components/client/ConfirmCancelModal";
@@ -25,6 +31,10 @@ import EstadoSolicitudPendiente from "@/features/citas/components/client/EstadoS
 
 import { useSoftToast } from "@/hooks/useSoftToast";
 import { horaEsPasada } from "@/features/citas/utils/horaEsPasada";
+
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/Button";
 
 export default function MisCitasPage() {
   /* -------------------- Queries -------------------- */
@@ -63,9 +73,7 @@ export default function MisCitasPage() {
 
   const { data: horasOcupadas = [] } = useHorasOcupadasQuery(fecha);
 
-  const diasRestantes = useDiasRestantesSolicitud(
-    solicitudActiva?.created_at
-  );
+  const diasRestantes = useDiasRestantesSolicitud(solicitudActiva?.created_at);
 
   /* -------------------- Handlers -------------------- */
   async function confirmarCita() {
@@ -103,28 +111,60 @@ export default function MisCitasPage() {
     setPaso("inicio");
   }
 
-  /* -------------------- States -------------------- */
+  /* -------------------- Loading / Error -------------------- */
   if (isLoading) {
-    return <p className="text-center py-10 text-[#7a5c49]">Cargando...</p>;
+    return (
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-32 rounded-full" />
+          <Skeleton className="h-10 w-2/3" />
+          <Skeleton className="h-5 w-1/2" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-3xl" />
+        <div className="flex items-center justify-center gap-2 text-[#7a5c49] py-4">
+          <Loader2 size={16} className="animate-spin" />
+          <span className="text-sm">Cargando tus citas...</span>
+        </div>
+      </div>
+    );
   }
 
   if (isError) {
     return (
-      <p className="text-center py-10 text-red-600">
-        Error al cargar tus citas.
-      </p>
+      <EmptyState
+        icon={<AlertCircle size={32} />}
+        title="No pudimos cargar tus citas"
+        description="Ocurrió un error al consultar tus citas. Intenta nuevamente en unos momentos."
+        action={
+          <Button onClick={() => window.location.reload()}>Reintentar</Button>
+        }
+      />
     );
   }
 
+  /* -------------------- Subtitle dinámico -------------------- */
+  const subtitle = citaProgramada
+    ? "Tu cita está confirmada. Te esperamos en el CAAM."
+    : solicitudActiva
+    ? "Programa o gestiona tu cita para conocer a tu futura mascota."
+    : "Aún no tienes solicitudes activas ni citas pendientes.";
+
   /* -------------------- Render -------------------- */
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <PageHead
         title="Mis citas de adopción"
-        subtitle="Consulta o agenda tu cita para conocer a tu futura mascota 🐾"
+        subtitle={subtitle}
+        eyebrow={
+          <>
+            <CalendarCheck size={12} />
+            <span>Agenda</span>
+          </>
+        }
+        icon={<CalendarCheck size={20} />}
       />
 
-      {/* PASO 1 */}
+      {/* PASO 1: Inicio */}
       {paso === "inicio" && (
         <>
           {citaProgramada ? (
@@ -161,14 +201,25 @@ export default function MisCitasPage() {
               />
             )
           ) : (
-            <p className="text-center text-[#7a5c49] py-10">
-              No tienes solicitudes activas ni citas pendientes.
-            </p>
+            <EmptyState
+              icon={<CalendarPlus size={32} />}
+              title="No tienes citas ni solicitudes activas"
+              description="Para agendar una cita primero necesitas iniciar el proceso de adopción seleccionando una mascota."
+              action={
+                <Button
+                  onClick={() =>
+                    (window.location.href = "/dashboards/usuario/mascotas")
+                  }
+                >
+                  Ver mascotas disponibles
+                </Button>
+              }
+            />
           )}
         </>
       )}
 
-      {/* PASO 2 */}
+      {/* PASO 2: Formulario */}
       {paso === "formulario" && solicitudActiva && (
         <FormularioAgendarCita
           solicitudActiva={solicitudActiva}
@@ -187,12 +238,9 @@ export default function MisCitasPage() {
         />
       )}
 
-      {/* PASO 3 */}
+      {/* PASO 3: Confirmación */}
       {paso === "confirmacion" && citaProgramada && (
-        <ConfirmacionCita
-          cita={citaProgramada}
-          onFinalizar={handleFinalizar}
-        />
+        <ConfirmacionCita cita={citaProgramada} onFinalizar={handleFinalizar} />
       )}
 
       {/* Modales */}
