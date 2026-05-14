@@ -10,7 +10,7 @@ import { useReprogramarCita } from "@/features/citas/hooks/useReprogramarCita";
 import { useCancelarCita } from "@/features/citas/hooks/useCancelarCita";
 import { useEvaluarCita } from "@/features/citas/hooks/useEvaluarCita";
 
-import { Search, CheckCircle } from "lucide-react";
+import { Search, CheckCircle, CalendarDays, Calendar as CalendarIcon, Table2 } from "lucide-react";
 import { toast } from "sonner";
 import { toastConfirm } from "@/components/ui/toastConfirm";
 import PageHead from "@/components/layout/PageHead";
@@ -211,39 +211,48 @@ export default function GestionCitasPage() {
     );
 
   return (
-    <div className="min-h-[70vh] space-y-6 transition-all">
+    <div className="min-h-[70vh] space-y-5 sm:space-y-6 transition-all">
       {/* HEADER */}
       <PageHead
         title="Gestión de citas de adopción"
+        eyebrow={
+          <>
+            <CalendarDays size={12} />
+            <span>Programación de visitas</span>
+          </>
+        }
+        icon={<CalendarDays size={20} />}
         subtitle="Administra todas las citas de adopción programadas."
       />
 
       {/* FILTROS Y BUSCADOR */}
-      <div className="space-y-6">
+      <div className="space-y-5">
 
         {/* Toggle Tabla / Calendario */}
-        <div className="flex items-center gap-3">
-          <div className="flex rounded-xl border border-[#EADACB] overflow-hidden">
-            <button
-              className={`px-4 py-2 text-sm ${view === "tabla"
-                ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold"
-                : "bg-white text-[#6b4f40]"
-                }`}
-              onClick={() => setView("tabla")}
-            >
-              Tabla
-            </button>
+        <div className="inline-flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-1">
+          <button
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+              view === "tabla"
+                ? "bg-white text-[#BC5F36] shadow-sm ring-1 ring-[#f3d6bb]"
+                : "text-slate-600 hover:text-[#BC5F36] hover:bg-white/60"
+            }`}
+            onClick={() => setView("tabla")}
+          >
+            <Table2 className="h-3.5 w-3.5" />
+            Tabla
+          </button>
 
-            <button
-              className={`px-4 py-2 text-sm ${view === "calendario"
-                ? "bg-[#FFF4E7] text-[#2B1B12] font-semibold"
-                : "bg-white text-[#6b4f40]"
-                }`}
-              onClick={() => setView("calendario")}
-            >
-              Calendario
-            </button>
-          </div>
+          <button
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+              view === "calendario"
+                ? "bg-white text-[#BC5F36] shadow-sm ring-1 ring-[#f3d6bb]"
+                : "text-slate-600 hover:text-[#BC5F36] hover:bg-white/60"
+            }`}
+            onClick={() => setView("calendario")}
+          >
+            <CalendarIcon className="h-3.5 w-3.5" />
+            Calendario
+          </button>
         </div>
 
         {/* KPI CHIPS COMO FILTROS */}
@@ -319,13 +328,13 @@ export default function GestionCitasPage() {
       </div>
 
       {/* Buscador */}
-      <div className="flex items-center rounded-full border border-[#EADACB] bg-white px-4 py-2 w-full md:w-96 shadow-sm">
-        <Search className="h-4 w-4 text-[#BC5F36]" />
+      <div className="flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 w-full md:w-96 shadow-sm focus-within:border-[#f3d6bb] focus-within:ring-2 focus-within:ring-[#BC5F36]/15 transition">
+        <Search className="h-4 w-4 text-slate-400" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar por usuario, mascota o correo"
-          className="ml-2 w-full text-sm outline-none bg-transparent"
+          className="ml-2 w-full text-sm outline-none bg-transparent placeholder:text-slate-400"
         />
       </div>
 

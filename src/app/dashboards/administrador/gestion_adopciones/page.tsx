@@ -11,6 +11,7 @@ import { AdopcionesKPIs } from "@/features/adopciones/components/client/Adopcion
 import AdopcionesTableSkeleton from "@/features/adopciones/components/client/AdopcionesTableSkeleton";
 import { useAdopcionesAdminQuery } from "@/features/adopciones/hooks/useAdopcionesAdminQuery";
 import { useCambiarEstadoAdopcion } from "@/features/adopciones/hooks/useCambiarEstadoAdopcion";
+import { HeartHandshake, ClipboardList } from "lucide-react";
 
 export default function GestionAdopcionesPage() {
   const isMobile = useIsMobile();
@@ -87,9 +88,16 @@ export default function GestionAdopcionesPage() {
   };
 
   return (
-  <div className="p-6 space-y-4">
+  <div className="space-y-5 sm:space-y-6">
     <PageHead
-      title="Gestión de Adopciones"
+      title="Gestión de adopciones"
+      eyebrow={
+        <>
+          <ClipboardList size={12} />
+          <span>Solicitudes</span>
+        </>
+      }
+      icon={<HeartHandshake size={20} />}
       subtitle="Revisa y administra las solicitudes de adopción."
     />
 

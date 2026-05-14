@@ -13,6 +13,7 @@ import { useDocumentosQuery } from "@/features/documentos/hooks/useDocumentosQue
 import { useAprobarDocumento } from "@/features/documentos/hooks/useAprobarDocumento";
 import { useRechazarDocumento } from "@/features/documentos/hooks/useRechazarDocumento";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { FileText, FileSearch } from "lucide-react";
 
 export default function GestionDocumentosPage() {
   const isMobile = useIsMobile();
@@ -46,14 +47,19 @@ export default function GestionDocumentosPage() {
     paginaActual * USERS_PER_PAGE
   );
 
-  const documentosPagina = usuariosPagina.flatMap(
-    (email) => agrupado[email]
-  );
+  const documentosPagina = usuariosPagina.flatMap((email) => agrupado[email]);
 
   return (
-    <>
+    <div className="space-y-5 sm:space-y-6">
       <PageHead
-        title="Gestión de documentos 📄"
+        title="Gestión de documentos"
+        eyebrow={
+          <>
+            <FileSearch size={12} />
+            <span>Revisión y validación</span>
+          </>
+        }
+        icon={<FileText size={20} />}
         subtitle="Revisa, aprueba o rechaza los documentos enviados por los usuarios."
       />
 
@@ -99,6 +105,6 @@ export default function GestionDocumentosPage() {
         url={visorActivo}
         onClose={() => setVisorActivo(null)}
       />
-    </>
+    </div>
   );
 }

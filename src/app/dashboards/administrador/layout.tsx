@@ -36,9 +36,9 @@ export default async function AdminLayout({
           <div className="absolute -bottom-32 -right-24 w-[45rem] h-[45rem] rounded-full bg-amber-100/40 blur-3xl" />
         </div>
 
-        <main className="relative px-4 md:px-8 py-6 pt-24 lg:pt-6 lg:ml-72">
+        <main className="relative px-4 md:px-6 lg:px-8 py-6 pt-20 lg:pt-6 lg:ml-[280px]">
           <div
-            className="mx-auto max-w-full bg-white/85 backdrop-blur-sm rounded-3xl border border-slate-100 p-5 md:p-8"
+            className="mx-auto max-w-full bg-white/90 backdrop-blur-sm rounded-3xl border border-slate-100 p-4 sm:p-6 md:p-8"
             style={{ boxShadow: "0 20px 60px rgba(2,6,23,.06)" }}
           >
             {children}
