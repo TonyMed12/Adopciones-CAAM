@@ -37,9 +37,14 @@ export default function PerfilCard() {
 
   if (isError || !data?.perfil) {
     return (
-      <p className="text-center py-10 text-red-600">
-        Error cargando el perfil.
-      </p>
+      <div className="rounded-3xl border border-rose-200 bg-gradient-to-br from-rose-50 to-rose-100/60 p-8 text-center">
+        <p className="text-base font-bold text-rose-900">
+          No pudimos cargar tu perfil
+        </p>
+        <p className="text-sm text-rose-800/90 mt-1">
+          Recarga la página o intenta más tarde.
+        </p>
+      </div>
     );
   }
 

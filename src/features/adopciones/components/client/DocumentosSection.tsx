@@ -63,15 +63,28 @@ export default function DocumentosSection({
                 />
 
                 {/* FAQs */}
-                <section className="rounded-2xl border border-[#eadacb] bg-white p-5 text-[#2b1b12] shadow-sm mt-6">
-                    <div className="flex items-center gap-2">
-                        <Info className="h-5 w-5 text-[#BC5F36]" />
-                        <h3 className="text-sm font-extrabold">Preguntas frecuentes</h3>
+                <section className="rounded-2xl border border-[#eadacb] bg-gradient-to-br from-white to-[#FFF7EF] p-5 sm:p-6 text-[#2b1b12] shadow-sm mt-6">
+                    <div className="flex items-center gap-3 mb-3">
+                        <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#FFF1E6] text-[#BC5F36] ring-1 ring-[#f3d6bb]">
+                            <Info className="h-5 w-5" />
+                        </span>
+                        <h3 className="text-sm sm:text-base font-extrabold">
+                            Preguntas frecuentes
+                        </h3>
                     </div>
-                    <ul className="mt-3 grid gap-2 text-sm text-[#7a5c49]">
-                        <li>• Formatos aceptados: PDF, JPG, PNG. Tamaño máx. 5 MB.</li>
-                        <li>• La revisión la realiza un administrador.</li>
-                        <li>• Si hay observaciones, podrás corregir y volver a enviar.</li>
+                    <ul className="space-y-2 text-sm text-[#6c5241] leading-relaxed">
+                        <li className="flex items-start gap-2">
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#BC5F36] shrink-0" />
+                            <span>Formatos aceptados: PDF, JPG, PNG. Tamaño máximo 5 MB.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#BC5F36] shrink-0" />
+                            <span>La revisión la realiza un administrador del CAAM.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[#BC5F36] shrink-0" />
+                            <span>Si hay observaciones, podrás corregir y volver a enviar.</span>
+                        </li>
                     </ul>
                 </section>
             </>
@@ -81,23 +94,27 @@ export default function DocumentosSection({
     /* ---------------- En revisión ---------------- */
     if (estado === "en_revision") {
         return (
-            <section className="rounded-2xl border border-[#eadacb] bg-[#fff9f3] p-10 text-center shadow-sm">
-                <div className="flex flex-col items-center gap-4">
+            <section className="relative overflow-hidden rounded-3xl border border-[#f3d6bb] bg-gradient-to-br from-[#FFF7EF] via-white to-[#FFEAD2] p-8 sm:p-12 text-center shadow-sm">
+                <div className="flex flex-col items-center gap-4 relative z-10">
                     <motion.div
                         animate={{ rotate: 360 }}
-                        transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-                        className="flex h-16 w-16 items-center justify-center rounded-full bg-[#BC5F36]/10"
+                        transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+                        className="grid h-20 w-20 place-items-center rounded-3xl bg-white text-[#BC5F36] shadow-lg ring-1 ring-[#f3d6bb]"
                     >
-                        <Clock className="h-10 w-10 text-[#BC5F36]" />
+                        <Clock className="h-9 w-9" />
                     </motion.div>
 
-                    <h2 className="text-xl font-extrabold text-[#2b1b12]">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF1E6] text-[#8B4513] px-3 py-1 text-xs font-bold uppercase tracking-wider ring-1 ring-[#f3d6bb]">
+                        En revisión
+                    </span>
+
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-[#2b1b12] tracking-tight">
                         Tus documentos están en revisión
                     </h2>
 
-                    <p className="max-w-md text-sm text-[#7a5c49]">
-                        Un administrador revisará que todo esté correcto. Te avisaremos
-                        cuando hayan sido aprobados.
+                    <p className="max-w-lg text-sm sm:text-base text-[#6c5241] leading-relaxed">
+                        Un administrador del CAAM revisará que todo esté correcto.
+                        Te avisaremos cuando hayan sido aprobados. Esto suele tardar de 1 a 3 días hábiles.
                     </p>
                 </div>
             </section>

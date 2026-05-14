@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Info, XCircle, PawPrint } from "lucide-react";
+import { CheckCircle2, Info, XCircle, PawPrint, FileSearch, PartyPopper } from "lucide-react";
 import dynamic from "next/dynamic";
 
 import type { EstadoDocumentos } from "@/features/adopciones/types/documentos";
@@ -9,6 +9,7 @@ import type { CitaProgramadaUI } from "@/features/citas/types/CitaProgramadaSect
 import type { SolicitudAdopcionUI } from "@/features/adopciones/types/solicitud";
 
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 
 import CitaProgramadaSection from "@/features/adopciones/components/client/CitaProgramadaSection";
 import CitaAprobadaSection from "@/features/adopciones/components/client/CitaAprobadaSection";
@@ -57,25 +58,30 @@ export default function AdopcionAprobadaSection({
                         : 1;
 
     return (
-        <section className="rounded-2xl border border-[#eadacb] bg-white p-5 shadow-sm text-[#2b1b12]">
-            {/* ✅ Banner documentos aprobados */}
-            <div className="flex items-center gap-3 rounded-2xl border border-green-200 border-b-2 border-b-green-300 bg-green-50 p-3 mb-4 shadow-sm">
-                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-green-100 shadow-sm">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+        <section className="rounded-3xl border border-[#eadacb] bg-white p-5 sm:p-7 shadow-sm text-[#2b1b12]">
+            {/* ============ Banner de documentos aprobados ============ */}
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100/50 p-4 mb-6 shadow-sm">
+                <div className="h-11 w-11 grid place-items-center rounded-2xl bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-200 shrink-0">
+                    <CheckCircle2 className="h-5 w-5" />
                 </div>
 
-                <div className="flex flex-col">
-                    <span className="text-sm font-extrabold text-green-800">
-                        Documentos validados
-                    </span>
-                    <span className="text-xs text-green-700 mt-0.5">
+                <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm sm:text-base font-extrabold text-emerald-900">
+                            Documentos validados
+                        </span>
+                        <Badge tone="success" size="sm" dot>
+                            Aprobado
+                        </Badge>
+                    </div>
+                    <span className="text-xs sm:text-sm text-emerald-800/90 mt-0.5 leading-relaxed">
                         Todo está en orden. Puedes continuar con tu proceso de adopción.
                     </span>
                 </div>
             </div>
 
-            {/* ✅ Stepper (siempre visible en aprobado) */}
-            <div className="relative z-10">
+            {/* ============ Stepper visual del flujo ============ */}
+            <div className="relative z-10 mb-6">
                 <StepperAdopcion
                     activeStep={activeStep}
                     solicitudId={solicitudActiva?.id ?? null}
@@ -89,68 +95,99 @@ export default function AdopcionAprobadaSection({
                         4: true,
                         5: true,
                     }}
-                    onStepClick={() => { }}
+                    onStepClick={() => {}}
                 />
             </div>
 
-            {/* ✅ Contenido debajo del stepper */}
-            <div className="mt-6">
-                {/* CASO 0: NO hay solicitud → NO hay mascota seleccionada */}
+            {/* ============ Contenido del estado actual ============ */}
+            <div>
+                {/* CASO: sin solicitud */}
                 {!solicitudActiva ? (
-                    <div className="rounded-xl border border-[#eadacb] bg-[#fffaf4] p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <PawPrint className="h-5 w-5 text-[#BC5F36]" />
-                            <p className="text-sm font-extrabold text-[#2b1b12]">
-                                1) Mascota seleccionada
-                            </p>
+                    <div className="rounded-2xl border border-[#eadacb] bg-gradient-to-br from-[#FFF7EF] to-white p-5 sm:p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#FFF1E6] text-[#BC5F36] ring-1 ring-[#f3d6bb] shrink-0">
+                                <PawPrint className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base sm:text-lg font-extrabold text-[#2b1b12] leading-tight">
+                                    Elige a tu mascota
+                                </h3>
+                                <p className="text-sm text-[#7a5c49] leading-relaxed mt-0.5">
+                                    Aún no has seleccionado una mascota.
+                                </p>
+                            </div>
                         </div>
 
-                        <p className="mt-1 text-sm text-[#7a5c49]">
-                            Aún no has seleccionado una mascota.
-                        </p>
-
-                        <Button className="mt-3 w-full" onClick={onVerMascotas}>
+                        <Button className="w-full sm:w-auto" onClick={onVerMascotas}>
                             Ver mascotas disponibles
                         </Button>
                     </div>
                 ) : citaActiva ? (
                     adopcionEstado === "pendiente" ? (
-                        <div className="mt-0 mb-2 rounded-2xl border border-[#f2d4b7] bg-gradient-to-br from-[#fff7f1] via-white to-[#ffe9d6] p-6 shadow">
-                            <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-full bg-[#BC5F36] text-white flex items-center justify-center">
-                                    <Info className="h-6 w-6" />
+                        <div className="rounded-2xl border border-[#f2d4b7] bg-gradient-to-br from-[#FFF7EF] via-white to-[#FFEAD2] p-5 sm:p-6 shadow-sm">
+                            <div className="flex items-start gap-4">
+                                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#BC5F36] text-white shadow-md shrink-0">
+                                    <FileSearch className="h-6 w-6" />
                                 </div>
-
-                                <div>
-                                    <h3 className="text-lg font-extrabold text-[#8b4513]">
-                                        Tu formulario está en revisión
-                                    </h3>
-                                    <p className="text-sm text-[#7a5c49] mt-1">
-                                        Ya completaste el formulario de adopción. El equipo del CAAM lo
-                                        está revisando.
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base sm:text-lg font-extrabold text-[#2b1b12]">
+                                            Tu formulario está en revisión
+                                        </h3>
+                                        <Badge tone="warning" size="sm" dot>
+                                            En revisión
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-[#6c5241] mt-1 leading-relaxed">
+                                        Ya completaste el formulario de adopción. El equipo del CAAM
+                                        lo está revisando. Te avisaremos cuando esté listo.
                                     </p>
                                 </div>
                             </div>
                         </div>
                     ) : adopcionEstado === "aprobada" ? (
-                        <div className="rounded-xl border border-green-300 bg-green-50 p-5 mb-2">
-                            <h3 className="text-sm font-extrabold text-green-800 flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4" />
-                                ¡Adopción aprobada!
-                            </h3>
-                            <p className="mt-2 text-sm text-green-700">
-                                Felicidades, el proceso de adopción ha sido aprobado.
-                            </p>
+                        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/60 p-5 sm:p-6 shadow-sm">
+                            <div className="flex items-start gap-4">
+                                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-600 text-white shadow-md shrink-0">
+                                    <PartyPopper className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base sm:text-lg font-extrabold text-emerald-900">
+                                            ¡Adopción aprobada!
+                                        </h3>
+                                        <Badge tone="success" size="sm" dot>
+                                            Aprobada
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-emerald-800/90 mt-1 leading-relaxed">
+                                        Felicidades, el proceso de adopción ha sido aprobado.
+                                        Lleva el seguimiento de tu nueva mascota desde "Mis mascotas".
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     ) : adopcionEstado === "rechazada" ? (
-                        <div className="rounded-xl border border-red-300 bg-red-50 p-5 mb-2">
-                            <h3 className="text-sm font-extrabold text-red-800 flex items-center gap-2">
-                                <XCircle className="h-4 w-4" />
-                                Adopción no aprobada
-                            </h3>
-                            <p className="mt-2 text-sm text-red-700">
-                                En esta ocasión la solicitud no fue aprobada.
-                            </p>
+                        <div className="rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 to-rose-100/60 p-5 sm:p-6 shadow-sm">
+                            <div className="flex items-start gap-4">
+                                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-600 text-white shadow-md shrink-0">
+                                    <XCircle className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base sm:text-lg font-extrabold text-rose-900">
+                                            Adopción no aprobada
+                                        </h3>
+                                        <Badge tone="danger" size="sm" dot>
+                                            Rechazada
+                                        </Badge>
+                                    </div>
+                                    <p className="text-sm text-rose-800/90 mt-1 leading-relaxed">
+                                        En esta ocasión la solicitud no fue aprobada. Puedes intentarlo
+                                        de nuevo con otra mascota.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     ) : citaProgramadaUI?.estado === "programada" ? (
                         <CitaProgramadaSection

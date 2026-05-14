@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { PawPrint, Heart } from "lucide-react";
 import PageHead from "@/components/layout/PageHead";
 import Filters from "@/features/mascotas/components/client/Filters";
 import MascotasFeed from "@/features/mascotas/components/client/MascotasFeed";
@@ -17,26 +18,32 @@ export default function MascotasPublicPage() {
 
   const [openCard, setOpenCard] = useState(false);
   const [selectedMascota, setSelectedMascota] = useState<Mascota | null>(null);
-
   const [loginModal, setLoginModal] = useState(false);
 
   return (
     <>
       <PageHead
-        title="Mascotas"
-        subtitle="Explora a nuestros adorables compañeros 🐾"
+        title="Mascotas disponibles"
+        subtitle="Explora a nuestros adorables compañeros y encuentra a tu próxima mejor amiga 🐾"
+        eyebrow={
+          <>
+            <Heart size={12} fill="currentColor" />
+            <span>Catálogo</span>
+          </>
+        }
+        icon={<PawPrint size={20} />}
       />
 
-      <div className="mb-6">        
+      <div className="mb-6 sm:mb-8">
         <Filters
-        q={q}
-        onQ={setQ}
-        especie={especie}
-        onEspecie={setEspecie}
-        sexo={sexo}
-        onSexo={setSexo}
-        ESPECIES={ESPECIES}
-      />
+          q={q}
+          onQ={setQ}
+          especie={especie}
+          onEspecie={setEspecie}
+          sexo={sexo}
+          onSexo={setSexo}
+          ESPECIES={ESPECIES}
+        />
       </div>
 
       <MascotasFeed

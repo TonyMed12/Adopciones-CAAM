@@ -1,3 +1,19 @@
+import Link from "next/link";
+import {
+  ArrowLeft,
+  PawPrint,
+  Cake,
+  Ruler,
+  Weight,
+  Stethoscope,
+  Heart,
+  Sparkles,
+  MapPin,
+  Calendar,
+  Palette,
+  ShieldCheck,
+} from "lucide-react";
+
 import { obtenerMascotaPorId } from "@/features/mascotas/actions/mascotas-actions";
 import HeaderSmart from "@/components/layout/HeaderSmart";
 import MascotaPublicAdoptButton from "@/features/mascotas/components/client/MascotaPublicAdoptButton";
@@ -39,9 +55,30 @@ export default async function MascotaPublicPage({
 
   if (!mascota) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600">
-        Mascota no encontrada 🐾
-      </div>
+      <>
+        <HeaderSmart />
+        <main className="min-h-screen bg-[#FFF8F0] grid place-items-center px-6 pt-32 pb-16">
+          <div className="text-center max-w-md">
+            <div className="grid place-items-center h-20 w-20 mx-auto rounded-3xl bg-white text-[#BC5F36] shadow-lg mb-4">
+              <PawPrint size={36} />
+            </div>
+            <h1 className="text-3xl font-extrabold text-[#2b1b12] mb-2">
+              Mascota no encontrada
+            </h1>
+            <p className="text-[#7a5c49] mb-6">
+              No pudimos localizar esta mascota. Es posible que ya haya sido
+              adoptada.
+            </p>
+            <Link
+              href="/dashboards/mascotas"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#BC5F36] text-white px-5 py-3 font-semibold hover:bg-[#A0522D] transition"
+            >
+              <ArrowLeft size={16} />
+              Volver al catálogo
+            </Link>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -61,251 +98,350 @@ export default async function MascotaPublicPage({
     };
   });
 
-  const tamanoRaw = (mascota.tamano || "").toLowerCase();
-  const tamanoClase =
-    tamanoRaw === "pequeño" || tamanoRaw === "chico"
-      ? "from-emerald-500 to-emerald-400"
-      : tamanoRaw === "mediano"
-      ? "from-amber-500 to-amber-400"
-      : tamanoRaw === "grande"
-      ? "from-red-500 to-red-400"
-      : "from-slate-500 to-slate-400";
-
   const sexoEsHembra = mascota.sexo?.toLowerCase().startsWith("h");
+
+  const capitalizar = (s?: string | null) =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "—";
+
+  const fechaIngreso = new Date(mascota.fecha_ingreso).toLocaleDateString(
+    "es-MX",
+    { year: "numeric", month: "long", day: "numeric" }
+  );
 
   return (
     <>
       <HeaderSmart />
-      <main className="min-h-screen bg-[#FFF4E7] flex flex-col items-center justify-center p-6">
-        <article className="relative w-full max-w-4xl overflow-hidden rounded-3xl shadow-2xl border-[4px] border-[#FF8414] bg-white">
-          {/* 📸 Imagen + fondo blur + chips */}
-          <div className="relative h-[500px] w-full overflow-hidden">
-            {/* Fondo blur con la misma imagen */}
-            <div
-              className="absolute inset-0 bg-cover bg-center blur-2xl scale-110 opacity-60"
-              style={{ backgroundImage: `url(${fotoSrc})` }}
-            />
 
-            {/* Imagen principal */}
-            <img
-              src={fotoSrc}
-              alt={mascota.nombre}
-              className="relative z-10 w-full h-full object-contain drop-shadow-2xl"
-            />
+      <main className="min-h-screen bg-[#FFF8F0] pt-24 sm:pt-28 pb-32 px-4">
+        <div className="mx-auto max-w-6xl">
+          {/* Volver */}
+          <Link
+            href="/dashboards/mascotas"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#8B4513] hover:text-[#BC5F36] mb-5 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Volver al catálogo
+          </Link>
 
-            {/* Capa cálida */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#00000066] via-[#FF841420] to-transparent z-20" />
+          <div className="grid lg:grid-cols-[1.1fr_1fr] gap-6 lg:gap-10">
+            {/* ============ Columna izquierda: HERO Imagen ============ */}
+            <section className="relative">
+              <div className="sticky top-24">
+                <div className="relative overflow-hidden rounded-3xl bg-white shadow-xl border border-[#eadacb]">
+                  {/* Fondo blur con la misma imagen */}
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 bg-cover bg-center blur-3xl scale-110 opacity-50"
+                    style={{ backgroundImage: `url(${fotoSrc})` }}
+                  />
 
-            {/* Chips superiores distribuidos */}
-            <div className="absolute top-5 left-0 right-0 z-30 px-6 flex items-start justify-between">
-              {/* Lado izquierdo: Sexo + Tamaño */}
-              <div className="flex flex-wrap gap-2">
-                {/* Sexo */}
-                <span
-                  className={`
-                    inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg tracking-wide capitalize
-                    bg-gradient-to-r ${
-                      sexoEsHembra
-                        ? "from-pink-500 to-rose-400"
-                        : "from-sky-500 to-blue-600"
-                    }
-                    text-white
-                  `}
-                >
-                  <span className="text-lg">{sexoEsHembra ? "♀" : "♂"}</span>
-                  {mascota.sexo}
-                </span>
+                  <div className="relative aspect-[4/5] w-full">
+                    <img
+                      src={fotoSrc}
+                      alt={mascota.nombre}
+                      className="relative z-10 w-full h-full object-contain drop-shadow-2xl p-4"
+                    />
 
-                {/* Tamaño */}
-                <span
-                  className={`
-                    inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg tracking-wide capitalize
-                    bg-gradient-to-r ${tamanoClase}
-                    text-white
-                  `}
-                >
-                  {mascota.tamano || "—"}
-                </span>
+                    {/* Chip de disponibilidad arriba derecha */}
+                    <div className="absolute top-4 right-4 z-20">
+                      <span
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-sm ${
+                          mascota.disponible_adopcion
+                            ? "bg-emerald-500/95 text-white"
+                            : "bg-rose-500/95 text-white"
+                        }`}
+                      >
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            mascota.disponible_adopcion
+                              ? "bg-emerald-200 animate-pulse"
+                              : "bg-rose-200"
+                          }`}
+                        />
+                        {mascota.disponible_adopcion
+                          ? "Disponible para adopción"
+                          : "No disponible"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              {/* Lado derecho: Disponibilidad */}
-              <span
-                className={`
-                  inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold shadow-lg tracking-wide capitalize
-                  ${
-                    mascota.disponible_adopcion
-                      ? "bg-emerald-500 text-white"
-                      : "bg-red-500 text-white"
-                  }
-                `}
-              >
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    mascota.disponible_adopcion
-                      ? "bg-emerald-200"
-                      : "bg-red-200"
-                  }`}
-                />
-                {mascota.disponible_adopcion ? "Disponible" : "No Disponible"}
-              </span>
-            </div>
-
-            {/* Nombre + Raza abajo */}
-            <div className="absolute bottom-0 left-0 right-0 z-30 p-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white">
-              <h1 className="text-4xl font-extrabold drop-shadow-xl capitalize">
-                {mascota.nombre}
-              </h1>
-              <p className="text-sm text-gray-200 mt-1 capitalize">
-                {mascota.raza?.nombre || "Mestizo"} •{" "}
-                {mascota.raza?.especie || "Desconocido"}
-              </p>
-            </div>
-          </div>
-
-          {/* 📋 Detalles */}
-          <div className="p-6 md:p-8 text-[#2B1B12]">
-            {/* Información general */}
-            <section className="mb-8">
-              <h2 className="text-xl font-extrabold mb-4 text-[#BC5F36]">
-                Información General
-              </h2>
-
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-5 text-sm">
-                <div>
-                  <dt className="font-semibold text-slate-700">Edad</dt>
-                  <dd className="capitalize">{mascota.edad || "—"}</dd>
-                </div>
-
-                <div>
-                  <dt className="font-semibold text-slate-700">Peso</dt>
-                  <dd>{mascota.peso_kg ? `${mascota.peso_kg} Kg` : "—"}</dd>
-                </div>
-
-                <div>
-                  <dt className="font-semibold text-slate-700">Altura</dt>
-                  <dd>{mascota.altura_cm ? `${mascota.altura_cm} Cm` : "—"}</dd>
-                </div>
-
-                <div>
-                  <dt className="font-semibold text-slate-700">Raza</dt>
-                  <dd className="capitalize">
-                    {mascota.raza?.nombre || "Mestizo"}
-                  </dd>
-                </div>
-
-                <div>
-                  <dt className="font-semibold text-slate-700">Especie</dt>
-                  <dd className="capitalize">
-                    {mascota.raza?.especie || "Desconocido"}
-                  </dd>
-                </div>
-
-                <div>
-                  <dt className="font-semibold text-slate-700">Esterilizado</dt>
-                  <dd>{mascota.esterilizado ? "Sí" : "No"}</dd>
-                </div>
-              </dl>
             </section>
 
-            {/* Colores */}
-            {coloresEnriquecidos.length > 0 && (
-              <section className="mb-8">
-                <h2 className="text-xl font-extrabold mb-3 text-[#BC5F36]">
-                  Colores
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {coloresEnriquecidos.map(({ nombre, hex }) => (
-                    <div
-                      key={nombre}
-                      className="
-                        flex items-center gap-2 px-3 py-1.5 rounded-2xl border 
-                        bg-white border-[#FF8414] text-[#2B1B12] text-sm 
-                        shadow-sm
-                      "
-                    >
-                      <span
-                        className="w-4 h-4 rounded-full border border-[#2b1b12]/30"
-                        style={{ backgroundColor: hex }}
-                      />
-                      <span className="capitalize">{nombre}</span>
-                    </div>
-                  ))}
+            {/* ============ Columna derecha: INFO ============ */}
+            <section className="space-y-6">
+              {/* Nombre + raza */}
+              <header>
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm ${
+                      sexoEsHembra
+                        ? "bg-gradient-to-r from-pink-500 to-rose-500"
+                        : "bg-gradient-to-r from-sky-500 to-blue-600"
+                    }`}
+                  >
+                    <span>{sexoEsHembra ? "♀" : "♂"}</span>
+                    {capitalizar(mascota.sexo)}
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF1E6] text-[#8B4513] px-3 py-1 text-xs font-bold ring-1 ring-[#f3d6bb]">
+                    <PawPrint size={12} />
+                    {capitalizar(mascota.raza?.especie) || "Otro"}
+                  </span>
                 </div>
-              </section>
-            )}
 
-            {/* Personalidad */}
-            {mascota.personalidad && (
-              <section className="mb-8">
-                <h2 className="text-xl font-extrabold mb-3 text-[#BC5F36]">
-                  Personalidad
-                </h2>
-                <p className="capitalize text-sm">{mascota.personalidad}</p>
-              </section>
-            )}
+                <h1 className="text-4xl sm:text-5xl font-extrabold text-[#2b1b12] tracking-tight capitalize leading-tight">
+                  {mascota.nombre}
+                </h1>
+                <p className="mt-2 text-base text-[#7a5c49]">
+                  <span className="font-semibold capitalize">
+                    {mascota.raza?.nombre || "Mestizo"}
+                  </span>{" "}
+                  • Buscando un hogar amoroso
+                </p>
+              </header>
 
-            {/* Descripción física */}
-            {mascota.descripcion_fisica && (
-              <section className="mb-8">
-                <h2 className="text-xl font-extrabold mb-3 text-[#BC5F36]">
-                  Descripción Física
-                </h2>
-                <p className="text-sm">{mascota.descripcion_fisica}</p>
-              </section>
-            )}
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <FactCard
+                  icon={<Cake size={18} />}
+                  label="Edad"
+                  value={capitalizar(mascota.edad) || "—"}
+                />
+                <FactCard
+                  icon={<Ruler size={18} />}
+                  label="Tamaño"
+                  value={capitalizar(mascota.tamano) || "—"}
+                />
+                <FactCard
+                  icon={<Weight size={18} />}
+                  label="Peso"
+                  value={mascota.peso_kg ? `${mascota.peso_kg} kg` : "—"}
+                />
+                <FactCard
+                  icon={<ShieldCheck size={18} />}
+                  label="Esterilizado"
+                  value={mascota.esterilizado ? "Sí" : "No"}
+                  tone={mascota.esterilizado ? "success" : "neutral"}
+                />
+              </div>
 
-            {/* Datos médicos y de rescate */}
-            {(mascota.lugar_rescate ||
-              mascota.condicion_ingreso ||
-              mascota.observaciones_medicas) && (
-              <section className="mb-8 border-t border-slate-200 pt-6">
-                <h2 className="text-xl font-extrabold mb-4 text-[#BC5F36]">
-                  Datos Médicos Y De Rescate
-                </h2>
-
-                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 text-sm">
-                  {mascota.lugar_rescate && (
-                    <div>
-                      <dt className="font-semibold text-slate-700">
-                        Lugar De Rescate
-                      </dt>
-                      <dd className="capitalize">{mascota.lugar_rescate}</dd>
-                    </div>
-                  )}
-
-                  {mascota.condicion_ingreso && (
-                    <div>
-                      <dt className="font-semibold text-slate-700">
-                        Condición De Ingreso
-                      </dt>
-                      <dd className="capitalize">
-                        {mascota.condicion_ingreso}
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-
-                {mascota.observaciones_medicas && (
-                  <p className="mt-3 text-sm text-[#2B1B12]">
-                    <strong>Observaciones:</strong>{" "}
-                    {mascota.observaciones_medicas}
+              {/* Personalidad destacada */}
+              {mascota.personalidad && (
+                <Section
+                  icon={<Sparkles size={18} />}
+                  title="Personalidad"
+                  tone="brand"
+                >
+                  <p className="capitalize text-sm sm:text-base leading-relaxed text-[#4a2c1e]">
+                    {mascota.personalidad}
                   </p>
-                )}
-              </section>
-            )}
+                </Section>
+              )}
 
-            {/* Fecha de ingreso */}
-            <p className="text-xs text-slate-500 mt-4">
-              Fecha De Ingreso:{" "}
-              {new Date(mascota.fecha_ingreso).toLocaleDateString("es-MX")}
-            </p>
+              {/* Descripción física */}
+              {mascota.descripcion_fisica && (
+                <Section
+                  icon={<PawPrint size={18} />}
+                  title="Descripción física"
+                >
+                  <p className="text-sm sm:text-base leading-relaxed text-[#4a2c1e]">
+                    {mascota.descripcion_fisica}
+                  </p>
+                </Section>
+              )}
+
+              {/* Colores */}
+              {coloresEnriquecidos.length > 0 && (
+                <Section icon={<Palette size={18} />} title="Colores">
+                  <div className="flex flex-wrap gap-2">
+                    {coloresEnriquecidos.map(({ nombre, hex }) => (
+                      <div
+                        key={nombre}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#eadacb] bg-white text-[#2B1B12] text-sm shadow-sm"
+                      >
+                        <span
+                          className="w-4 h-4 rounded-full border border-[#2b1b12]/15"
+                          style={{ backgroundColor: hex }}
+                        />
+                        <span className="capitalize font-medium">{nombre}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Datos médicos y de rescate */}
+              {(mascota.lugar_rescate ||
+                mascota.condicion_ingreso ||
+                mascota.observaciones_medicas) && (
+                <Section
+                  icon={<Stethoscope size={18} />}
+                  title="Historia médica y rescate"
+                  tone="info"
+                >
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm">
+                    {mascota.lugar_rescate && (
+                      <div>
+                        <dt className="flex items-center gap-1 text-[11px] uppercase font-bold tracking-wide text-[#7a5c49] mb-0.5">
+                          <MapPin size={12} /> Lugar de rescate
+                        </dt>
+                        <dd className="capitalize text-[#2b1b12] font-medium">
+                          {mascota.lugar_rescate}
+                        </dd>
+                      </div>
+                    )}
+                    {mascota.condicion_ingreso && (
+                      <div>
+                        <dt className="text-[11px] uppercase font-bold tracking-wide text-[#7a5c49] mb-0.5">
+                          Condición de ingreso
+                        </dt>
+                        <dd className="capitalize text-[#2b1b12] font-medium">
+                          {mascota.condicion_ingreso}
+                        </dd>
+                      </div>
+                    )}
+                    {mascota.altura_cm && (
+                      <div>
+                        <dt className="text-[11px] uppercase font-bold tracking-wide text-[#7a5c49] mb-0.5">
+                          Altura
+                        </dt>
+                        <dd className="text-[#2b1b12] font-medium">
+                          {mascota.altura_cm} cm
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  {mascota.observaciones_medicas && (
+                    <div className="mt-4 pt-4 border-t border-[#eadacb]">
+                      <p className="text-[11px] uppercase font-bold tracking-wide text-[#7a5c49] mb-1">
+                        Observaciones médicas
+                      </p>
+                      <p className="text-sm text-[#2B1B12] leading-relaxed">
+                        {mascota.observaciones_medicas}
+                      </p>
+                    </div>
+                  )}
+                </Section>
+              )}
+
+              {/* Fecha de ingreso */}
+              <div className="flex items-center gap-2 text-xs text-[#7a5c49] pt-2">
+                <Calendar size={14} />
+                <span>
+                  Llegó al CAAM el{" "}
+                  <span className="font-semibold capitalize">
+                    {fechaIngreso}
+                  </span>
+                </span>
+              </div>
+            </section>
           </div>
-        </article>
+        </div>
 
+        {/* CTA Adoptar – sticky bottom en móvil, integrado en desktop */}
         {mascota.disponible_adopcion && (
-          <MascotaPublicAdoptButton mascota={mascota} />
+          <div className="fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#eadacb] shadow-[0_-10px_30px_rgba(0,0,0,0.08)] lg:relative lg:bg-transparent lg:border-0 lg:shadow-none lg:mt-12">
+            <div className="mx-auto max-w-6xl px-4 py-4 lg:py-0 flex items-center justify-between lg:justify-center gap-4">
+              <div className="lg:hidden flex items-center gap-3 min-w-0">
+                <div className="grid place-items-center h-12 w-12 rounded-xl bg-[#FFF1E6] text-[#BC5F36] shrink-0">
+                  <Heart size={20} fill="currentColor" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#BC5F36]">
+                    Listo para adoptar
+                  </p>
+                  <p className="text-sm font-extrabold text-[#2b1b12] truncate capitalize">
+                    Llévate a {mascota.nombre} a casa
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0">
+                <MascotaPublicAdoptButton mascota={mascota} />
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </>
+  );
+}
+
+/* =================== Componentes auxiliares =================== */
+
+function FactCard({
+  icon,
+  label,
+  value,
+  tone = "brand",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  tone?: "brand" | "success" | "neutral";
+}) {
+  const colors =
+    tone === "success"
+      ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+      : tone === "neutral"
+      ? "bg-slate-50 text-slate-700 ring-slate-200"
+      : "bg-[#FFF1E6] text-[#BC5F36] ring-[#f3d6bb]";
+
+  return (
+    <div className="rounded-2xl bg-white border border-[#eadacb] p-3.5 shadow-sm">
+      <div
+        className={`inline-grid place-items-center h-9 w-9 rounded-xl ring-1 ring-inset mb-2 ${colors}`}
+      >
+        {icon}
+      </div>
+      <p className="text-[10px] uppercase font-bold tracking-wider text-[#a78d7b]">
+        {label}
+      </p>
+      <p className="text-sm font-extrabold text-[#2b1b12] capitalize">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function Section({
+  icon,
+  title,
+  children,
+  tone = "neutral",
+}: {
+  icon?: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+  tone?: "brand" | "info" | "neutral";
+}) {
+  const bg =
+    tone === "brand"
+      ? "bg-gradient-to-br from-[#FFF7EF] to-white border-[#f3d6bb]"
+      : tone === "info"
+      ? "bg-sky-50/40 border-sky-100"
+      : "bg-white border-[#eadacb]";
+
+  return (
+    <section
+      className={`rounded-2xl border p-5 shadow-sm ${bg}`}
+      aria-labelledby={`section-${title}`}
+    >
+      <header className="flex items-center gap-2 mb-3">
+        {icon && (
+          <div className="grid place-items-center h-9 w-9 rounded-xl bg-white text-[#BC5F36] ring-1 ring-[#f3d6bb] shrink-0">
+            {icon}
+          </div>
+        )}
+        <h2
+          id={`section-${title}`}
+          className="text-base sm:text-lg font-extrabold text-[#2b1b12] tracking-tight"
+        >
+          {title}
+        </h2>
+      </header>
+      <div className="text-[#4a2c1e]">{children}</div>
+    </section>
   );
 }

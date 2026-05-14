@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AlertCircle, Heart, FileText } from "lucide-react";
 
 import PageHead from "@/components/layout/PageHead";
 import { showSoftToast } from "@/lib/showSoftToast";
@@ -19,6 +20,9 @@ import { mapCitaToCitaProgramadaUI } from "@/features/adopciones/mappers/mapCita
 
 import { useQueryClient } from "@tanstack/react-query";
 
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/Button";
 
 export default function ProcesoAdopcionPage() {
   const queryClient = useQueryClient();
@@ -35,12 +39,7 @@ export default function ProcesoAdopcionPage() {
   });
 
   /* -------------------- Queries -------------------- */
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useProcesoAdopcionQuery();
+  const { data, isLoading, isError, error } = useProcesoAdopcionQuery();
 
   const {
     data: documentosData,
@@ -66,15 +65,11 @@ export default function ProcesoAdopcionPage() {
 
   /* -------------------- Handlers -------------------- */
   const handlePickDocumento = (id: string, file?: File) => {
-    setArchivos((prev) => ({
-      ...prev,
-      [id]: file,
-    }));
+    setArchivos((prev) => ({ ...prev, [id]: file }));
   };
 
   const enviar = async () => {
     const tipos = Object.keys(archivos) as Array<keyof typeof archivos>;
-
     await Promise.all(
       tipos
         .filter((tipo) => archivos[tipo])
@@ -94,69 +89,104 @@ export default function ProcesoAdopcionPage() {
     showSoftToast("Documentos enviados correctamente");
   };
 
-
   const handleConfirmCancelar = async () => {
     if (!solicitudActiva?.id) return;
-
     await cancelarSolicitudMutation.mutateAsync(solicitudActiva.id);
-
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["proceso-adopcion"] }),
       queryClient.invalidateQueries({ queryKey: ["documentos-adopcion"] }),
     ]);
-
     showSoftToast("Solicitud cancelada correctamente");
     setShowCancelSolicitudModal(false);
   };
-
 
   const deshabilitarEnviar =
     subirDocumentoMutation.isPending ||
     (estado === "sin_documentos"
       ? !Object.values(archivos).every(Boolean)
       : docs
-        .filter((d) => d.estado === "rechazado")
-        .some((d) => !archivos[d.tipo]));
+          .filter((d) => d.estado === "rechazado")
+          .some((d) => !archivos[d.tipo]));
 
-  /* -------------------- Estados de carga / error -------------------- */
+  /* -------------------- Loading / Error -------------------- */
   if (isLoading || isLoadingDocs) {
     return (
-      <div className="animate-pulse mt-4 rounded-xl border border-[#eadacb] bg-[#fff9f3] p-5 shadow-sm">
-        <div className="h-4 w-32 bg-[#eadacb]/50 rounded mb-3" />
-        <div className="h-3 w-full bg-[#eadacb]/40 rounded mb-2" />
-        <div className="h-3 w-5/6 bg-[#eadacb]/40 rounded" />
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-32 rounded-full" />
+          <Skeleton className="h-10 w-2/3" />
+          <Skeleton className="h-5 w-1/2" />
+        </div>
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
 
   if (isDocsError) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-800">
-        Error al cargar documentos
-      </div>
+      <EmptyState
+        icon={<AlertCircle size={32} />}
+        title="No pudimos cargar tus documentos"
+        description="Hubo un problema al consultar el estado de tus documentos. Intenta nuevamente."
+        action={
+          <Button
+            onClick={() =>
+              queryClient.invalidateQueries({
+                queryKey: ["documentos-adopcion"],
+              })
+            }
+          >
+            Reintentar
+          </Button>
+        }
+      />
     );
   }
 
   if (isError) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-800">
-        <p className="font-bold">Error al cargar tu proceso de adopción</p>
-        <p className="text-sm mt-1">{error.message}</p>
-      </div>
+      <EmptyState
+        icon={<AlertCircle size={32} />}
+        title="Error al cargar tu proceso de adopción"
+        description={error?.message || "Algo salió mal. Intenta nuevamente."}
+        action={
+          <Button
+            onClick={() =>
+              queryClient.invalidateQueries({ queryKey: ["proceso-adopcion"] })
+            }
+          >
+            Reintentar
+          </Button>
+        }
+      />
     );
   }
+
+  /* -------------------- Subtitle dinámico -------------------- */
+  const subtitle =
+    estado === "aprobado"
+      ? "¡Documentos validados! Continúa con tu proceso paso a paso."
+      : estado === "en_revision"
+      ? "Tus documentos están en revisión. Te avisaremos pronto."
+      : estado === "rechazado"
+      ? "Hay observaciones en tus documentos. Por favor corrígelas."
+      : "Sube tus documentos para que un administrador los valide.";
 
   /* -------------------- Render -------------------- */
   return (
     <>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <PageHead
-          title="Proceso de adopción"
-          subtitle={
-            estado === "aprobado"
-              ? "¡Listo! Ya puedes agendar tu cita para conocer a una mascota."
-              : "Sube tus documentos para que un administrador los valide antes de continuar."
+          title="Mi proceso de adopción"
+          subtitle={subtitle}
+          eyebrow={
+            <>
+              <Heart size={12} fill="currentColor" />
+              <span>Tu adopción en curso</span>
+            </>
           }
+          icon={<FileText size={20} />}
         />
 
         <DocumentosSection

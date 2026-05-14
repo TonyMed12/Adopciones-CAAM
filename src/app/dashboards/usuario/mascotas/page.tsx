@@ -127,12 +127,17 @@ export default function MascotasPage() {
   return (
     <>
       <PageHead
-        title="Mascotas"
-        subtitle="Encuentra a tu nuevo mejor amigo 🐾"
+        title="Adopta a tu próximo amigo"
+        subtitle="Cada mascota merece un hogar lleno de amor. Filtra y conoce a quien encajará perfecto contigo 🐾"
+        eyebrow={
+          <>
+            <span>•</span> <span>Mascotas disponibles</span>
+          </>
+        }
       />
 
       {/* Filtros */}
-      <div className="mb-6">
+      <div className="mb-6 sm:mb-8">
         <Filters
           q={q}
           onQ={setQ}
@@ -180,15 +185,22 @@ export default function MascotasPage() {
       {/* Scroll top */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className="
-          fixed bottom-5 right-5 z-50
-          bg-[#BC5F36] text-white p-3 rounded-full
-          shadow-lg hover:bg-[#a24f2d] hover:shadow-xl
-          transition-all duration-200
-        "
+        className="fixed bottom-5 right-5 z-50 grid place-items-center h-12 w-12 rounded-full bg-[#BC5F36] text-white shadow-lg hover:bg-[#a24f2d] hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
         aria-label="Volver arriba"
       >
-        ↑
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
       </button>
     </>
   );
