@@ -142,8 +142,10 @@ export default function CitasVeterinariasPage() {
     mascotas.find((m) => m.adopcion_id === adopcion_id)?.mascota_nombre ||
     "Desconocida";
 
+  const esExito = mensaje?.startsWith("✅");
+
   return (
-    <div className="max-w-6xl mx-auto bg-white rounded-3xl p-5 sm:p-8">
+    <div className="max-w-6xl mx-auto">
       <CitasVeterinariasUsuarioHeader
         modo={modo}
         setModo={setModo}
@@ -153,13 +155,17 @@ export default function CitasVeterinariasPage() {
 
       {mensaje && (
         <div
-          className={`mt-4 text-center text-sm p-3 rounded-lg ${
-            mensaje.startsWith("✅")
-              ? "bg-green-50 text-green-700 border border-green-200"
-              : "bg-yellow-50 text-yellow-800 border border-yellow-200"
-          }`}
+          role="alert"
+          className={`
+            mb-5 flex items-start gap-3 text-sm p-3.5 rounded-2xl border
+            ${
+              esExito
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                : "bg-amber-50 text-amber-800 border-amber-200"
+            }
+          `}
         >
-          {mensaje}
+          <span className="leading-relaxed">{mensaje}</span>
         </div>
       )}
 

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(git stash *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(xargs grep -l \"cita.*veterinaria\\\\|CitaVeterinaria\\\\|citaVet\" -i)",
+      "Bash(powershell -Command \"Get-ChildItem -Path src/features/citas/components/client -Recurse -Filter *.tsx | Select-Object -ExpandProperty FullName\")",
+      "Bash(findstr /R \"citas-veterinarias CitasVeterinarias\")"
+    ]
+  }
+}
