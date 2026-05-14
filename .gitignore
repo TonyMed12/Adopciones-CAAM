@@ -49,3 +49,5 @@ storybook-static
 # Google OAuth secrets
 public/client_secret_*.json
 
+.claude/
+
