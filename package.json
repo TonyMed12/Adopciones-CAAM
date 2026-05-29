@@ -10,7 +10,13 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.19",
@@ -84,6 +90,7 @@
     "eslint-plugin-storybook": "^9.1.8",
     "jsdom": "^27.3.0",
     "playwright": "^1.55.1",
+    "@playwright/test": "^1.55.1",
     "storybook": "^9.1.8",
     "supabase": "^2.58.5",
     "tailwindcss": "^4",

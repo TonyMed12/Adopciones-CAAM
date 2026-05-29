@@ -51,3 +51,9 @@ public/client_secret_*.json
 
 .claude/
 
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/blob-report/
+/tests/.auth/
