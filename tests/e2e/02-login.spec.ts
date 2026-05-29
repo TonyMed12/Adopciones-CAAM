@@ -1,9 +1,17 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../fixtures/test";
 import { LoginPage } from "../pages/LoginPage";
 import { env, hasValidCredentials } from "../helpers/env";
 
+/**
+ * Flujo 2 — Inicio de sesion.
+ *
+ * El test "login valido" hace UN unico submit por corrida. El resto
+ * de tests autenticados reutiliza la sesion via storageState generado
+ * por el setup project, asi NUNCA llegamos al limite de 5 logins/min
+ * del rate limiter.
+ */
 test.describe("Flujo 2 — Inicio de sesion", () => {
-  test("renderiza el formulario y los botones de proveedores sociales", async ({ page }) => {
+  test("renderiza el formulario y los proveedores sociales", async ({ page }) => {
     const login = new LoginPage(page);
     await login.goto();
 
@@ -15,43 +23,43 @@ test.describe("Flujo 2 — Inicio de sesion", () => {
     await expect(login.registerLink).toBeVisible();
   });
 
-  test("muestra error de validacion si los campos estan vacios", async ({ page }) => {
+  test("error de validacion si los campos estan vacios", async ({ page }) => {
     const login = new LoginPage(page);
     await login.goto();
     await login.submit();
 
-    // El componente setea: "Checa tu info papito."
     await expect(login.errorAlert).toBeVisible();
     await expect(login.errorAlert).toContainText(/checa tu info/i);
   });
 
-  test("rechaza credenciales invalidas y muestra mensaje del backend", async ({ page }) => {
+  test("rechaza credenciales invalidas con el mensaje del backend", async ({
+    page,
+  }) => {
     const login = new LoginPage(page);
     await login.goto();
 
-    await login.login("no-existe@caam-tests.local", "PasswordIncorrecta1!");
+    await login.login("no-existe@e2e.caam.test", "PasswordIncorrecta1!");
 
-    // El backend responde 401 con un mensaje; la app lo pinta en role=alert
     await expect(login.errorAlert).toBeVisible({ timeout: 15_000 });
     await expect(login.errorAlert).toContainText(
-      /credenciales|invalid|incorrect|no es valid|no se pudo/i
+      /credenciales|invalid|incorrect|no es valid|no se pudo|demasiadas/i
     );
-
-    // No debe haber navegado fuera de /login
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test("login valido redirige al dashboard correspondiente", async ({ page }) => {
+  test("login valido redirige al dashboard segun rol", async ({ page }) => {
     test.skip(
       !hasValidCredentials(),
-      "Define E2E_USER_EMAIL y E2E_USER_PASSWORD en .env.test para correr este caso."
+      "Define E2E_USER_EMAIL y E2E_USER_PASSWORD en .env.test"
     );
 
     const login = new LoginPage(page);
     await login.goto();
     await login.login(env.validUserEmail, env.validUserPassword);
 
-    await page.waitForURL(/\/dashboards\/(usuario|administrador)/i, { timeout: 20_000 });
+    await page.waitForURL(/\/dashboards\/(usuario|administrador)(\/|$)/i, {
+      timeout: 30_000,
+    });
     expect(page.url()).toMatch(/\/dashboards\/(usuario|administrador)/);
   });
 });

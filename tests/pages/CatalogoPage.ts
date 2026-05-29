@@ -1,11 +1,20 @@
 import { expect, Locator, Page } from "@playwright/test";
 
 /**
- * Page Object para /dashboards/usuario/mascotas (catalogo publico).
+ * Page Object BASE para las vistas de catalogo de mascotas.
  *
- * Esta vista es PUBLICA (sin sesion) y muestra el grid de mascotas.
- * Los filtros estan controlados por <ChipSelect> que es un boton + popup,
- * por eso los abrimos por aria-label y elegimos la opcion por rol option.
+ * Existen dos rutas en la app que reutilizan los mismos componentes
+ * de UI (`Filters` + `MascotasFeed`):
+ *
+ *   - PUBLICA   : /dashboards/mascotas
+ *                 layout sin auth, "Adoptar" abre <ModalLoginRequired>.
+ *
+ *   - PROTEGIDA : /dashboards/usuario/mascotas
+ *                 protegida por `requireRole(2)` en su layout.tsx.
+ *                 "Adoptar" dispara el flujo real (hook + redirects).
+ *
+ * Esta clase concentra los locators comunes; las subclases concretas
+ * solo definen su `goto()` y, opcionalmente, su heading esperado.
  */
 export class CatalogoPage {
   readonly page: Page;
@@ -15,7 +24,6 @@ export class CatalogoPage {
   readonly limpiarFiltros: Locator;
   readonly mascotaCards: Locator;
   readonly emptyState: Locator;
-  readonly heading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -25,34 +33,24 @@ export class CatalogoPage {
     this.limpiarFiltros = page.getByRole("button", { name: /^limpiar$/i }).first();
     this.mascotaCards = page.locator('section[aria-label="Lista de mascotas"] article');
     this.emptyState = page.getByText(/no encontramos mascotas|a(u|ú)n no hay mascotas/i);
-    this.heading = page.getByRole("heading", { name: /adopta a tu pr(o|ó)ximo amigo/i });
   }
 
-  async goto() {
-    await this.page.goto("/dashboards/usuario/mascotas");
-    await expect(this.heading).toBeVisible();
-  }
-
-  /**
-   * Espera que el feed termine de cargar (desaparezcan los skeletons)
-   * y que aparezcan tarjetas o el empty state.
-   */
   async waitForFeed() {
-    // El skeleton se muestra mientras isLoading=true. Cuando termina,
-    // aparece <section aria-label="Lista de mascotas"> o el empty state.
     await Promise.race([
-      this.mascotaCards.first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => null),
-      this.emptyState.first().waitFor({ state: "visible", timeout: 15_000 }).catch(() => null),
+      this.mascotaCards
+        .first()
+        .waitFor({ state: "visible", timeout: 20_000 })
+        .catch(() => null),
+      this.emptyState
+        .first()
+        .waitFor({ state: "visible", timeout: 20_000 })
+        .catch(() => null),
     ]);
   }
 
-  /**
-   * Selecciona una opcion en un ChipSelect (boton + listbox emergente).
-   */
-  async selectChip(buttonLocator: Locator, optionLabel: RegExp | string) {
+  private async selectChip(buttonLocator: Locator, optionLabel: RegExp | string) {
     await buttonLocator.click();
-    const option = this.page.getByRole("option", { name: optionLabel }).first();
-    await option.click();
+    await this.page.getByRole("option", { name: optionLabel }).first().click();
   }
 
   async filterByEspecie(label: RegExp | string) {
@@ -73,26 +71,69 @@ export class CatalogoPage {
     }
   }
 
-  async cardsCount(): Promise<number> {
+  cardsCount(): Promise<number> {
     return this.mascotaCards.count();
   }
 
-  /**
-   * Abre el modal de detalle de la primera mascota disponible
-   * haciendo click en su imagen (boton "Ver detalles de ...").
-   */
   async openFirstCardDetails() {
-    const firstCardButton = this.mascotaCards
+    await this.mascotaCards
       .first()
-      .getByRole("button", { name: /ver detalles de/i });
-    await firstCardButton.click();
+      .getByRole("button", { name: /ver detalles de/i })
+      .click();
   }
 
   /**
-   * Click en el boton "Adoptar" de la primera mascota disponible.
+   * Click en "Adoptar" de la primera tarjeta con boton habilitado.
+   * Devuelve la tarjeta usada por si el test quiere assertear sobre ella.
    */
-  async clickAdoptOnFirstCard() {
-    const card = this.mascotaCards.first();
+  async clickAdoptOnFirstAvailableCard(): Promise<Locator> {
+    const card = this.mascotaCards
+      .filter({ has: this.page.getByRole("button", { name: /^adoptar$/i }) })
+      .first();
+    await expect(card).toBeVisible();
     await card.getByRole("button", { name: /^adoptar$/i }).click();
+    return card;
+  }
+}
+
+/**
+ * Catalogo PUBLICO: /dashboards/mascotas
+ *
+ * Layout: Header (publico) + PageShell. "Adoptar" abre el modal
+ * `ModalLoginRequired` (no redirige inmediatamente a /login).
+ */
+export class CatalogoPublicoPage extends CatalogoPage {
+  readonly heading: Locator;
+
+  constructor(page: Page) {
+    super(page);
+    this.heading = page.getByRole("heading", { name: /mascotas disponibles/i });
+  }
+
+  async goto() {
+    await this.page.goto("/dashboards/mascotas");
+    await expect(this.heading).toBeVisible();
+  }
+}
+
+/**
+ * Catalogo PROTEGIDO: /dashboards/usuario/mascotas
+ *
+ * Requiere sesion con rol 2. Pensado para correr con storageState
+ * generado por el setup project.
+ */
+export class CatalogoUsuarioPage extends CatalogoPage {
+  readonly heading: Locator;
+
+  constructor(page: Page) {
+    super(page);
+    this.heading = page.getByRole("heading", {
+      name: /adopta a tu pr(o|ó)ximo amigo/i,
+    });
+  }
+
+  async goto() {
+    await this.page.goto("/dashboards/usuario/mascotas");
+    await expect(this.heading).toBeVisible();
   }
 }

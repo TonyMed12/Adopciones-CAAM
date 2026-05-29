@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   "/quienes-somos",
   "/contacto",
   "/login",
+  "/register",
   "/registro",
   "/recuperacion",
   "/recuperacion/reestablecer_contrasena",
