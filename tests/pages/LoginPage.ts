@@ -21,7 +21,10 @@ export class LoginPage {
     this.emailInput = page.locator('input[type="email"][autocomplete="email"]');
     this.passwordInput = page.locator('input[type="password"][autocomplete="current-password"]');
     this.submitButton = page.getByRole("button", { name: /iniciar sesi(o|ó)n$/i }).first();
-    this.errorAlert = page.getByRole("alert");
+    // Excluye el announcer invisible que Next.js monta como
+    // <div role="alert" id="__next-route-announcer__"> y que rompe
+    // las consultas con `getByRole('alert')` por strict mode.
+    this.errorAlert = page.locator('[role="alert"]:not(#__next-route-announcer__)');
     this.googleButton = page.getByRole("button", { name: /google/i });
     this.githubButton = page.getByRole("button", { name: /github/i });
     this.registerLink = page.getByRole("link", { name: /reg(i|í)strate/i });

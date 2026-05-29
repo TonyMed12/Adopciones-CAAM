@@ -12,6 +12,16 @@ const BASE_URL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 const STORAGE_STATE = path.resolve(__dirname, "tests/.auth/user.json");
 
+/**
+ * Solo activamos los projects `setup` + `authenticated` cuando hay
+ * credenciales E2E. Si no, ni siquiera se registran -> Playwright no
+ * intenta leer un storageState inexistente y no marca tests como
+ * fallidos por ENOENT.
+ */
+const HAS_E2E_CREDS = !!(
+  process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD
+);
+
 export default defineConfig({
   testDir: "./tests",
   outputDir: "./test-results",
@@ -42,23 +52,8 @@ export default defineConfig({
 
   projects: [
     /**
-     * 1. SETUP — login una sola vez por corrida; persiste cookies a
-     *    tests/.auth/user.json para que los proyectos autenticados los
-     *    reutilicen. Si las credenciales E2E no estan definidas, el
-     *    propio setup se omite y los projects dependientes tambien.
-     */
-    {
-      name: "setup",
-      testMatch: /tests\/setup\/.*\.setup\.ts$/,
-      use: { ...devices["Desktop Chrome"] },
-    },
-
-    /**
-     * 2. PUBLIC — tests que no requieren sesion:
-     *    registro, login, catalogo publico, filtrado, detalle, gate de
-     *    adopcion (modal "iniciar sesion para adoptar").
-     *
-     *    No depende del setup -> se puede correr aislado.
+     * PUBLIC — tests que no requieren sesion: registro, login, catalogo
+     * publico, filtrado, detalle, gate de adopcion. Siempre activo.
      */
     {
       name: "public",
@@ -67,19 +62,29 @@ export default defineConfig({
     },
 
     /**
-     * 3. AUTHENTICATED — tests que sí requieren un usuario logueado
-     *    (catalogo protegido, inicio del flujo de adopcion con sesion).
-     *    Reutiliza storageState del setup.
+     * SETUP + AUTHENTICATED — solo se registran si hay credenciales E2E.
+     * Asi, en entornos sin credenciales (CI sin secrets, dev sin Supabase)
+     * Playwright ni siquiera intenta cargar el storageState y la suite
+     * publica se mantiene 100% verde.
      */
-    {
-      name: "authenticated",
-      testMatch: /tests\/e2e\/auth\/.*\.spec\.ts$/,
-      dependencies: ["setup"],
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: STORAGE_STATE,
-      },
-    },
+    ...(HAS_E2E_CREDS
+      ? [
+          {
+            name: "setup",
+            testMatch: /tests\/setup\/.*\.setup\.ts$/,
+            use: { ...devices["Desktop Chrome"] },
+          },
+          {
+            name: "authenticated",
+            testMatch: /tests\/e2e\/auth\/.*\.spec\.ts$/,
+            dependencies: ["setup"],
+            use: {
+              ...devices["Desktop Chrome"],
+              storageState: STORAGE_STATE,
+            },
+          },
+        ]
+      : []),
   ],
 
   webServer: process.env.E2E_SKIP_WEBSERVER

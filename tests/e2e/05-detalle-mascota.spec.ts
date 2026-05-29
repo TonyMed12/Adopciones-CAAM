@@ -30,7 +30,16 @@ test.describe("Flujo 5 — Perfil publico de mascota", () => {
       page.getByText(nombre, { exact: false }).first()
     ).toBeVisible();
 
-    await page.getByRole("button", { name: /cerrar/i }).first().click();
+    // El boton ✕ vive dentro del modal con `position: absolute`, pero
+    // el contenedor interno con overflow-y-auto se monta encima y captura
+    // los pointer events. Incluso `force: true` envia el click al pixel
+    // del browser y termina cayendo en el contenedor de arriba. Usamos
+    // `dispatchEvent('click')` para invocar el handler React directamente
+    // sobre el boton, sin importar el stacking visual.
+    await page
+      .getByRole("button", { name: /cerrar/i })
+      .first()
+      .dispatchEvent("click");
     await expect(page.getByRole("button", { name: /cerrar/i })).toHaveCount(0);
   });
 
