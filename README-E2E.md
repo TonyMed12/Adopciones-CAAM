@@ -306,10 +306,12 @@ La suite automatizada cubre los siguientes procesos:
 
 # Evidencia de ejecución
 
+![Resultados de ejecución de Playwright](tests/resultados-e2e.png)
+
 La ejecución fue realizada mediante el comando:
 
 ```bash
-npm run test:e2e:headed
+npm run test:e2e
 ```
 
 ## Resultados obtenidos
@@ -320,18 +322,20 @@ Running 23 tests using 1 worker
 ✓ 22 passed
 - 1 skipped
 
-22 passed (2.4m)
+22 passed (1.0m)
 ```
+
+La captura anterior muestra la ejecución completa de la suite E2E, incluyendo los seis flujos principales del sistema y los escenarios autenticados que reutilizan una sesión previamente generada.
 
 ## Resumen de resultados
 
-| Métrica                     | Resultado   |
-| --------------------------- | ----------- |
-| Total de pruebas ejecutadas | 23          |
-| Pruebas aprobadas           | 22          |
-| Pruebas omitidas            | 1           |
-| Pruebas fallidas            | 0           |
-| Tiempo total de ejecución   | 2.4 minutos |
+| Métrica                     | Resultado  |
+| --------------------------- | ---------- |
+| Total de pruebas ejecutadas | 23         |
+| Pruebas aprobadas           | 22         |
+| Pruebas omitidas            | 1          |
+| Pruebas fallidas            | 0          |
+| Tiempo total de ejecución   | 1.0 minuto |
 
 ## Estado por flujo
 
@@ -360,6 +364,8 @@ E2E_REGISTER_DRY_RUN=1
 ```
 
 Esta configuración evita la creación de usuarios reales mientras se valida completamente el flujo de registro.
+
+La ejecución finalizó sin pruebas fallidas, validando correctamente los flujos principales del sistema y los escenarios que requieren autenticación.
 
 ---
 
